@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.4.4](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.4.4) — 2026-10-04
+
+- keep campaign tabs, search and filters full width above the list and details, with fixed detail headers and reachable controls in short windows ([#65](https://github.com/ohne-b/twitch-drops-miner/pull/65))
+- move campaign pagination into the top toolbar, remove the bottom pagination gap and wrap crowded controls on narrow phones
+- reduce repainting during campaign-detail scrolling by giving the scrollable body an opaque background
+- switch the project license to PolyForm Noncommercial 1.0.0, with matching package and image metadata; preserve upstream MIT and third-party notices
+
+Existing settings, credentials, history, service names and container mounts remain compatible.
+Mining selection, watch cadence and claim requirements are unchanged.
+
 ## [v1.4.3](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.4.3) — 2026-10-04
 
 - correct conflicting live progress using newer Twitch account inventory, keep watching when only the disputed counter reaches 100%, and preserve pending reconciliation across reconnects ([#63](https://github.com/ohne-b/twitch-drops-miner/pull/63))
