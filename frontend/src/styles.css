@@ -556,6 +556,10 @@ label:has(> input[type='checkbox']:focus-visible) {
   .row {
     @apply mx-4 flex items-center gap-3 border-b border-divider py-3 last:border-0;
   }
+  .scroll-list {
+    padding-inline-end: 4px;
+    scrollbar-gutter: stable;
+  }
   .drag-handle {
     @apply grid h-9 w-7 shrink-0 touch-none select-none place-items-center border-0 bg-transparent text-muted;
     cursor: grab;
