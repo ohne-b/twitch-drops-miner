@@ -341,11 +341,15 @@ embed it and run without a build tool/runtime companion. Production builds never
 - Campaign summaries open one detail panel, alongside the list on wide screens and as a full
   page on smaller screens. Lock page scrolling while the full-page detail is open and contain
   its body scrolling; release the lock on close, navigation or return to the desktop layout.
-  At desktop widths the workspace leaves a compact 12px bottom margin;
-  details keep the same height for short and long campaigns, with a fixed header and separately
-  scrollable body. Scroll campaign results independently with a small scrollbar gutter; allow
-  the left column to scroll in short windows when filters/notices need more space. Omit selection stripes and confine row hover
-  to the side-panel icon circle; preserve a visible title/icon keyboard focus cue.
+  At desktop widths tabs, search and filters stay full width above the list and detail columns.
+  Both columns fill the remaining height with a compact 12px bottom margin; details keep the
+  same height for short and long campaigns, with a fixed header and separately scrollable body.
+  The detail body inherits the panel's opaque background so browsers can composite scrolling;
+  preserve its distinct keyboard-focus background and the full-page layout's canvas color.
+  Scroll campaign results independently with a small scrollbar gutter; allow the controls area
+  to scroll in short windows and the workspace to scroll when notices or long titles leave too
+  little room for usable controls and detail content. Omit selection stripes and
+  confine row hover to the side-panel icon circle; preserve a visible title/icon keyboard focus cue.
   Use the Dock Right icon for opening details, with a tooltip, current-item state and panel
   control association rather than disclosure semantics.
   Mine icon hover stays separate, without a selected background strip behind it. Apply the
@@ -372,8 +376,10 @@ embed it and run without a build tool/runtime companion. Production builds never
   for account-confirmed claimed rewards only. Never let old history mark a live unclaimed
   reward as claimed. Omit benefit names identical to the reward title, retaining other names.
   List filters/layout are shareable URL state; loading a shared URL does not autosave it.
-  Available and History paginate 25 campaign groups, with a compact gap between results and
-  pagination. Preserve full-size pagination hit targets. Mine remains a game-wide action.
+  Available and History paginate 25 campaign groups, with pagination beside the campaign count
+  in the top toolbar. On narrow phones pagination wraps below the count; filter/sort/view
+  controls wrap to another row when needed. Results fill the remaining height without a pagination
+  footer. Preserve full-size pagination hit targets. Mine remains a game-wide action.
   Eligibility, normalized game identity, saved ranks and priority reasons come from shared
   backend policy; prerequisite boosts identify their actual target rewards.
 - Activity is a bounded session buffer of typed events with category, severity, safe message
@@ -429,7 +435,7 @@ checks both platforms/version/revision before registry writes, and copies them b
 Failed or pending newer validation cannot fall back to an older run. Missing/expired artifacts
 require rerunning validation; release and edge publishing never rebuild images. PR artifacts
 cannot be promoted. Ordinary merges only retain artifacts, never publish registry images.
-Keep the project's PolyForm Strict 1.0.0 license in `LICENSE.md` and the full upstream MIT
+Keep the project's PolyForm Noncommercial 1.0.0 license in `LICENSE.md` and the full upstream MIT
 license in `NOTICE.md`; third-party components retain their original licenses;
 include both with frontend asset notices in production images. Preserve 1000:1000 ownership,
 mounts and port. Health does not prove earning.

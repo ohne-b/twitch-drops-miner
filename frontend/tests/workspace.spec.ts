@@ -841,7 +841,7 @@ test('Available and History share card geometry and inset list dividers', async 
   }
 });
 
-test('campaign panes fill desktop height and keep row hovers compact', async ({
+test('campaign panes fill the height below full-width controls and keep row hovers compact', async ({
   page,
   request,
 }) => {
@@ -873,6 +873,8 @@ test('campaign panes fill desktop height and keep row hovers compact', async ({
     const first = page.getByRole('button', { name: 'Open Campaign 01', exact: true });
     const search = page.getByRole('searchbox', { name: 'Search campaigns and rewards' });
     await expect(first).toBeVisible();
+    const toolbar = (await page.locator('.campaign-toolbar').boundingBox())!;
+    const searchBounds = (await search.boundingBox())!;
     await first.hover();
     await expect(first).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
     await expect(first.locator('.campaign-detail-icon')).toHaveCSS('width', '28px');
@@ -886,15 +888,39 @@ test('campaign panes fill desktop height and keep row hovers compact', async ({
     const detail = page.getByRole('complementary', { name: 'Campaign details' });
     await expect(detail).toBeVisible();
     const bounds = (await detail.boundingBox())!;
-    expect(bounds.y).toBe(28);
-    expect(bounds.height).toBe(viewport.height - 40);
-    const footer = (await page.getByRole('navigation', { name: 'Campaign pages' }).boundingBox())!;
-    expect(viewport.height - footer.y - footer.height).toBe(12);
+    expect(await page.locator('.campaign-toolbar').boundingBox()).toEqual(toolbar);
+    expect(await search.boundingBox()).toEqual(searchBounds);
+    expect(bounds.x + bounds.width).toBeCloseTo(toolbar.x + toolbar.width, 0);
+    expect(bounds.y).toBe((await list.boundingBox())!.y);
+    expect(bounds.y).toBe(toolbar.y + toolbar.height + 20);
+    expect(bounds.y + bounds.height).toBe(viewport.height - 12);
+    const pagination = (await page
+      .getByRole('navigation', { name: 'Campaign pages' })
+      .boundingBox())!;
+    expect(pagination.y).toBeGreaterThanOrEqual(toolbar.y);
+    expect(pagination.y + pagination.height).toBeLessThanOrEqual(toolbar.y + toolbar.height);
+    const listBounds = (await list.boundingBox())!;
+    expect(listBounds.y + listBounds.height).toBe(viewport.height - 12);
     await expect(first.locator('..')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
     const mine = page.getByRole('button', { name: 'Mine Game 1', exact: true });
     await mine.hover();
     await expect(mine).toHaveCSS('background-color', 'rgb(51, 51, 51)');
     await expect(mine.locator('..')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await page.getByRole('button', { name: 'Filters', exact: true }).click();
+    const filters = (await page
+      .getByRole('group', { name: 'Filters', exact: true })
+      .boundingBox())!;
+    const filteredBounds = (await detail.boundingBox())!;
+    expect(filters.x).toBe(toolbar.x);
+    expect(filters.width).toBeCloseTo(toolbar.width, 0);
+    expect(filteredBounds.y).toBe((await list.boundingBox())!.y);
+    expect(filteredBounds.y).toBeGreaterThan(bounds.y);
+    expect(filteredBounds.y + filteredBounds.height).toBe(viewport.height - 12);
+    await expect(
+      detail.getByRole('heading', { name: 'Campaign 01', exact: true }),
+    ).toBeInViewport();
+    await page.getByRole('button', { name: 'Filters', exact: true }).click();
+    expect(await detail.boundingBox()).toEqual(bounds);
     await page.screenshot({
       path: `../artifacts/campaign-pane-${viewport.width}-${viewport.height}.png`,
     });
@@ -906,8 +932,13 @@ test('campaign panes fill desktop height and keep row hovers compact', async ({
     expect((await search.boundingBox())!.y).toBe(searchTop);
     expect((await detail.boundingBox())!.height).toBe(bounds.height);
     const body = detail.getByRole('region', { name: 'Campaign 20', exact: true });
+    await expect(body).toHaveCSS(
+      'background-color',
+      await detail.evaluate((element) => getComputedStyle(element).backgroundColor),
+    );
     await body.focus();
     await body.press('End');
+    await expect(body).toHaveCSS('background-color', 'rgb(36, 36, 36)');
     await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
     await expect(
       detail.getByRole('heading', { name: 'Campaign 20', exact: true }),
@@ -932,10 +963,73 @@ test('campaign panes fill desktop height and keep row hovers compact', async ({
   await expect(history).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(history.locator('.campaign-detail-icon')).toHaveCSS('width', '28px');
   await history.click();
-  await expect(page.getByRole('complementary', { name: 'Campaign details' })).toHaveCSS(
-    'height',
-    '320px',
+  const historyBounds = (await page
+    .getByRole('complementary', { name: 'Campaign details' })
+    .boundingBox())!;
+  const historyList = (await page
+    .getByRole('region', { name: 'History', exact: true })
+    .boundingBox())!;
+  expect(historyBounds.y).toBe(historyList.y);
+  expect(historyBounds.y + historyBounds.height).toBe(348);
+  expect(historyBounds.y).toBeGreaterThan(
+    (await page.getByRole('searchbox', { name: 'Search campaigns and rewards' }).boundingBox())!.y,
   );
+});
+
+test('short campaign workspaces keep controls and rewards reachable with long titles and notices', async ({
+  page,
+  request,
+}) => {
+  const campaign = {
+    ...fixture.campaigns[0]!,
+    name: 'Campaign with a long title that wraps across several lines when viewing the campaign details',
+  };
+  await request.post('/__test/event', {
+    headers,
+    data: { event: 'inventory_batch_update', data: { campaigns: [campaign] } },
+  });
+  await page.setViewportSize({ width: 1280, height: 360 });
+  await page.goto(`/campaigns?campaign=${campaign.id}`);
+  await page.getByRole('button', { name: 'Filters', exact: true }).click();
+  const detail = page.getByRole('complementary', { name: 'Campaign details' });
+  const body = detail.getByRole('region', { name: campaign.name, exact: true });
+  const reward = body.getByRole('heading', { level: 3 }).last();
+  await reward.scrollIntoViewIfNeeded();
+  await expect(reward).toBeInViewport({ ratio: 0.99 });
+  const bodyBounds = (await body.boundingBox())!;
+  const detailBounds = (await detail.boundingBox())!;
+  expect(bodyBounds.y + bodyBounds.height).toBeLessThanOrEqual(
+    detailBounds.y + detailBounds.height,
+  );
+  await page.route('**/api/settings', async (route) => {
+    if (route.request().method() === 'POST')
+      await route.fulfill({ status: 409, json: { detail: 'settings_conflict' } });
+    else await route.continue();
+  });
+  await page.getByRole('button', { name: 'Change campaign layout', exact: true }).click();
+  await expect(page.getByRole('alert')).toBeVisible();
+  await page.context().setOffline(true);
+  try {
+    await request.post('/__test/reconnect', { headers, data: {} });
+    await expect(page.getByText('Connection lost.', { exact: false })).toBeVisible();
+    for (const control of [
+      page.getByRole('link', { name: 'History', exact: true }),
+      page.getByRole('searchbox', { name: 'Search campaigns and rewards' }),
+      page.getByRole('button', { name: 'Filters', exact: true }),
+      detail.getByRole('button', { name: 'Close details' }),
+    ]) {
+      await control.focus();
+      await expect(control).toBeInViewport({ ratio: 0.99 });
+    }
+    await reward.scrollIntoViewIfNeeded();
+    await expect(reward).toBeInViewport({ ratio: 0.99 });
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(360);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  } finally {
+    await page.unroute('**/api/settings');
+    await page.context().setOffline(false);
+  }
 });
 
 for (const view of ['grid', 'list']) {
@@ -1045,6 +1139,10 @@ test('mobile campaign details lock background scrolling and restore the list', a
         const detail = page.getByRole('complementary', { name: 'Campaign details' });
         const body = detail.locator('.detail-body');
         await expect(detail).toBeVisible();
+        await expect(body).toHaveCSS(
+          'background-color',
+          await detail.evaluate((element) => getComputedStyle(element).backgroundColor),
+        );
         await expect(page.locator('html')).toHaveCSS('overflow-y', 'hidden');
         expect(await page.evaluate(() => window.scrollY)).toBe(before);
         await detail.locator('header').hover();

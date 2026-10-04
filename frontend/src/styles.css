@@ -137,8 +137,14 @@
 .campaign-workspace {
   display: grid;
   align-items: stretch;
+  gap: 20px;
+}
+.campaign-columns {
+  display: grid;
+  min-height: 0;
   gap: 24px;
 }
+.campaign-tools,
 .campaign-browser {
   display: flex;
   min-height: 0;
@@ -169,15 +175,32 @@
 }
 @media (max-width: 767px) {
   .campaign-toolbar {
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    grid-template-areas: 'tabs tabs refresh' 'search search search' 'total controls controls';
+    display: flex;
+    flex-wrap: wrap;
     gap: 8px;
   }
   .campaign-tabs {
+    flex: 1;
     gap: 4px;
   }
+  .campaign-refresh {
+    order: 1;
+  }
+  .campaign-search {
+    order: 2;
+    flex-basis: 100%;
+  }
+  .campaign-total {
+    order: 3;
+    flex: 1;
+  }
+  .campaign-controls {
+    order: 4;
+    align-self: end;
+    margin-inline-start: auto;
+  }
 }
-.campaign-workspace.with-detail {
+.campaign-workspace.with-detail .campaign-columns {
   grid-template-columns: minmax(0, 1fr) minmax(360px, 42%);
 }
 .campaign-summary {
@@ -303,11 +326,14 @@
   .campaign-workspace {
     flex: 1;
     min-height: 0;
-    grid-template-rows: minmax(0, 1fr);
+    grid-template-rows: minmax(96px, auto) minmax(min-content, 1fr);
+    overflow-y: auto;
   }
+  .campaign-tools,
   .campaign-browser {
     overflow-y: auto;
   }
+  .campaign-tools > *,
   .campaign-browser > :not(.campaign-results) {
     flex-shrink: 0;
   }
@@ -315,9 +341,12 @@
     max-height: min(256px, 40dvh);
     overflow-y: auto;
   }
-  .campaign-results {
-    flex: 1;
+  .campaign-results,
+  .campaign-detail .detail-body {
+    flex: 1 1 0;
     min-height: 80px;
+  }
+  .campaign-results {
     padding-inline-end: 8px;
     overflow-y: auto;
     scrollbar-gutter: stable;
@@ -371,7 +400,8 @@
   .campaign-detail .detail-body {
     overscroll-behavior-y: contain;
   }
-  .campaign-workspace.with-detail > .campaign-browser {
+  .campaign-workspace.with-detail > .campaign-tools,
+  .campaign-workspace.with-detail .campaign-browser {
     visibility: hidden;
   }
   .mining-frame {
@@ -379,7 +409,7 @@
     height: auto;
     min-height: 0;
   }
-  .campaign-workspace.with-detail {
+  .campaign-workspace.with-detail .campaign-columns {
     grid-template-columns: minmax(0, 1fr);
   }
   .campaign-detail {

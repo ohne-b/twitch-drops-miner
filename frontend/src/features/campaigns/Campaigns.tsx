@@ -231,7 +231,7 @@ export default function Campaigns() {
   ];
   return (
     <div className={`campaign-workspace ${detailId ? 'with-detail' : ''}`}>
-      <div className="campaign-browser min-w-0">
+      <div className="campaign-tools min-w-0">
         <header className="campaign-toolbar">
           <h1 className="sr-only">{t('campaigns')}</h1>
           <nav
@@ -253,12 +253,33 @@ export default function Campaigns() {
               </Link>
             ))}
           </nav>
-          <p className="campaign-total muted">
-            {t('campaign_count', {
-              count: historyTab ? historical.length : campaigns.length,
-              total,
-            })}
-          </p>
+          <div className="campaign-total flex flex-wrap items-center gap-x-4 gap-y-1">
+            <p className="muted">
+              {t('campaign_count', {
+                count: historyTab ? historical.length : campaigns.length,
+                total,
+              })}
+            </p>
+            {(historyTab ? historical : campaigns).length > 25 && (
+              <nav className="flex shrink-0 items-center gap-1" aria-label={t('campaign_pages')}>
+                <IconButton
+                  path={mdiChevronLeft}
+                  label={t('gui.history.previous')}
+                  disabled={page === 0}
+                  onClick={() => setQuery('page', String(page - 1))}
+                />
+                <span className="muted whitespace-nowrap tabular-nums">
+                  {page + 1} / {Math.ceil((historyTab ? historical : campaigns).length / 25)}
+                </span>
+                <IconButton
+                  path={mdiChevronRight}
+                  label={t('gui.history.next')}
+                  disabled={(page + 1) * 25 >= (historyTab ? historical : campaigns).length}
+                  onClick={() => setQuery('page', String(page + 1))}
+                />
+              </nav>
+            )}
+          </div>
           <div className="campaign-refresh justify-self-end">
             <InventoryRefreshButton />
           </div>
@@ -391,122 +412,104 @@ export default function Campaigns() {
             </div>
           </div>
         )}
-        <div
-          ref={results}
-          role="region"
-          aria-label={t(historyTab ? 'gui.tabs.history' : 'campaigns')}
-          tabIndex={0}
-          className="campaign-results relative space-y-5 focus-visible:bg-field focus-visible:[&_.panel]:border-control"
-        >
-          <ActionResult action={action} />
-          {historyTab && history.error && (
-            <Notice error>
-              {t('history_error')}
-              <IconButton path={mdiReload} label={t('retry')} onClick={history.retry} />
-            </Notice>
-          )}
+      </div>
+      <div className="campaign-columns">
+        <div className="campaign-browser min-w-0">
           <div
-            className={
-              list
-                ? 'campaign-list panel overflow-hidden'
-                : 'campaign-grid grid gap-4 md:grid-cols-2'
-            }
+            ref={results}
+            role="region"
+            aria-label={t(historyTab ? 'gui.tabs.history' : 'campaigns')}
+            tabIndex={0}
+            className="campaign-results relative space-y-5 focus-visible:bg-field focus-visible:[&_.panel]:border-control"
           >
-            {historyTab ? (
-              <History
-                groups={historical.slice(page * 25, (page + 1) * 25)}
-                onOpen={openCampaign}
-                selected={detailId}
-              />
-            ) : (
-              campaigns.slice(page * 25, (page + 1) * 25).map((campaign) => (
-                <Campaign
-                  key={campaign.id}
-                  campaign={campaign}
-                  onOpen={() => openCampaign(campaign.id)}
-                  selected={detailId === campaign.id}
-                  action={
-                    !campaign.finished &&
-                    !campaign.expired && (
-                      <IconButton
-                        path={
-                          selectedGames.some(
-                            (game) => gameKey(game) === gameKey(campaign.game_name),
-                          )
-                            ? mdiStopCircleOutline
-                            : mdiPlayCircleOutline
-                        }
-                        disabled={!connected || action.busy}
-                        label={t(
-                          selectedGames.some(
-                            (game) => gameKey(game) === gameKey(campaign.game_name),
-                          )
-                            ? 'stop_mining_game'
-                            : 'mine_game',
-                          { game: campaign.game_name },
-                        )}
-                        onClick={() => {
-                          autosave.change('games_to_watch', (games) =>
-                            games.some((game) => gameKey(game) === gameKey(campaign.game_name))
-                              ? games.filter(
-                                  (game) => gameKey(game) !== gameKey(campaign.game_name),
-                                )
-                              : [...games, campaign.game_name],
-                          );
-                        }}
-                      />
-                    )
-                  }
-                />
-              ))
+            <ActionResult action={action} />
+            {historyTab && history.error && (
+              <Notice error>
+                {t('history_error')}
+                <IconButton path={mdiReload} label={t('retry')} onClick={history.retry} />
+              </Notice>
             )}
-          </div>
-          {historyTab
-            ? !historical.length &&
-              !history.loading &&
-              !history.error && (
-                <Empty title={t(history.entries.length ? 'no_matches' : 'history_empty')} />
-              )
-            : !campaigns.length && (
-                <Empty
-                  title={t(data.campaigns.length ? 'no_matches' : 'gui.inventory.no_campaigns')}
-                  detail={t('campaign_empty_help')}
+            <div
+              className={
+                list
+                  ? 'campaign-list panel overflow-hidden'
+                  : 'campaign-grid grid gap-4 md:grid-cols-2'
+              }
+            >
+              {historyTab ? (
+                <History
+                  groups={historical.slice(page * 25, (page + 1) * 25)}
+                  onOpen={openCampaign}
+                  selected={detailId}
                 />
+              ) : (
+                campaigns.slice(page * 25, (page + 1) * 25).map((campaign) => (
+                  <Campaign
+                    key={campaign.id}
+                    campaign={campaign}
+                    onOpen={() => openCampaign(campaign.id)}
+                    selected={detailId === campaign.id}
+                    action={
+                      !campaign.finished &&
+                      !campaign.expired && (
+                        <IconButton
+                          path={
+                            selectedGames.some(
+                              (game) => gameKey(game) === gameKey(campaign.game_name),
+                            )
+                              ? mdiStopCircleOutline
+                              : mdiPlayCircleOutline
+                          }
+                          disabled={!connected || action.busy}
+                          label={t(
+                            selectedGames.some(
+                              (game) => gameKey(game) === gameKey(campaign.game_name),
+                            )
+                              ? 'stop_mining_game'
+                              : 'mine_game',
+                            { game: campaign.game_name },
+                          )}
+                          onClick={() => {
+                            autosave.change('games_to_watch', (games) =>
+                              games.some((game) => gameKey(game) === gameKey(campaign.game_name))
+                                ? games.filter(
+                                    (game) => gameKey(game) !== gameKey(campaign.game_name),
+                                  )
+                                : [...games, campaign.game_name],
+                            );
+                          }}
+                        />
+                      )
+                    }
+                  />
+                ))
               )}
+            </div>
+            {historyTab
+              ? !historical.length &&
+                !history.loading &&
+                !history.error && (
+                  <Empty title={t(history.entries.length ? 'no_matches' : 'history_empty')} />
+                )
+              : !campaigns.length && (
+                  <Empty
+                    title={t(data.campaigns.length ? 'no_matches' : 'gui.inventory.no_campaigns')}
+                    detail={t('campaign_empty_help')}
+                  />
+                )}
+          </div>
         </div>
-        {(historyTab ? historical : campaigns).length > 25 && (
-          <nav
-            className="-mt-3 flex items-center justify-end gap-3"
-            aria-label={t('campaign_pages')}
-          >
-            <IconButton
-              path={mdiChevronLeft}
-              label={t('gui.history.previous')}
-              disabled={page === 0}
-              onClick={() => setQuery('page', String(page - 1))}
-            />
-            <span className="muted">
-              {page + 1} / {Math.ceil((historyTab ? historical : campaigns).length / 25)}
-            </span>
-            <IconButton
-              path={mdiChevronRight}
-              label={t('gui.history.next')}
-              disabled={(page + 1) * 25 >= (historyTab ? historical : campaigns).length}
-              onClick={() => setQuery('page', String(page + 1))}
-            />
-          </nav>
+        {detailId && (
+          <CampaignDetail
+            campaign={data.campaigns.find((campaign) => campaign.id === detailId)}
+            history={groups.find((group) => group.id === detailId)}
+            historyOnly={historyTab}
+            loading={history.loading}
+            historyError={history.error}
+            retryHistory={history.retry}
+          />
         )}
       </div>
-      {detailId && (
-        <CampaignDetail
-          campaign={data.campaigns.find((campaign) => campaign.id === detailId)}
-          history={groups.find((group) => group.id === detailId)}
-          historyOnly={historyTab}
-          loading={history.loading}
-          historyError={history.error}
-          retryHistory={history.retry}
-        />
-      )}
     </div>
   );
 }

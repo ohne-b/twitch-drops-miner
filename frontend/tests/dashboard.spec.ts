@@ -2318,11 +2318,12 @@ test('History shares sort, search, game filters and layout while paging recorded
   request,
 }) => {
   const original = (await (await request.get('/api/history')).json()).entries[0];
+  let campaignCount = 27;
   await page.route('**/api/history', async (route) =>
     route.fulfill({
       json: {
         ...(await (await route.fetch()).json()),
-        entries: Array.from({ length: 27 }, (_, index) => ({
+        entries: Array.from({ length: campaignCount }, (_, index) => ({
           ...original,
           id: `reward-${index}`,
           campaign_id: `history-${index}`,
@@ -2350,8 +2351,22 @@ test('History shares sort, search, game filters and layout while paging recorded
     await expect(button).toHaveText('');
     await expect(button).toHaveAttribute('title', label);
   }
-  await page.setViewportSize({ width: 390, height: 844 });
-  await next.scrollIntoViewIfNeeded();
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    const pagination = page.getByRole('navigation', { name: 'Campaign pages' });
+    await expect(pagination).toBeInViewport();
+    const bounds = (await pagination.boundingBox())!;
+    const search = (await page.getByRole('searchbox').boundingBox())!;
+    const filters = (await page
+      .getByRole('button', { name: 'Filters', exact: true })
+      .boundingBox())!;
+    expect(bounds.y).toBeGreaterThanOrEqual(search.y + search.height);
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual((await titles.first().boundingBox())!.y);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(filters.x);
+    expect(bounds.y).toBe(filters.y);
+    expect((await next.boundingBox())!.height).toBe(44);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+  }
   await page.screenshot({
     path: '../artifacts/history-pagination-icons-phone.png',
     fullPage: true,
@@ -2385,6 +2400,19 @@ test('History shares sort, search, game filters and layout while paging recorded
   await page.getByText('Campaign 26', { exact: true }).click();
   await page.screenshot({ path: '../artifacts/history-phone.png', fullPage: true });
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  campaignCount = 2500;
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.goto('/campaigns?tab=history&page=99&game=');
+  const pagination = page.getByRole('navigation', { name: 'Campaign pages' });
+  await expect(pagination).toHaveText('100 / 100');
+  const bounds = (await pagination.boundingBox())!;
+  const filters = (await page.getByRole('button', { name: 'Filters', exact: true }).boundingBox())!;
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(filters.y);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
+  await expect(next).toBeDisabled();
+  await previous.click();
+  await expect(pagination).toHaveText('99 / 100');
+  await page.screenshot({ path: '../artifacts/history-pagination-large-count-phone.png' });
 });
 
 test('an authoritative history clear removes cached claims even when reloading fails', async ({

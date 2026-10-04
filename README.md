@@ -7,7 +7,7 @@
 <p align="center">Mine timed Twitch Drops without streaming video or audio.</p>
 
 <p align="center">
-  <a href="https://github.com/ohne-b/twitch-drops-miner?tab=License-1-ov-file"><img src="https://img.shields.io/badge/license-PolyForm_Strict-9146ff" alt="License: PolyForm Strict"></a>
+  <a href="https://github.com/ohne-b/twitch-drops-miner?tab=License-1-ov-file"><img src="https://img.shields.io/badge/license-PolyForm_Noncommercial-9146ff" alt="License: PolyForm Noncommercial"></a>
 </p>
 
 Twitch Drops Miner runs on your own hardware and manages one Twitch account through a
@@ -259,11 +259,14 @@ or trailing separator lines. The Twitch account tab keeps its status and logout 
 the sidebar footer has no divider above GitHub.
 
 Open a campaign or reward to inspect its dates, prerequisites, account linkage and confirmed
-progress. On wide screens, details fill the available height beside the list, even for a
-single reward. The campaign list has a small gap before its scrollbar. The list and detail body
-scroll independently, with the detail heading always visible. In short windows, the left column
-can also scroll to keep filters reachable. Opening desktop details keeps the selected campaign
-in view as the list narrows, including after changing between grid and list layouts.
+progress. On wide screens, tabs, search and filters stay full width above the list and details.
+Both panes fill the remaining height, even for a single reward. The campaign list has a small
+gap before its scrollbar. Scroll the list and reward details independently; the detail heading
+stays visible and the detail body shares its panel's background. The controls area can scroll
+in short windows; when notices or long titles leave too little room, the workspace also scrolls
+to keep controls and rewards reachable.
+Opening desktop details keeps the selected campaign in view as the list narrows, including
+after changing between grid and list layouts.
 Details fill the page on smaller screens, with background scrolling locked until they close.
 Only the detail content scrolls; closing restores the list position.
 Details opened from Mining or Activity return to that page and its link on Close or Back.
@@ -281,7 +284,8 @@ can be bookmarked; old or unavailable IDs show an explicit missing-record state.
 
 Search, filters, sorting, layout and pagination stay in the Campaigns URL. Opening a shared
 link does not change saved preferences. Available and History each show 25 campaign groups
-per page. Unknown progress remains unknown until Twitch supplies evidence.
+per page, with page controls beside the campaign count in the top toolbar.
+Unknown progress remains unknown until Twitch supplies evidence.
 History loads without a loading caption; request errors still offer Retry.
 
 Activity keeps the latest 1,000 events for the current process. Filter by category or severity,
@@ -411,8 +415,8 @@ and switch between list and grid layouts. The shared icon-only sort menu offers 
 choices as Available. History defaults to the most recently recorded claim, **Most Drops**
 counts recorded claims, and date sorts use campaign dates when available (older entries
 without dates come last). Claims are grouped by campaign, with 25 campaigns per page.
-Use the left/right chevrons beside the page count just below the results to navigate;
-unavailable directions are disabled. The desktop workspace leaves a compact margin below them.
+Use the left/right chevrons in the top toolbar to navigate; unavailable directions are disabled.
+The results use the remaining desktop height, with a compact bottom margin.
 The former `/history` link redirects here. History has no export or separate clear action.
 
 Docker stores application data in `/app/data` and logs in `/app/logs`, mounted to the
@@ -605,9 +609,9 @@ device codes, or a data directory.
 
 ## License and credits
 
-[PolyForm Strict 1.0.0](https://github.com/ohne-b/twitch-drops-miner?tab=License-1-ov-file), copyright 2026 ohne-b (OhneB).
-This is source-available software for noncommercial use. The license does not grant
-permission to modify or redistribute the software; those uses need separate permission.
+[PolyForm Noncommercial 1.0.0](https://github.com/ohne-b/twitch-drops-miner?tab=License-1-ov-file), copyright 2026 ohne-b (OhneB).
+This is source-available software for noncommercial use, with permission to modify and
+redistribute under the license's terms. Keep the license and required notices with copies.
 Previously published copies retain their original license terms. Third-party components
 retain their own licenses.
 

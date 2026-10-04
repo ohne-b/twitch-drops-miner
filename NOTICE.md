@@ -2,7 +2,7 @@
 
 Twitch Drops Miner is based on
 [rangermix/TwitchDropsMiner](https://github.com/rangermix/TwitchDropsMiner).
-The upstream MIT license is reproduced in full below. The project's own PolyForm Strict
+The upstream MIT license is reproduced in full below. The project's own PolyForm Noncommercial
 1.0.0 license is in [LICENSE.md](LICENSE.md). Upstream code and third-party components retain
 their original licenses; these notices preserve their copyright and attribution.
 Previously published copies retain the license terms under which they were distributed.
