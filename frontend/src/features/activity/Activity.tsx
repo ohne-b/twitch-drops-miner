@@ -31,7 +31,7 @@ export default function Activity() {
     if (following && ref.current) ref.current.scrollTop = ref.current.scrollHeight;
   }, [data?.activity, search, category, severity, following]);
   return (
-    <div className="space-y-5">
+    <div className="activity-workspace">
       <header className="flex items-center gap-3">
         <h1 className="text-[22px] font-semibold">{t('activity')}</h1>
       </header>

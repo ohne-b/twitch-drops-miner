@@ -272,9 +272,27 @@
   border-left: 2px solid var(--color-accent);
   padding-left: 12px;
 }
+.activity-frame {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - 56px);
+  overflow-y: auto;
+}
+.activity-workspace {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 200px;
+}
+.activity-frame > :not(.activity-workspace),
+.activity-workspace > :not(.activity-list) {
+  flex-shrink: 0;
+}
 .activity-list {
-  max-height: calc(100dvh - 165px);
-  min-height: 300px;
+  flex: 1;
+  min-height: 80px;
+  overscroll-behavior-y: contain;
 }
 .activity-row {
   display: flex;
@@ -370,8 +388,8 @@
   .campaign-detail {
     inset: 0 0 calc(65px + env(safe-area-inset-bottom));
   }
-  .activity-list {
-    max-height: calc(100dvh - 280px);
+  .activity-frame {
+    height: calc(100dvh - 173px - env(safe-area-inset-bottom));
   }
   .settings-tab {
     min-height: 44px;

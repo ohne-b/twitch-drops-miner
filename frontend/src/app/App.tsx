@@ -102,7 +102,7 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
       </aside>
       <main id="main" tabIndex={-1} className="workspace min-w-0">
         <div
-          className={`mx-auto max-w-[1440px] ${location.pathname === '/' ? (new URLSearchParams(location.search).get('edit') === 'priorities' ? 'preferences-frame' : 'mining-frame') : location.pathname === '/campaigns' ? 'campaigns-frame' : ''}`}
+          className={`mx-auto max-w-[1440px] ${location.pathname === '/' ? (new URLSearchParams(location.search).get('edit') === 'priorities' ? 'preferences-frame' : 'mining-frame') : location.pathname === '/campaigns' ? 'campaigns-frame' : location.pathname === '/activity' ? 'activity-frame' : ''}`}
         >
           {!connected && (
             <div className="mb-5">
