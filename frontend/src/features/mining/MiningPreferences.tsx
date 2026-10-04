@@ -12,6 +12,7 @@ import {
   Check,
   Dialog,
   Field,
+  HelpButton,
   IconButton,
   Notice,
   Search,
@@ -109,9 +110,10 @@ export default function MiningPreferences() {
               className="preferences-games relative flex min-h-0 min-w-0 flex-col gap-4 focus-visible:bg-field"
             >
               <div className="flex min-h-0 flex-col gap-2">
-                <fieldset disabled={!connected} className="flex shrink-0 gap-2">
-                  <div
-                    className="min-w-0 flex-1"
+                <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                  <fieldset
+                    disabled={!connected}
+                    className="min-w-0 flex-1 max-md:basis-full"
                     onKeyDown={(event) => {
                       if (event.key === 'Enter') {
                         event.preventDefault();
@@ -128,12 +130,12 @@ export default function MiningPreferences() {
                       }}
                       label={t('gui.settings.search_games')}
                     />
-                  </div>
+                  </fieldset>
                   <IconButton
                     path={mdiPlus}
                     label={t('gui.settings.add_game')}
                     onClick={resolveGame}
-                    disabled={!search.trim()}
+                    disabled={!connected || !search.trim()}
                   />
                   <div
                     className="icon-button has-[:disabled]:opacity-50"
@@ -143,7 +145,8 @@ export default function MiningPreferences() {
                     <select
                       className="icon-select absolute inset-0 size-full cursor-pointer opacity-0 disabled:cursor-default"
                       aria-label={t('mining_priority')}
-                      aria-describedby="mining-priority-help"
+                      aria-describedby="mining-priority-details-text"
+                      disabled={!connected}
                       value={draft.mining_priority_mode}
                       onChange={(event) =>
                         change(
@@ -159,7 +162,12 @@ export default function MiningPreferences() {
                       ))}
                     </select>
                   </div>
-                </fieldset>
+                  <HelpButton
+                    id="mining-priority-details"
+                    label={t('mining_priority')}
+                    text={t(`priority_${draft.mining_priority_mode}_help`)}
+                  />
+                </div>
                 {(gameError || (search && available.length > 0)) && (
                   <div
                     key={search}
@@ -184,13 +192,6 @@ export default function MiningPreferences() {
                   </div>
                 )}
               </div>
-              <p id="mining-priority-help" className="muted shrink-0">
-                {t(
-                  draft.mining_priority_mode === 'manual'
-                    ? 'selected_games_help'
-                    : `priority_${draft.mining_priority_mode}_help`,
-                )}
-              </p>
               <div
                 ref={gameList}
                 role="region"
@@ -214,39 +215,47 @@ export default function MiningPreferences() {
               tabIndex={!connected ? 0 : undefined}
               className="relative min-h-0 min-w-0 focus-visible:bg-field lg:overflow-y-auto"
             >
-              <fieldset disabled={!connected} className="space-y-5">
-                <fieldset className="space-y-2">
-                  <legend className="text-[13px] font-medium">{t('auto_mine_types')}</legend>
-                  <p className="muted">{t('auto_mine_types_help')}</p>
+              <div className="space-y-5">
+                <fieldset
+                  disabled={!connected}
+                  aria-label={t('auto_mine_types')}
+                  className="space-y-2"
+                >
+                  <legend className="text-[13px] font-medium">
+                    <span className="flex items-center gap-1">
+                      {t('auto_mine_types')}
+                      <HelpButton label={t('auto_mine_types')} text={t('auto_mine_types_help')} />
+                    </span>
+                  </legend>
                   <div className="flex flex-wrap gap-x-6">
                     <Check
-                      label={t('auto_mine_badges')}
+                      label={t('reward_badges')}
                       checked={draft.auto_mine_badges}
                       onChange={(value) => change('auto_mine_badges', value)}
                     />
                     <Check
-                      label={t('auto_mine_emotes')}
+                      label={t('reward_emotes')}
                       checked={draft.auto_mine_emotes}
                       onChange={(value) => change('auto_mine_emotes', value)}
                     />
                   </div>
                 </fieldset>
-                <div>
-                  <p className="mb-2 text-[13px] font-medium">
+                <fieldset disabled={!connected}>
+                  <legend className="mb-2 text-[13px] font-medium">
                     {t('gui.settings.mining_benefits')}
-                  </p>
+                  </legend>
                   <div className="flex flex-wrap gap-x-6">
                     {[
-                      ['BADGE', 'badge'],
-                      ['EMOTE', 'emote'],
-                      ['DIRECT_ENTITLEMENT', 'item'],
+                      ['BADGE', 'badges'],
+                      ['EMOTE', 'emotes'],
+                      ['DIRECT_ENTITLEMENT', 'items'],
                       ['UNKNOWN', 'other'],
                     ].map(
                       ([key, label]) =>
                         key && (
                           <Check
                             key={key}
-                            label={t(`gui.inventory.filters.${label}`)}
+                            label={t(`reward_${label}`)}
                             checked={draft.mining_benefits[key] ?? true}
                             onChange={(value) =>
                               change('mining_benefits', { ...draft.mining_benefits, [key]: value })
@@ -255,13 +264,14 @@ export default function MiningPreferences() {
                         ),
                     )}
                   </div>
-                </div>
+                </fieldset>
                 <Field
                   label={t('gui.settings.drop_name_blacklist')}
-                  help={t('gui.settings.drop_name_blacklist_help')}
+                  detail={t('gui.settings.drop_name_blacklist_help')}
                 >
                   <textarea
                     className="field"
+                    disabled={!connected}
                     value={ignoredText}
                     onFocus={() => setEditingIgnored(true)}
                     onBlur={() => setEditingIgnored(false)}
@@ -271,7 +281,7 @@ export default function MiningPreferences() {
                     }}
                   />
                 </Field>
-              </fieldset>
+              </div>
             </div>
           </div>
         </form>

@@ -107,6 +107,33 @@
   color: var(--color-text);
   background: var(--color-raised);
 }
+.help-popover {
+  position: fixed;
+  inset: 0;
+  width: min(320px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 16px;
+  overflow-y: auto;
+  border: 1px solid var(--color-divider);
+  border-radius: 6px;
+  background: var(--color-raised);
+  color: var(--color-soft);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.6;
+  box-shadow: 0 4px 16px #0004;
+}
+@supports (position-area: bottom) {
+  @media (min-width: 768px) {
+    .help-popover {
+      inset: auto;
+      margin: 8px;
+      position-area: bottom;
+      position-try-fallbacks: flip-block, flip-inline;
+    }
+  }
+}
 .campaign-workspace {
   display: grid;
   align-items: stretch;

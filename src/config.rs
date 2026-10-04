@@ -92,7 +92,7 @@ impl Default for Settings {
                 .map(|kind| (kind.to_owned(), true))
                 .collect(),
             proxy: String::new(),
-            connection_quality: 1,
+            connection_quality: 3,
             minimum_refresh_interval_minutes: 30,
         }
     }
@@ -212,6 +212,19 @@ pub fn validate_proxy(proxy: &str) -> Result<(), InvalidSettings> {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn connection_quality_defaults_to_three_and_preserves_saved_values() {
+        assert_eq!(Settings::default().connection_quality, 3);
+        assert_eq!(
+            Settings::from_saved(json!({})).unwrap().connection_quality,
+            3
+        );
+        for quality in 1..=6 {
+            let settings = Settings::from_saved(json!({"connection_quality": quality})).unwrap();
+            assert_eq!(settings.connection_quality, quality);
+        }
+    }
 
     #[test]
     fn mining_priority_defaults_round_trips_and_rejects_unknown_modes() {

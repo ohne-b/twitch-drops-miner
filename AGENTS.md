@@ -174,7 +174,8 @@ embed it and run without a build tool/runtime companion. Production builds never
   new channel choices until fresh channel eligibility is available. Cache clear
   preserves settings, credentials and completed campaigns, and clears local claim history with
   durable cleared-ID tombstones before refreshing; failure to persist must fail the clear.
-- Requests use bounded concurrency/rate, retries and cancellation. Quality 1..6 controls connect
+- Requests use bounded concurrency/rate, retries and cancellation. Connection Quality defaults
+  to 3 for new or missing settings; preserve explicit saved values. Quality 1..6 controls connect
   timeout 5×quality and total 10×quality seconds; the saved refresh interval actually schedules
   inventory work. Slow discovery must not block watch cadence. Duplicate idle prompts collapse.
   Nonfatal notification dismissal failures remain visible but never extend or clear the shared
@@ -245,6 +246,12 @@ embed it and run without a build tool/runtime companion. Production builds never
   Default (manual order), Short events first and Ending soonest. Its tooltip reports the
   selected mode; accessible help explains that drag order is preserved for ties. Reuse
   autosave/conflict handling and disable the selector until reconnect hydration.
+  Mining preferences has no inline priority or ignore-name hints. Native info popovers retain
+  the selected priority mode's full rules, other-game reward rules and ignore/dependency details, with
+  click/tap/keyboard access and outside-click/Escape dismissal. Keep priority rules associated
+  with the selector for assistive technology, and help available during reconnects. Use concise
+  labels: Also mine from other games, Allowed reward types and Ignore rewards by name. Keep
+  the two reward groups distinct and preserve all existing settings/mining behavior.
   Render strings as React text, validate external links/artwork, expand Twitch image placeholders.
   No injected HTML or CDN scripts. Art provides safe missing/broken-image fallbacks.
   Reward thumbnails contain their artwork; game covers retain cover sizing. Phone checkbox
@@ -268,8 +275,8 @@ embed it and run without a build tool/runtime companion. Production builds never
   and the settings beside it stay fixed. In short windows the settings column scrolls independently
   to keep every field reachable, without scrolling the whole preferences panel or page.
   When error/reconnect notices leave too little height, allow the games column to scroll as
-  well; search results, explanation and selected games must never overlap or become unreachable.
-  Game search results appear below the search controls and above the priority explanation;
+  well; search results and selected games must never overlap or become unreachable.
+  Game search results appear below the search controls and above the selected games;
   bound their height so long result lists remain reachable in short windows.
   `/settings#mining` redirects there. Settings has account, dashboard access, connection and
   maintenance sections without trailing separator lines.
