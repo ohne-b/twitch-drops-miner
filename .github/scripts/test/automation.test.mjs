@@ -61,11 +61,26 @@ test('every release has matching metadata and concise reviewed notes, never an i
   assert.equal(releaseManifest('0.2.0-rc.1').version, '0.2.0-rc.1');
   const notes = releaseNotes('0.2.0', releaseEntry('0.2.0') + '\n' + releaseEntry('0.1.0'));
   assert.match(notes, /^- a reviewed change\n/);
-  assert.match(notes, /compare\/v0\.1\.0\.\.\.v0\.2\.0/);
+  assert.match(notes, /^Changelog: https:\/\/github\.com\/ohne-b\/twitch-drops-miner\/compare\/v0\.1\.0\.\.\.v0\.2\.0$/m);
   assert.match(notes, /issues\/new/);
   assert.equal(notes.match(/a reviewed change/g).length, 1);
   for (const changelog of ['', releaseEntry('0.1.0').repeat(2), releaseEntry('0.1.0').replace('- a reviewed change', ''), releaseEntry('0.1.0') + releaseEntry('1.0.0')]) {
     assert.throws(() => releaseNotes('0.1.0', changelog));
+  }
+});
+
+test('repository release notes contain one generated changelog link per version', () => {
+  const changelog = readFileSync(new URL('../../../CHANGELOG.md', import.meta.url), 'utf8');
+  const versions = [...changelog.matchAll(/^## \[v([^\]]+)\]/gm)].map(match => match[1]);
+  assert.ok(versions.length > 0);
+  for (const [index, version] of versions.entries()) {
+    const notes = releaseNotes(version, changelog);
+    const previous = versions[index + 1];
+    const path = previous ? `compare/v${previous}...v${version}` : `commits/v${version}`;
+    const link = `https://github.com/ohne-b/twitch-drops-miner/${path}`;
+    assert.ok(notes.includes(`\nChangelog: ${link}\n`), version);
+    assert.equal(notes.split(link).length - 1, 1, version);
+    assert.doesNotMatch(notes, /\[Compare |Full Changelog:/);
   }
 });
 

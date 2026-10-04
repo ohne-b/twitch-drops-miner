@@ -96,7 +96,8 @@ Switch the image back to `:latest` to return to stable releases.
 The historical 0.1.0 image remains at `ghcr.io/ohne-b/twitch-miner:0.1.0` for rollback.
 Renaming the GitHub repository does not rename that old package or its pull command.
 [Release notes](https://github.com/ohne-b/twitch-drops-miner/releases)
-and the [changelog](CHANGELOG.md) describe changes between versions.
+and the [changelog](CHANGELOG.md) describe changes between versions. Each release's
+**Changelog** link opens its commit comparison (or commit history for the first release).
 
 <a name="build-from-a-checkout"></a>
 <details>

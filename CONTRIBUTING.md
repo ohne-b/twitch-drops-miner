@@ -193,7 +193,9 @@ If it is not configured, a maintainer can prepare the same draft PR locally: sta
 commit the version files, and push using their existing GitHub login. The same review
 and validation requirements apply.
 Add a concise, reviewed `CHANGELOG.md` entry to that draft PR, matching the existing
-version/link/date heading and change-list style. Review and merge it under the same policy.
+version/link/date heading and change-list style. Keep comparison and issue footers out of
+these entries; the release script adds one `Changelog:` link and the issue link.
+Review and merge it under the same policy.
 **Publish release** then runs manually
 from main for that version, requires successful push or manually dispatched validation on the exact commit,
 and uses the `prod` environment. It downloads both tested image artifacts from that validation
