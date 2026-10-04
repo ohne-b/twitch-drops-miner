@@ -4,10 +4,12 @@
 
 - align narrow campaign cards to equal row heights, with readable names and counts and actions below the campaign identity ([#56](https://github.com/ohne-b/twitch-drops-miner/pull/56))
 - return campaign details to the originating Mining or Activity view with its search, filters, scroll position and keyboard focus; keep Settings tabs from scrolling the page ([#57](https://github.com/ohne-b/twitch-drops-miner/pull/57))
-- show claim dates beside claimed rewards without a duplicate History section, omit repeated reward names and shared Up next deadlines, and remove the reward selection stripe
+- show claim dates beside claimed rewards without a duplicate History section, omit repeated reward names, show shared Up next deadlines once, and remove the reward selection stripe
 - preserve complete reward artwork and use matching game artwork for channels when their own image is missing
 - give mobile Campaigns a full-width search field, fit Activity to the available viewport, and distinguish an empty activity log from unmatched filters
 - align mining list dividers, add compact scrollbar spacing and retain full-size phone touch targets
+- simplify Mining preferences with shorter labels and accessible info buttons for priority and reward rules ([#59](https://github.com/ohne-b/twitch-drops-miner/pull/59), [#60](https://github.com/ohne-b/twitch-drops-miner/pull/60))
+- default Connection Quality to 3 (15-second connect and 30-second request timeouts), preserve saved choices, and shorten troubleshooting guidance ([#60](https://github.com/ohne-b/twitch-drops-miner/pull/60))
 
 Existing settings, credentials, history, service names and container mounts remain compatible.
 Mining selection, watch cadence and claim requirements are unchanged.
