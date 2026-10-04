@@ -262,7 +262,8 @@ Open a campaign or reward to inspect its dates, prerequisites, account linkage a
 progress. On wide screens, tabs, search and filters stay full width above the list and details.
 Both panes fill the remaining height, even for a single reward. The campaign list has a small
 gap before its scrollbar. The list and detail body scroll independently, with the detail heading
-always visible. In short windows, the controls area can scroll to keep filters reachable.
+always visible. The controls area can scroll in short windows; when notices or long titles
+leave too little room, the workspace also scrolls to keep controls and rewards reachable.
 Opening desktop details keeps the selected campaign in view as the list narrows, including
 after changing between grid and list layouts.
 Details fill the page on smaller screens, with background scrolling locked until they close.

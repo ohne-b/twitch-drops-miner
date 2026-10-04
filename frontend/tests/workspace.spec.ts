@@ -966,6 +966,62 @@ test('campaign panes fill the height below full-width controls and keep row hove
   );
 });
 
+test('short campaign workspaces keep controls and rewards reachable with long titles and notices', async ({
+  page,
+  request,
+}) => {
+  const campaign = {
+    ...fixture.campaigns[0]!,
+    name: 'Campaign with a long title that wraps across several lines when viewing the campaign details',
+  };
+  await request.post('/__test/event', {
+    headers,
+    data: { event: 'inventory_batch_update', data: { campaigns: [campaign] } },
+  });
+  await page.setViewportSize({ width: 1280, height: 360 });
+  await page.goto(`/campaigns?campaign=${campaign.id}`);
+  await page.getByRole('button', { name: 'Filters', exact: true }).click();
+  const detail = page.getByRole('complementary', { name: 'Campaign details' });
+  const body = detail.getByRole('region', { name: campaign.name, exact: true });
+  const reward = body.getByRole('heading', { level: 3 }).last();
+  await reward.scrollIntoViewIfNeeded();
+  await expect(reward).toBeInViewport({ ratio: 0.99 });
+  const bodyBounds = (await body.boundingBox())!;
+  const detailBounds = (await detail.boundingBox())!;
+  expect(bodyBounds.y + bodyBounds.height).toBeLessThanOrEqual(
+    detailBounds.y + detailBounds.height,
+  );
+  await page.route('**/api/settings', async (route) => {
+    if (route.request().method() === 'POST')
+      await route.fulfill({ status: 409, json: { detail: 'settings_conflict' } });
+    else await route.continue();
+  });
+  await page.getByRole('button', { name: 'Change campaign layout', exact: true }).click();
+  await expect(page.getByRole('alert')).toBeVisible();
+  await page.context().setOffline(true);
+  try {
+    await request.post('/__test/reconnect', { headers, data: {} });
+    await expect(page.getByText('Connection lost.', { exact: false })).toBeVisible();
+    for (const control of [
+      page.getByRole('link', { name: 'History', exact: true }),
+      page.getByRole('searchbox', { name: 'Search campaigns and rewards' }),
+      page.getByRole('button', { name: 'Filters', exact: true }),
+      detail.getByRole('button', { name: 'Close details' }),
+    ]) {
+      await control.focus();
+      await expect(control).toBeInViewport({ ratio: 0.99 });
+    }
+    await reward.scrollIntoViewIfNeeded();
+    await expect(reward).toBeInViewport({ ratio: 0.99 });
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(360);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  } finally {
+    await page.unroute('**/api/settings');
+    await page.context().setOffline(false);
+  }
+});
+
 for (const view of ['grid', 'list']) {
   test(`campaign ${view} restores its position after details and offline filters remain accessible`, async ({
     page,

@@ -345,7 +345,8 @@ embed it and run without a build tool/runtime companion. Production builds never
   Both columns fill the remaining height with a compact 12px bottom margin; details keep the
   same height for short and long campaigns, with a fixed header and separately scrollable body.
   Scroll campaign results independently with a small scrollbar gutter; allow the controls area
-  to scroll in short windows when filters/notices need more space. Omit selection stripes and
+  to scroll in short windows and the workspace to scroll when notices or long titles leave too
+  little room for usable controls and detail content. Omit selection stripes and
   confine row hover to the side-panel icon circle; preserve a visible title/icon keyboard focus cue.
   Use the Dock Right icon for opening details, with a tooltip, current-item state and panel
   control association rather than disclosure semantics.
