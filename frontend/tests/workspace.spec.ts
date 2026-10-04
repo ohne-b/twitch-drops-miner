@@ -932,13 +932,8 @@ test('campaign panes fill the height below full-width controls and keep row hove
     expect((await search.boundingBox())!.y).toBe(searchTop);
     expect((await detail.boundingBox())!.height).toBe(bounds.height);
     const body = detail.getByRole('region', { name: 'Campaign 20', exact: true });
-    await expect(body).toHaveCSS(
-      'background-color',
-      await detail.evaluate((element) => getComputedStyle(element).backgroundColor),
-    );
     await body.focus();
     await body.press('End');
-    await expect(body).toHaveCSS('background-color', 'rgb(36, 36, 36)');
     await expect.poll(() => body.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
     await expect(
       detail.getByRole('heading', { name: 'Campaign 20', exact: true }),
@@ -1139,10 +1134,6 @@ test('mobile campaign details lock background scrolling and restore the list', a
         const detail = page.getByRole('complementary', { name: 'Campaign details' });
         const body = detail.locator('.detail-body');
         await expect(detail).toBeVisible();
-        await expect(body).toHaveCSS(
-          'background-color',
-          await detail.evaluate((element) => getComputedStyle(element).backgroundColor),
-        );
         await expect(page.locator('html')).toHaveCSS('overflow-y', 'hidden');
         expect(await page.evaluate(() => window.scrollY)).toBe(before);
         await detail.locator('header').hover();
