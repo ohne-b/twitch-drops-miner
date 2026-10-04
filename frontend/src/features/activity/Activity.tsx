@@ -147,7 +147,7 @@ export default function Activity() {
             )}
           </article>
         ))}
-        {!events.length && <Empty title={t('no_activity')} />}
+        {!events.length && <Empty title={t(data?.activity.length ? 'no_activity' : 'activity_empty')} />}
       </div>
     </div>
   );
