@@ -305,14 +305,19 @@ impl Channel {
         self.broadcast_id.is_some()
     }
 
-    pub fn view(&self, watching: Option<u64>) -> ChannelView {
+    pub fn view(&self, watching: Option<u64>, campaigns: &[Campaign]) -> ChannelView {
         ChannelView {
             id: self.identity.id,
             login: self.identity.login.clone(),
             name: self.identity.name.clone(),
             game: self.game.as_ref().map(|g| g.name.clone()),
             game_id: self.game.as_ref().map(|g| g.id),
-            game_icon: self.game.as_ref().map(|g| g.image_url.clone()),
+            game_icon: self.game.as_ref().and_then(|game| {
+                std::iter::once(game)
+                    .chain(campaigns.iter().map(|campaign| &campaign.game))
+                    .find(|candidate| candidate.id == game.id && !candidate.image_url.is_empty())
+                    .map(|game| game.image_url.clone())
+            }),
             viewers: self.viewers,
             online: self.online(),
             drops_enabled: self.drops_enabled,
@@ -1047,6 +1052,34 @@ mod tests {
             acl_based: false,
             beacon_url: None,
         }
+    }
+
+    #[test]
+    fn channel_artwork_uses_matching_catalog_game_without_changing_stream_identity() {
+        let mut stream = channel();
+        let mut catalog = vec![campaign(vec![raw_drop("coat", &[])])];
+        assert_eq!(stream.view(Some(10), &catalog).game_icon, None);
+        catalog[0].game.image_url = "https://static-cdn.jtvnw.net/catalog.jpg".into();
+        let view = stream.view(Some(10), &catalog);
+        assert_eq!(
+            view.game_icon.as_deref(),
+            Some(catalog[0].game.image_url.as_str())
+        );
+        assert_eq!(view.game_id, Some(1));
+        assert_eq!(view.game.as_deref(), Some("Rust"));
+        assert!(view.watching && view.online && view.drops_enabled);
+        assert!(stream.game.as_ref().unwrap().image_url.is_empty());
+
+        stream.game.as_mut().unwrap().image_url = "https://static-cdn.jtvnw.net/stream.jpg".into();
+        assert_eq!(
+            stream.view(None, &catalog).game_icon.as_deref(),
+            Some("https://static-cdn.jtvnw.net/stream.jpg")
+        );
+        stream.game.as_mut().unwrap().image_url.clear();
+        stream.game.as_mut().unwrap().id = 2;
+        assert_eq!(stream.view(None, &catalog).game_icon, None);
+        stream.game = None;
+        assert_eq!(stream.view(None, &catalog).game_icon, None);
     }
 
     #[test]

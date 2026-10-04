@@ -129,7 +129,7 @@ impl Mining {
                     .is_some_and(|manual| manual.channel == channel.identity.id)
                     || mineable.iter().any(|c| c.matches_channel(channel))
             })
-            .map(|c| c.view(self.watching))
+            .map(|c| c.view(self.watching, &self.campaigns))
             .collect();
         let wanted = wanted_items(&self.campaigns, settings, now);
         let active = self

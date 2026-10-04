@@ -128,7 +128,7 @@ export function Check({
   disabled?: boolean;
 }) {
   return (
-    <label className="flex min-h-9 cursor-pointer items-center gap-2.5 text-soft">
+    <label className="flex min-h-9 cursor-pointer items-center gap-2.5 text-soft max-md:min-h-11">
       <input
         type="checkbox"
         checked={checked}
@@ -140,7 +140,15 @@ export function Check({
     </label>
   );
 }
-export function Art({ url, className = '' }: { url?: string | null; className?: string }) {
+export function Art({
+  url,
+  className = '',
+  fit = 'cover',
+}: {
+  url?: string | null;
+  className?: string;
+  fit?: 'cover' | 'contain';
+}) {
   const [failed, setFailed] = useState(false);
   const source = safeUrl(url?.replaceAll('{width}', '80').replaceAll('{height}', '112'));
   useEffect(() => setFailed(false), [url]);
@@ -151,7 +159,7 @@ export function Art({ url, className = '' }: { url?: string | null; className?: 
       {source && !failed ? (
         <img
           loading="lazy"
-          className="size-full object-cover"
+          className={`size-full ${fit === 'contain' ? 'object-contain' : 'object-cover'}`}
           src={source}
           alt=""
           onError={() => setFailed(true)}

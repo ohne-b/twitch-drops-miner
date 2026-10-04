@@ -205,6 +205,7 @@
             "search_activity": "Search activity",
             "follow_activity": "Follow latest",
             "no_activity": "No matching activity",
+            "activity_empty": "No activity yet",
             "login_description": "Enter your dashboard password to continue.",
             "navigation": "Main navigation",
             "skip_content": "Skip to content",

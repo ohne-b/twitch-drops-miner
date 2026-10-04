@@ -1,6 +1,14 @@
 import { Icon } from '@mdi/react';
-import { useEffect, useState } from 'react';
-import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router';
+import { useEffect, useRef, useState } from 'react';
+import {
+  NavLink,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useNavigationType,
+} from 'react-router';
 import {
   mdiPlayCircleOutline,
   mdiReload,
@@ -25,6 +33,8 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
   const { data, connected, incompatible, autosave } = useMiner();
   const t = useT();
   const location = useLocation();
+  const navigationType = useNavigationType();
+  const previousLocation = useRef(location);
   const [logoutError, setLogoutError] = useState(false);
   const links = [
     ['/', 'mining', mdiPlayCircleOutline],
@@ -33,14 +43,29 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
     ['/settings', 'gui.tabs.settings', mdiCogOutline],
   ] as const;
   useEffect(() => {
-    if (location.pathname === '/settings' && location.hash === '#mining') return;
+    const previous = previousLocation.current;
+    previousLocation.current = location;
+    const origin = previous.state?.campaignReturn;
+    if (
+      navigationType === 'POP' &&
+      origin?.path === location.pathname + location.search + location.hash
+    ) {
+      const frame = requestAnimationFrame(() => {
+        for (const [id, top, width] of origin.lists as [string, number, number][]) {
+          const list = document.getElementById(id);
+          if (list?.clientWidth === width) list.scrollTop = top;
+        }
+        window.scrollTo(0, origin.width === window.innerWidth ? origin.top : 0);
+        const trigger = document.getElementById(origin.focus);
+        trigger?.focus({ preventScroll: true });
+        trigger?.scrollIntoView({ block: 'nearest' });
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+    if (previous.pathname === location.pathname) return;
     if (location.search.includes('campaign=')) return;
-    if (location.hash)
-      requestAnimationFrame(() =>
-        document.getElementById(location.hash.slice(1))?.scrollIntoView(),
-      );
-    else window.scrollTo(0, 0);
-  }, [location.pathname, location.hash]);
+    window.scrollTo(0, 0);
+  }, [location, navigationType]);
   return (
     <div className="app-shell min-h-dvh">
       <a href="#main" className="sr-only fixed z-50 bg-soft p-3 text-canvas focus:not-sr-only">
@@ -102,7 +127,7 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
       </aside>
       <main id="main" tabIndex={-1} className="workspace min-w-0">
         <div
-          className={`mx-auto max-w-[1440px] ${location.pathname === '/' ? (new URLSearchParams(location.search).get('edit') === 'priorities' ? 'preferences-frame' : 'mining-frame') : location.pathname === '/campaigns' ? 'campaigns-frame' : ''}`}
+          className={`mx-auto max-w-[1440px] ${location.pathname === '/' ? (new URLSearchParams(location.search).get('edit') === 'priorities' ? 'preferences-frame' : 'mining-frame') : location.pathname === '/campaigns' ? 'campaigns-frame' : location.pathname === '/activity' ? 'activity-frame' : ''}`}
         >
           {!connected && (
             <div className="mb-5">

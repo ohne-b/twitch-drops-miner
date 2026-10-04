@@ -166,7 +166,7 @@ export default function MiningPreferences() {
                     role="region"
                     aria-label={t('gui.settings.search_games')}
                     tabIndex={!connected ? 0 : undefined}
-                    className="max-h-40 min-h-11 overflow-y-auto rounded border border-divider focus-visible:bg-field lg:overscroll-y-contain"
+                    className="scroll-list max-h-40 min-h-11 overflow-y-auto rounded border border-divider focus-visible:bg-field lg:overscroll-y-contain"
                   >
                     {gameError && <Notice error>{gameError}</Notice>}
                     <fieldset disabled={!connected}>
@@ -174,7 +174,7 @@ export default function MiningPreferences() {
                         <button
                           type="button"
                           key={game}
-                          className="block w-full px-3 py-2 text-start text-[13px] hover:bg-hover"
+                          className="block w-full px-3 py-2 text-start text-[13px] hover:bg-hover max-md:min-h-11"
                           onClick={() => addGame(game)}
                         >
                           {game}
@@ -196,7 +196,7 @@ export default function MiningPreferences() {
                 role="region"
                 aria-label={t('game_priorities')}
                 tabIndex={0}
-                className="relative max-h-[440px] min-h-0 scroll-py-1 overflow-y-auto focus-visible:bg-field focus-visible:[&_.panel]:bg-field lg:max-h-none lg:flex-1 lg:overscroll-y-contain"
+                className="scroll-list relative max-h-[440px] min-h-0 scroll-py-1 overflow-y-auto focus-visible:bg-field focus-visible:[&_.panel]:bg-field lg:max-h-none lg:flex-1 lg:overscroll-y-contain"
               >
                 <fieldset disabled={!connected}>
                   <GamePriorities

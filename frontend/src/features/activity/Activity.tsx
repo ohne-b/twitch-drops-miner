@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@mdi/react';
-import { Link } from 'react-router';
+import { CampaignLink } from '../campaigns/CampaignLink';
+import { useSearchParams } from 'react-router';
 import {
   mdiArrowDown,
   mdiFilterOutline,
   mdiAlertCircleOutline,
-  mdiChevronRight,
+  mdiDockRight,
   mdiCheck,
   mdiInformationOutline,
 } from '@mdi/js';
@@ -16,9 +17,17 @@ import { IconButton, Empty, Search, dateTime } from '../../shared/ui/index';
 export default function Activity() {
   const { data } = useMiner();
   const t = useT();
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('all');
-  const [severity, setSeverity] = useState('all');
+  const [params, setParams] = useSearchParams();
+  const categories = ['all', 'mining', 'claims', 'inventory', 'account', 'connection'];
+  const severities = ['all', 'info', 'warning', 'error'];
+  const search = params.get('q') ?? '';
+  const category = categories.find((value) => value === params.get('category')) ?? 'all';
+  const severity = severities.find((value) => value === params.get('severity')) ?? 'all';
+  function filter(key: string, value: string) {
+    const next = new URLSearchParams(params);
+    value && (key === 'q' || value !== 'all') ? next.set(key, value) : next.delete(key);
+    setParams(next, { replace: true });
+  }
   const [following, setFollowing] = useState(true);
   const ref = useRef<HTMLDivElement>(null);
   const events = (data?.activity ?? []).filter(
@@ -31,13 +40,17 @@ export default function Activity() {
     if (following && ref.current) ref.current.scrollTop = ref.current.scrollHeight;
   }, [data?.activity, search, category, severity, following]);
   return (
-    <div className="space-y-5">
+    <div className="activity-workspace">
       <header className="flex items-center gap-3">
         <h1 className="text-[22px] font-semibold">{t('activity')}</h1>
       </header>
       <div className="flex gap-2">
         <div className="min-w-0 flex-1">
-          <Search value={search} onChange={setSearch} label={t('search_activity')} />
+          <Search
+            value={search}
+            onChange={(value) => filter('q', value)}
+            label={t('search_activity')}
+          />
         </div>
         <div
           className="icon-button"
@@ -48,9 +61,9 @@ export default function Activity() {
             className="icon-select absolute inset-0 size-full opacity-0"
             aria-label={t('activity_category')}
             value={category}
-            onChange={(event) => setCategory(event.target.value)}
+            onChange={(event) => filter('category', event.target.value)}
           >
-            {['all', 'mining', 'claims', 'inventory', 'account', 'connection'].map((value) => (
+            {categories.map((value) => (
               <option key={value} value={value}>
                 {t(`activity_${value}`)}
               </option>
@@ -66,9 +79,9 @@ export default function Activity() {
             className="icon-select absolute inset-0 size-full opacity-0"
             aria-label={t('activity_severity')}
             value={severity}
-            onChange={(event) => setSeverity(event.target.value)}
+            onChange={(event) => filter('severity', event.target.value)}
           >
-            {['all', 'info', 'warning', 'error'].map((value) => (
+            {severities.map((value) => (
               <option key={value} value={value}>
                 {t(`activity_${value}`)}
               </option>
@@ -84,6 +97,8 @@ export default function Activity() {
       </div>
       <div
         ref={ref}
+        id="activity-list"
+        data-restore-scroll
         tabIndex={0}
         aria-label={t('activity')}
         className="panel activity-list overflow-y-auto"
@@ -133,18 +148,21 @@ export default function Activity() {
               </span>
             )}
             {event.campaign_id && (
-              <Link
+              <CampaignLink
+                id={`activity-campaign-${event.id}`}
                 className="icon-button"
                 aria-label={t('campaign_details')}
                 title={t('campaign_details')}
                 to={`/campaigns?campaign=${encodeURIComponent(event.campaign_id)}${event.drop_id ? `&drop=${encodeURIComponent(event.drop_id)}` : ''}`}
               >
-                <Icon path={mdiChevronRight} className="mdi-icon" />
-              </Link>
+                <Icon path={mdiDockRight} className="mdi-icon" />
+              </CampaignLink>
             )}
           </article>
         ))}
-        {!events.length && <Empty title={t('no_activity')} />}
+        {!events.length && (
+          <Empty title={t(data?.activity.length ? 'no_activity' : 'activity_empty')} />
+        )}
       </div>
     </div>
   );

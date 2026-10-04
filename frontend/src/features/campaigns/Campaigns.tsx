@@ -172,13 +172,13 @@ export default function Campaigns() {
     const next = new URLSearchParams(params);
     if (key !== 'page' && key !== 'campaign' && key !== 'drop') next.delete('page');
     value ? next.set(key, value) : next.delete(key);
-    setParams(next, { replace: true });
+    setParams(next, { replace: true, state: location.state });
   }
   function changeFilters(next: Filters, clearSearch = false) {
     setFilterDraft({ key: location.key, filters: next });
     const query = writeFilters(params, next);
     if (clearSearch) query.delete('q');
-    setParams(query, { replace: true });
+    setParams(query, { replace: true, state: location.state });
     const touched = Object.fromEntries(
       Object.entries(next).filter(
         ([key, value]) => JSON.stringify(value) !== JSON.stringify(filters[key as keyof Filters]),
@@ -200,7 +200,7 @@ export default function Campaigns() {
       { pathname: location.pathname, search: next.toString() },
       {
         replace: !!detailId,
-        state: { campaignDetail: location.state?.campaignDetail || !detailId },
+        state: { ...location.state, campaignDetail: location.state?.campaignDetail || !detailId },
       },
     );
   }
@@ -232,9 +232,12 @@ export default function Campaigns() {
   return (
     <div className={`campaign-workspace ${detailId ? 'with-detail' : ''}`}>
       <div className="campaign-browser min-w-0">
-        <header className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <header className="campaign-toolbar">
           <h1 className="sr-only">{t('campaigns')}</h1>
-          <nav aria-label={t('campaign_views')} className="flex gap-5 text-[13px] text-muted">
+          <nav
+            aria-label={t('campaign_views')}
+            className="campaign-tabs flex gap-5 text-[13px] text-muted"
+          >
             {[false, true].map((value) => (
               <Link
                 key={String(value)}
@@ -250,65 +253,65 @@ export default function Campaigns() {
               </Link>
             ))}
           </nav>
-          <p className="muted text-right">
+          <p className="campaign-total muted">
             {t('campaign_count', {
               count: historyTab ? historical.length : campaigns.length,
               total,
             })}
           </p>
-          <div className="ms-auto">
+          <div className="campaign-refresh justify-self-end">
             <InventoryRefreshButton />
           </div>
-        </header>
-        {!historyTab &&
-          data.inventory_status?.available === false &&
-          data.inventory_status.checked_at && <Notice error>{t('campaigns_unavailable')}</Notice>}
-        <div className="flex items-center gap-2">
-          <div className="min-w-0 flex-1">
+          <div className="campaign-search min-w-0">
             <Search
               value={search}
               onChange={(value) => setQuery('q', value)}
               label={t('search_campaigns')}
             />
           </div>
-          <IconButton
-            path={mdiFilterOutline}
-            label={t('filters')}
-            aria-expanded={showFilters}
-            onClick={() => setShowFilters(!showFilters)}
-          />
-          <div
-            className="icon-button"
-            title={`${t(historyTab ? 'sort_history' : 'sort_campaigns')}: ${t(`sort_${sort}`)}`}
-          >
-            <Icon className="mdi-icon pointer-events-none" path={mdiSortAscending} />
-            <select
-              className="icon-select absolute inset-0 size-full cursor-pointer opacity-0"
-              aria-label={t(historyTab ? 'sort_history' : 'sort_campaigns')}
-              value={sort}
-              onChange={(event) =>
-                setQuery('sort', event.target.value === 'default' ? '' : event.target.value)
-              }
+          <div className="campaign-controls flex items-center justify-end gap-2">
+            <IconButton
+              path={mdiFilterOutline}
+              label={t('filters')}
+              aria-expanded={showFilters}
+              onClick={() => setShowFilters(!showFilters)}
+            />
+            <div
+              className="icon-button"
+              title={`${t(historyTab ? 'sort_history' : 'sort_campaigns')}: ${t(`sort_${sort}`)}`}
             >
-              {campaignSorts.map((value) => (
-                <option key={value} value={value}>
-                  {t(`sort_${value}`)}
-                </option>
-              ))}
-            </select>
+              <Icon className="mdi-icon pointer-events-none" path={mdiSortAscending} />
+              <select
+                className="icon-select absolute inset-0 size-full cursor-pointer opacity-0"
+                aria-label={t(historyTab ? 'sort_history' : 'sort_campaigns')}
+                value={sort}
+                onChange={(event) =>
+                  setQuery('sort', event.target.value === 'default' ? '' : event.target.value)
+                }
+              >
+                {campaignSorts.map((value) => (
+                  <option key={value} value={value}>
+                    {t(`sort_${value}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <IconButton
+              path={list ? mdiViewGridOutline : mdiViewList}
+              label={t('toggle_view')}
+              disabled={!connected || settingsBusy}
+              onClick={() => {
+                const next = new URLSearchParams(params);
+                next.set('view', list ? 'grid' : 'list');
+                setParams(next, { replace: true, state: location.state });
+                autosave.change('inventory_list_view', !list);
+              }}
+            />
           </div>
-          <IconButton
-            path={list ? mdiViewGridOutline : mdiViewList}
-            label={t('toggle_view')}
-            disabled={!connected || settingsBusy}
-            onClick={() => {
-              const next = new URLSearchParams(params);
-              next.set('view', list ? 'grid' : 'list');
-              setParams(next, { replace: true });
-              autosave.change('inventory_list_view', !list);
-            }}
-          />
-        </div>
+        </header>
+        {!historyTab &&
+          data.inventory_status?.available === false &&
+          data.inventory_status.checked_at && <Notice error>{t('campaigns_unavailable')}</Notice>}
         {showFilters && (
           <div
             role="group"

@@ -1,4 +1,5 @@
 import MiningPreferences from './MiningPreferences';
+import { CampaignLink } from '../campaigns/CampaignLink';
 import { Icon } from '@mdi/react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
@@ -22,7 +23,7 @@ import {
 export default function Mining() {
   const { data, connected } = useMiner();
   const t = useT();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const edit = params.get('edit') === 'priorities';
   const editLink = useRef<HTMLAnchorElement>(null);
   const previousEdit = useRef(edit);
@@ -30,7 +31,12 @@ export default function Mining() {
     if (previousEdit.current && !edit) editLink.current?.focus({ preventScroll: true });
     previousEdit.current = edit;
   }, [edit]);
-  const [search, setSearch] = useState('');
+  const search = params.get('q') ?? '';
+  function setSearch(value: string) {
+    const next = new URLSearchParams(params);
+    value ? next.set('q', value) : next.delete('q');
+    setParams(next, { replace: true });
+  }
   const [channelInput, setChannelInput] = useState('');
   const [manualMinutes, setManualMinutes] = useState('');
   const [enterChannel, setEnterChannel] = useState(false);
@@ -39,6 +45,7 @@ export default function Mining() {
   if (edit) return <MiningPreferences />;
   const progress = data.current_drop;
   const campaign = data.campaigns.find((item) => item.id === progress?.campaign_id);
+  const reward = campaign?.drops.find((drop) => drop.id === progress?.drop_id);
   const watching = data.channels.find((channel) => channel.watching);
   const channels = data.channels
     .filter((channel) =>
@@ -78,19 +85,18 @@ export default function Mining() {
           <>
             <div className="flex items-start gap-4">
               <Art
-                url={
-                  campaign?.drops.find((drop) => drop.id === progress.drop_id)?.benefits[0]
-                    ?.image_url ?? campaign?.game_box_art_url
-                }
+                url={reward?.benefits[0]?.image_url || campaign?.game_box_art_url}
                 className="size-16"
+                fit={reward?.benefits[0]?.image_url ? 'contain' : 'cover'}
               />
               <div className="min-w-0 flex-1">
-                <Link
+                <CampaignLink
+                  id="mining-drop-details"
                   className="text-lg font-semibold hover:underline"
                   to={`/campaigns?campaign=${encodeURIComponent(progress.campaign_id)}&drop=${encodeURIComponent(progress.drop_id)}`}
                 >
                   {progress.drop_name}
-                </Link>
+                </CampaignLink>
                 <p className="muted mt-1">
                   {progress.game_name} / {progress.campaign_name}
                 </p>
@@ -105,7 +111,7 @@ export default function Mining() {
                   {t(
                     data.mining && data.mining.state !== 'unknown'
                       ? `mining_state_${data.mining.state}`
-                      : `eligibility_${campaign?.drops.find((drop) => drop.id === progress.drop_id)?.eligibility ?? 'unknown'}`,
+                      : `eligibility_${reward?.eligibility ?? 'unknown'}`,
                   )}
                 </p>
               )}
@@ -204,13 +210,15 @@ export default function Mining() {
             <Search value={search} onChange={setSearch} label={t('search_channels')} />
           </div>
           <div
-            className="min-h-0 max-h-[440px] overflow-y-auto focus-visible:bg-field xl:max-h-none xl:flex-1"
+            id="channels-list"
+            data-restore-scroll
+            className="scroll-list min-h-0 max-h-[440px] overflow-y-auto focus-visible:bg-field xl:max-h-none xl:flex-1"
             role="region"
             aria-labelledby="channels-heading"
             tabIndex={0}
           >
             {(enterChannel || data.manual_mode.error) && (
-              <div className="space-y-3 border-b border-divider p-4">
+              <div className="mx-4 space-y-3 border-b border-divider py-4">
                 {enterChannel && (
                   <form
                     className="space-y-2"
@@ -316,13 +324,15 @@ export default function Mining() {
             </Link>
           </div>
           <div
-            className="min-h-0 max-h-[440px] overflow-y-auto focus-visible:bg-field xl:max-h-none xl:flex-1"
+            id="up-next-list"
+            data-restore-scroll
+            className="scroll-list min-h-0 max-h-[440px] overflow-y-auto focus-visible:bg-field xl:max-h-none xl:flex-1"
             role="region"
             aria-labelledby="up-next-heading"
             tabIndex={0}
           >
             {data.wanted_items.map((game, index) => (
-              <div key={game.game_name} className="border-b border-divider p-4 last:border-0">
+              <div key={game.game_name} className="mx-4 border-b border-divider py-4 last:border-0">
                 <div className="flex items-center gap-3">
                   <span className="w-4 text-[13px] tabular-nums text-muted">{index + 1}</span>
                   <Art url={game.game_icon} className="size-8" />
@@ -333,62 +343,82 @@ export default function Mining() {
                       : t('automatic')}
                   </span>
                 </div>
-                {game.campaigns.map((item) => (
-                  <div className="mt-3 ps-7 text-[13px]" key={item.id}>
-                    <Link
-                      className="text-link"
-                      to={`/campaigns?campaign=${encodeURIComponent(item.id)}`}
-                    >
-                      {item.name}
-                    </Link>
-                    {item.priority && item.priority.reason !== 'saved_order' && (
-                      <p className="muted mt-1">
-                        {t(`reason_${item.priority.reason}`)}
-                        {item.priority.deadline && ` · ${dateTime(item.priority.deadline)}`}
-                      </p>
-                    )}
-                    <ul className="mt-2 space-y-2 text-muted">
-                      {item.drops.map((drop, position) => (
-                        <li
-                          className="flex items-start gap-3"
-                          key={drop.id || `${drop.name}/${position}`}
-                        >
-                          <Art url={drop.image_url} className="size-9 [&_img]:object-contain" />
-                          <div className="min-w-0 flex-1">
-                            <Link
-                              className="hover:underline text-soft"
-                              to={`/campaigns?campaign=${encodeURIComponent(item.id)}${drop.id ? `&drop=${encodeURIComponent(drop.id)}` : ''}`}
-                            >
-                              {drop.name}
-                            </Link>
-                            {drop.eligibility && drop.eligibility !== 'ready' && (
-                              <p className="text-xs mt-1">{t(`eligibility_${drop.eligibility}`)}</p>
-                            )}
-                            {(drop.eligibility === 'upcoming' ? drop.starts_at : drop.ends_at) && (
-                              <p className="text-xs mt-1">
-                                {t(
-                                  drop.eligibility === 'upcoming'
-                                    ? 'gui.inventory.starts'
-                                    : 'gui.inventory.ends',
-                                  {
-                                    time: dateTime(
-                                      (drop.eligibility === 'upcoming'
-                                        ? drop.starts_at
-                                        : drop.ends_at)!,
-                                    ),
-                                  },
-                                )}
-                              </p>
-                            )}
-                            {drop.benefits.some((benefit) => benefit !== drop.name) && (
-                              <p className="mt-0.5 text-xs">{drop.benefits.join(', ')}</p>
-                            )}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+                {game.campaigns.map((item) => {
+                  const dates = item.drops.map((drop) => {
+                    const upcoming = drop.eligibility === 'upcoming';
+                    const time = upcoming ? drop.starts_at : drop.ends_at;
+                    return {
+                      start: Date.parse(drop.starts_at ?? ''),
+                      end: Date.parse(drop.ends_at ?? ''),
+                      upcoming,
+                      text: time
+                        ? t(upcoming ? 'gui.inventory.starts' : 'gui.inventory.ends', {
+                            time: dateTime(time),
+                          })
+                        : '',
+                    };
+                  });
+                  const sharedDate =
+                    dates.length > 1 &&
+                    dates.every(
+                      (date) =>
+                        date.start === dates[0]?.start &&
+                        date.end === dates[0]?.end &&
+                        date.upcoming === dates[0]?.upcoming,
+                    );
+                  return (
+                    <div className="mt-3 ps-7 text-[13px]" key={item.id}>
+                      <CampaignLink
+                        id={`up-next-campaign-${item.id}`}
+                        className="text-link"
+                        to={`/campaigns?campaign=${encodeURIComponent(item.id)}`}
+                      >
+                        {item.name}
+                      </CampaignLink>
+                      {sharedDate && <p className="muted mt-1 text-xs">{dates[0]?.text}</p>}
+                      {item.priority && item.priority.reason !== 'saved_order' && (
+                        <p className="muted mt-1">
+                          {t(`reason_${item.priority.reason}`)}
+                          {item.priority.deadline && ` · ${dateTime(item.priority.deadline)}`}
+                        </p>
+                      )}
+                      <ul className="mt-2 space-y-2 text-muted">
+                        {item.drops.map((drop, position) => (
+                          <li
+                            className="flex items-start gap-3"
+                            key={drop.id || `${drop.name}/${position}`}
+                          >
+                            <Art url={drop.image_url} className="size-9" fit="contain" />
+                            <div className="min-w-0 flex-1">
+                              <CampaignLink
+                                id={`up-next-drop-${item.id}-${drop.id || position}`}
+                                className="hover:underline text-soft"
+                                to={`/campaigns?campaign=${encodeURIComponent(item.id)}${drop.id ? `&drop=${encodeURIComponent(drop.id)}` : ''}`}
+                              >
+                                {drop.name}
+                              </CampaignLink>
+                              {drop.eligibility && drop.eligibility !== 'ready' && (
+                                <p className="text-xs mt-1">
+                                  {t(`eligibility_${drop.eligibility}`)}
+                                </p>
+                              )}
+                              {!sharedDate && dates[position]?.text && (
+                                <p className="text-xs mt-1">{dates[position]?.text}</p>
+                              )}
+                              {drop.benefits.some((benefit) => benefit !== drop.name) && (
+                                <p className="mt-0.5 text-xs">
+                                  {drop.benefits
+                                    .filter((benefit) => benefit !== drop.name)
+                                    .join(', ')}
+                                </p>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
               </div>
             ))}
             {!data.wanted_items.length && <Empty title={t('gui.wanted.none')} />}

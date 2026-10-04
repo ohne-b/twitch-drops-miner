@@ -118,6 +118,38 @@
   flex-direction: column;
   gap: 20px;
 }
+.campaign-toolbar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'tabs total refresh' 'search search controls';
+  align-items: center;
+  gap: 20px 16px;
+}
+.campaign-tabs {
+  grid-area: tabs;
+}
+.campaign-total {
+  grid-area: total;
+}
+.campaign-refresh {
+  grid-area: refresh;
+}
+.campaign-search {
+  grid-area: search;
+}
+.campaign-controls {
+  grid-area: controls;
+}
+@media (max-width: 767px) {
+  .campaign-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas: 'tabs tabs refresh' 'search search search' 'total controls controls';
+    gap: 8px;
+  }
+  .campaign-tabs {
+    gap: 4px;
+  }
+}
 .campaign-workspace.with-detail {
   grid-template-columns: minmax(0, 1fr) minmax(360px, 42%);
 }
@@ -268,13 +300,27 @@
 .reward-detail {
   scroll-margin-top: 12px;
 }
-.reward-detail.selected {
-  border-left: 2px solid var(--color-accent);
-  padding-left: 12px;
+.activity-frame {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - 56px);
+  overflow-y: auto;
+}
+.activity-workspace {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 200px;
+}
+.activity-frame > :not(.activity-workspace),
+.activity-workspace > :not(.activity-list) {
+  flex-shrink: 0;
 }
 .activity-list {
-  max-height: calc(100dvh - 165px);
-  min-height: 300px;
+  flex: 1;
+  min-height: 80px;
+  overscroll-behavior-y: contain;
 }
 .activity-row {
   display: flex;
@@ -370,8 +416,8 @@
   .campaign-detail {
     inset: 0 0 calc(65px + env(safe-area-inset-bottom));
   }
-  .activity-list {
-    max-height: calc(100dvh - 280px);
+  .activity-frame {
+    height: calc(100dvh - 173px - env(safe-area-inset-bottom));
   }
   .settings-tab {
     min-height: 44px;
@@ -540,7 +586,11 @@ label:has(> input[type='checkbox']:focus-visible) {
     @apply text-[13px] text-muted;
   }
   .row {
-    @apply flex items-center gap-3 border-b border-divider px-4 py-3 last:border-0;
+    @apply mx-4 flex items-center gap-3 border-b border-divider py-3 last:border-0;
+  }
+  .scroll-list {
+    padding-inline-end: 4px;
+    scrollbar-gutter: stable;
   }
   .drag-handle {
     @apply grid h-9 w-7 shrink-0 touch-none select-none place-items-center border-0 bg-transparent text-muted;
@@ -565,6 +615,9 @@ label:has(> input[type='checkbox']:focus-visible) {
       @apply min-h-11;
     }
     .icon-button {
+      @apply size-11;
+    }
+    .drag-handle {
       @apply size-11;
     }
     .authorization-row > * {

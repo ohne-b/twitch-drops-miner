@@ -42,6 +42,7 @@ export function CampaignSummary({
   name,
   game,
   image,
+  imageFit,
   time,
   count,
   status,
@@ -53,6 +54,7 @@ export function CampaignSummary({
   name: string;
   game: string;
   image?: string | null;
+  imageFit?: 'cover' | 'contain';
   time: string;
   count: string;
   status?: string;
@@ -73,7 +75,7 @@ export function CampaignSummary({
         aria-current={selected ? 'true' : undefined}
         aria-controls={selected ? 'campaign-details' : undefined}
       >
-        <Art url={image} className="size-12" />
+        <Art url={image} className="size-12" fit={imageFit} />
         <span className="campaign-info min-w-0 flex-1 text-start">
           <span className="campaign-title block font-medium text-text">{name}</span>
           <span className="muted mt-1 block">{game}</span>
