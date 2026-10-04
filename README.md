@@ -242,7 +242,8 @@ search, priority controls and the settings beside it stay in place. Short window
 settings column its own scrolling when needed; if an error or reconnect notice leaves too
 little space, the games column can scroll too, keeping its controls reachable and the page fixed.
 Game search results appear directly below the search field, above the priority explanation.
-Settings tabs share the same content starting position, without repeated section headings
+Settings tabs switch in place, preserving drafts and browser back/forward navigation.
+They share the same content starting position, without repeated section headings
 or trailing separator lines. The Twitch account tab keeps its status and logout control;
 the sidebar footer has no divider above GitHub.
 
@@ -254,8 +255,12 @@ can also scroll to keep filters reachable. Opening desktop details keeps the sel
 in view as the list narrows, including after changing between grid and list layouts.
 Details fill the page on smaller screens, with background scrolling locked until they close.
 Only the detail content scrolls; closing restores the list position.
+Details opened from Mining or Activity return to that page and its link on Close or Back.
 Campaign dates appear once above the rewards;
 individual rewards show dates only when their effective window differs from the campaign.
+Available details show each claimed reward once, with its recorded claim time beside the
+status, or a first-observed label when the claim time is unknown. Additional benefit names
+remain visible without repeating the reward name. Reward artwork fits inside its thumbnail.
 Campaign rows use a small side-panel icon hover without a selection stripe;
 the Mine icon keeps its own circular hover.
 Close or press Escape to return to the same list position and filters. Campaign and drop links
@@ -273,6 +278,8 @@ Row separators are inset from the edges of the Activity panel. Adjacent repeated
 avoid duplicate lines in the server log.
 Recovery requires a matching successful operation. Campaign-related
 events link to their reward details. Server diagnostics remain in the log files.
+The event list fits the remaining screen height and scrolls independently. An empty log
+and a search or filter with no matches have separate messages.
 
 The dashboard disables commands while reconnecting and resumes them after receiving a
 complete snapshot. Unsaved edits remain separate from live updates. If a dashboard update
@@ -289,6 +296,12 @@ with confirmed progress first), **Newest** (latest campaign start), **Ending Soo
 through searches, tab changes and reloads; it does not change mining priorities.
 Icon-only actions have circular hover backgrounds. Search-clear actions stay inset
 inside the field, and game-priority drag grips remain visible as plain six-dot handles.
+On phones, refresh stays beside the tabs, search gets its own full-width row, and the count
+sits beside the filter/sort/view controls. Checkboxes, search results and drag handles keep
+44px touch targets. Channels, Up next and game priorities use inset separators and a smaller
+scrollbar gap than Campaigns. Up next shows identical reward windows once per campaign.
+Channel thumbnails use the current game's catalog artwork when stream metadata omits it;
+missing or broken artwork still has a safe placeholder. This adds no Twitch requests.
 Available and History use matching cards and list rows, with consistent artwork, spacing
 and inset list dividers. Grid cards align to the same height within each row, with names
 allowed to wrap. History keeps recorded claim counts and dates; Available shows campaign

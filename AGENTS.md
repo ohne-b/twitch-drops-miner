@@ -247,6 +247,9 @@ embed it and run without a build tool/runtime companion. Production builds never
   autosave/conflict handling and disable the selector until reconnect hydration.
   Render strings as React text, validate external links/artwork, expand Twitch image placeholders.
   No injected HTML or CDN scripts. Art provides safe missing/broken-image fallbacks.
+  Reward thumbnails contain their artwork; game covers retain cover sizing. Phone checkbox
+  labels, game search results and drag grips have at least 44px touch targets without enlarging
+  glyphs or adding pointer hover backgrounds to grips.
 - Sidebar: enlarged GitHub glyph above Twitch account ID, overriding shared icon sizing,
   with no divider above the footer.
   Connection status lives in Settings > Connection and is labeled Dashboard connected, separate
@@ -272,11 +275,17 @@ embed it and run without a build tool/runtime companion. Production builds never
   maintenance sections without trailing separator lines.
   Settings sections start at the same offset below their tabs, without repeated section headings.
   Keep the page title and tab labels, plus the account status/logout row. Hide inactive form
-  wrappers and retain drafts when switching tabs.
+  wrappers and retain drafts when switching tabs. Tab hashes support back/forward without
+  anchor-scrolling the title or navigation out of view.
 - Mining: watching information only in Now mining, no status subtitle or Recent activity. Channels
   and Up next have equal desktop dimensions and internal scrolling; stack on narrow screens and
   preserve access on short windows. Show confirmed values/timestamps without redundant labels
   or the Watching for this reward caption.
+  Channels, Up next and game-priority rows have inset separators and modest 4px scrollbar
+  padding, smaller than Campaigns. Up next shows a shared date once only when reward windows
+  match by instant and their upcoming state agrees; retain distinct per-drop dates.
+  Channel views may fill missing game artwork from catalog records with the exact same game
+  ID. Never change stream identity/eligibility or add network requests for this fallback.
   Keep expanded channel-entry controls and feedback inside the scrollable list body.
   Manual lookup has no preparing message; use a play-circle icon submit button with the Mine
   accessible name/tooltip, preserving its busy/disabled state, inline
@@ -307,7 +316,8 @@ embed it and run without a build tool/runtime companion. Production builds never
   No Telegram controls/API/credentials in responses and no dashboard updater.
 - Campaigns starts with Settings-style Available/History icon tabs, the filtered count and
   refresh control; keep the page heading screen-reader-only. Clear filters stays beside All games
-  inside Filters. Native icon-styled sorting offers Default, Newest (campaign start descending),
+  inside Filters. On phones keep refresh beside the tabs, a full-width search row, then the count
+  and filter/sort/view controls together. Native icon-styled sorting offers Default, Newest (campaign start descending),
   Ending Soonest (end ascending), Most Drops (total descending), and A-Z (campaign name).
   Default retains progress-first ordering; ties use that same deterministic order. Sort is
   URL state preserved by searches, filter resets and tab changes, never a mining setting.
@@ -334,8 +344,14 @@ embed it and run without a build tool/runtime companion. Production builds never
   otherwise reveal the selected item instead of depending on browser scroll anchoring. Switching
   details replaces the current detail history entry. Campaign/drop
   IDs form deep links; missing IDs and unknown account progress/linkage remain explicit.
+  Links from Mining and Activity return to their originating route, scroll and trigger focus
+  on Close/Back. Activity uses the same Dock Right detail icon. Reward deep links retain
+  scrolling and current-item semantics without a selection stripe or indentation.
   Show the campaign date range once; only show per-drop dates when the effective window differs
   from the campaign, comparing instants rather than timestamp strings. Keep claim timestamps.
+  Available details have no appended History section: show claim/first-observed times inline
+  for account-confirmed claimed rewards only. Never let old history mark a live unclaimed
+  reward as claimed. Omit benefit names identical to the reward title, retaining other names.
   List filters/layout are shareable URL state; loading a shared URL does not autosave it.
   Available and History paginate 25 campaign groups, with a compact gap between results and
   pagination. Preserve full-size pagination hit targets. Mine remains a game-wide action.
@@ -346,6 +362,8 @@ embed it and run without a build tool/runtime companion. Production builds never
   successful operation recovers its failures; unrelated messages never imply recovery.
   Keep category filtering, but omit the This session heading suffix and per-event category tags.
   Inset row separators to align with the content instead of touching the panel edges.
+  Fit the list to the remaining viewport on desktop and phone; keep notices and controls
+  reachable in short windows. Distinguish an empty event buffer from no filter matches.
   Count adjacent repeats in Activity while suppressing duplicate server log lines.
 - Maintenance checks the latest stable release's `latest.json`, compares SemVer precedence
   without build metadata, and distinguishes failure from up-to-date status. Keep requests
