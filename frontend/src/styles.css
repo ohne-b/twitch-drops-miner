@@ -175,15 +175,29 @@
 }
 @media (max-width: 767px) {
   .campaign-toolbar {
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    grid-template-areas: 'tabs tabs refresh' 'search search search' 'total controls controls';
+    display: flex;
+    flex-wrap: wrap;
     gap: 8px;
   }
   .campaign-tabs {
+    flex: 1;
     gap: 4px;
   }
+  .campaign-refresh {
+    order: 1;
+  }
+  .campaign-search {
+    order: 2;
+    flex-basis: 100%;
+  }
+  .campaign-total {
+    order: 3;
+    flex: 1;
+  }
   .campaign-controls {
+    order: 4;
     align-self: end;
+    margin-inline-start: auto;
   }
 }
 .campaign-workspace.with-detail .campaign-columns {
