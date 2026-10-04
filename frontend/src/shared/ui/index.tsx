@@ -209,16 +209,20 @@ export function ProgressBar({
   current,
   total,
   label,
+  description,
 }: {
   current: number;
   total: number;
   label: string;
+  description?: string;
 }) {
   const value = Math.min(100, Math.max(0, total > 0 ? (current / total) * 100 : 0));
   return (
     <div
       role="progressbar"
       aria-label={label}
+      aria-description={description}
+      title={description}
       aria-valuemin={0}
       aria-valuemax={total}
       aria-valuenow={Math.min(total, Math.max(0, current))}

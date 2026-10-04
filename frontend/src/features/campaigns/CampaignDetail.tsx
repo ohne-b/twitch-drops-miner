@@ -256,13 +256,12 @@ export function CampaignDetail({
                     )}
                     {!drop.is_claimed && (
                       <div className="mt-3 space-y-2">
-                        {drop.confirmed_at && (
-                          <ProgressBar
-                            current={drop.confirmed_minutes ?? 0}
-                            total={drop.required_minutes}
-                            label={drop.name}
-                          />
-                        )}
+                        <ProgressBar
+                          current={drop.confirmed_at ? (drop.confirmed_minutes ?? 0) : 0}
+                          total={drop.required_minutes}
+                          label={drop.name}
+                          description={drop.confirmed_at ? undefined : t('progress_unknown')}
+                        />
                         <p
                           className="muted tabular-nums"
                           title={drop.confirmed_at ? undefined : t('progress_unknown')}

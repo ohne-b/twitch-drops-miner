@@ -60,34 +60,33 @@ export default function Mining() {
     <div className="mining-workspace flex flex-col gap-5 xl:min-h-0 xl:flex-1">
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <h1 className="text-[22px] font-semibold">{t('mining')}</h1>
-        {progress?.confirmed_at && (
-          <time
-            dateTime={progress.confirmed_at}
-            className="order-last w-full text-right text-xs text-[#888888] sm:order-none sm:ms-auto sm:w-auto"
-          >
-            {t('last_confirmed', { time: dateTime(progress.confirmed_at) })}
-          </time>
-        )}
         <InventoryRefreshButton />
       </header>
       <ActionResult action={action} />
       <section className="panel shrink-0 p-5 md:p-6" aria-labelledby="mining-heading">
-        <div className="mb-5 flex items-center justify-between gap-3">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <h2 id="mining-heading" className="section-title">
             {t('now_mining')}
           </h2>
-          {data.manual_mode.active ? (
-            <span className="muted">{t('manual')}</span>
-          ) : (
-            <span
-              role="img"
-              aria-label={t('automatic')}
-              title={t('automatic')}
-              className="text-muted"
-            >
-              <Icon className="mdi-icon" path={mdiRefreshAuto} />
-            </span>
-          )}
+          <div className="ms-auto flex items-center gap-3">
+            {progress?.confirmed_at && (
+              <time dateTime={progress.confirmed_at} className="text-right text-xs text-[#888888]">
+                {t('last_confirmed', { time: dateTime(progress.confirmed_at) })}
+              </time>
+            )}
+            {data.manual_mode.active ? (
+              <span className="muted">{t('manual')}</span>
+            ) : (
+              <span
+                role="img"
+                aria-label={t('automatic')}
+                title={t('automatic')}
+                className="text-muted"
+              >
+                <Icon className="mdi-icon" path={mdiRefreshAuto} />
+              </span>
+            )}
+          </div>
         </div>
         {progress ? (
           <>
@@ -123,13 +122,12 @@ export default function Mining() {
                   )}
                 </p>
               )}
-              {progress.confirmed_at && (
-                <ProgressBar
-                  current={progress.confirmed_minutes ?? 0}
-                  total={progress.required_minutes}
-                  label={progress.drop_name}
-                />
-              )}
+              <ProgressBar
+                current={progress.confirmed_at ? (progress.confirmed_minutes ?? 0) : 0}
+                total={progress.required_minutes}
+                label={progress.drop_name}
+                description={progress.confirmed_at ? undefined : t('progress_unknown')}
+              />
               <div className="mt-2 flex flex-wrap justify-between gap-2 text-[13px]">
                 <span
                   className="tabular-nums"
