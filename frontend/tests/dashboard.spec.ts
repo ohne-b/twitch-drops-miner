@@ -577,6 +577,44 @@ test('confirmed progress and compact desktop design', async ({ page }) => {
       .evaluate((element) => getComputedStyle(element, '::-webkit-scrollbar').width),
   ).toBe('3px');
 });
+test('mining confirmation stays in the page header at desktop and phone widths', async ({
+  page,
+  request,
+}) => {
+  const header = page.getByRole('heading', { name: 'Mining', exact: true }).locator('..');
+  const confirmed = header.locator('time');
+  const refresh = header.getByRole('button', { name: 'Refresh inventory', exact: true });
+  for (const width of [1440, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(confirmed).toContainText('Last confirmed:');
+    await expect(confirmed).toHaveAttribute('datetime', snapshot.current_drop!.confirmed_at!);
+    await expect(confirmed).toHaveCSS('color', 'rgb(136, 136, 136)');
+    await expect(confirmed).toHaveCSS('font-size', '12px');
+    const timeBox = (await confirmed.boundingBox())!;
+    const refreshBox = (await refresh.boundingBox())!;
+    if (width >= 640) {
+      expect(timeBox.x + timeBox.width).toBeLessThanOrEqual(refreshBox.x);
+      expect(timeBox.y + timeBox.height / 2).toBeCloseTo(refreshBox.y + refreshBox.height / 2, 0);
+    } else {
+      expect(timeBox.y).toBeGreaterThanOrEqual(refreshBox.y + refreshBox.height);
+      expect(timeBox.x + timeBox.width).toBeCloseTo(refreshBox.x + refreshBox.width, 0);
+    }
+    await expect(
+      page.getByRole('region', { name: 'Now mining', exact: true }).getByText(/Last confirmed:/),
+    ).toHaveCount(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    );
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await page.screenshot({ path: `../artifacts/mining-confirmation-${width}.png` });
+  }
+  await request.post('/__test/event', {
+    headers,
+    data: { event: 'drop_progress', data: { ...snapshot.current_drop, confirmed_at: null } },
+  });
+  await expect(confirmed).toHaveCount(0);
+  await expect(refresh).toBeVisible();
+});
 test('Up next scrolls within its panel with reward artwork and safe fallbacks', async ({
   page,
   request,
