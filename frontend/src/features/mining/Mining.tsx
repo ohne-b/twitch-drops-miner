@@ -340,7 +340,21 @@ export default function Mining() {
                       : t('automatic')}
                   </span>
                 </div>
-                {game.campaigns.map((item) => (
+                {game.campaigns.map((item) => {
+                  const dates = item.drops.map((drop) => {
+                    const upcoming = drop.eligibility === 'upcoming';
+                    const time = upcoming ? drop.starts_at : drop.ends_at;
+                    return {
+                      start: Date.parse(drop.starts_at ?? ''),
+                      end: Date.parse(drop.ends_at ?? ''),
+                      upcoming,
+                      text: time ? t(upcoming ? 'gui.inventory.starts' : 'gui.inventory.ends', { time: dateTime(time) }) : '',
+                    };
+                  });
+                  const sharedDate = dates.length > 1 && dates.every((date) =>
+                    date.start === dates[0]?.start && date.end === dates[0]?.end && date.upcoming === dates[0]?.upcoming,
+                  );
+                  return (
                   <div className="mt-3 ps-7 text-[13px]" key={item.id}>
                     <CampaignLink
                       id={`up-next-campaign-${item.id}`}
@@ -349,6 +363,7 @@ export default function Mining() {
                     >
                       {item.name}
                     </CampaignLink>
+                    {sharedDate && <p className="muted mt-1 text-xs">{dates[0]?.text}</p>}
                     {item.priority && item.priority.reason !== 'saved_order' && (
                       <p className="muted mt-1">
                         {t(`reason_${item.priority.reason}`)}
@@ -373,31 +388,19 @@ export default function Mining() {
                             {drop.eligibility && drop.eligibility !== 'ready' && (
                               <p className="text-xs mt-1">{t(`eligibility_${drop.eligibility}`)}</p>
                             )}
-                            {(drop.eligibility === 'upcoming' ? drop.starts_at : drop.ends_at) && (
-                              <p className="text-xs mt-1">
-                                {t(
-                                  drop.eligibility === 'upcoming'
-                                    ? 'gui.inventory.starts'
-                                    : 'gui.inventory.ends',
-                                  {
-                                    time: dateTime(
-                                      (drop.eligibility === 'upcoming'
-                                        ? drop.starts_at
-                                        : drop.ends_at)!,
-                                    ),
-                                  },
-                                )}
-                              </p>
+                            {!sharedDate && dates[position]?.text && (
+                              <p className="text-xs mt-1">{dates[position]?.text}</p>
                             )}
                             {drop.benefits.some((benefit) => benefit !== drop.name) && (
-                              <p className="mt-0.5 text-xs">{drop.benefits.join(', ')}</p>
+                              <p className="mt-0.5 text-xs">{drop.benefits.filter((benefit) => benefit !== drop.name).join(', ')}</p>
                             )}
                           </div>
                         </li>
                       ))}
                     </ul>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             ))}
             {!data.wanted_items.length && <Empty title={t('gui.wanted.none')} />}
