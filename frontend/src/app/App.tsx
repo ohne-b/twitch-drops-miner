@@ -33,14 +33,9 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
     ['/settings', 'gui.tabs.settings', mdiCogOutline],
   ] as const;
   useEffect(() => {
-    if (location.pathname === '/settings' && location.hash === '#mining') return;
     if (location.search.includes('campaign=')) return;
-    if (location.hash)
-      requestAnimationFrame(() =>
-        document.getElementById(location.hash.slice(1))?.scrollIntoView(),
-      );
-    else window.scrollTo(0, 0);
-  }, [location.pathname, location.hash]);
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
   return (
     <div className="app-shell min-h-dvh">
       <a href="#main" className="sr-only fixed z-50 bg-soft p-3 text-canvas focus:not-sr-only">

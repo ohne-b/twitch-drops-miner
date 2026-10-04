@@ -1,5 +1,5 @@
 import { Icon } from '@mdi/react';
-import { useLocation } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   mdiOpenInNew,
@@ -300,15 +300,15 @@ function SettingsContent({ settings, auth }: { settings: SettingsData; auth: Aut
             ['maintenance', mdiWrenchOutline],
           ] as const
         ).map(([id, icon]) => (
-          <a
+          <Link
             className={`settings-tab ${section === id ? 'active' : ''}`}
             aria-current={section === id ? 'page' : undefined}
             key={id}
-            href={`#${id}`}
+            to={`#${id}`}
           >
             <Icon path={icon} className="mdi-icon" />
             {t(id)}
-          </a>
+          </Link>
         ))}
       </nav>
       <Section hidden={section !== 'account'} id="account">
