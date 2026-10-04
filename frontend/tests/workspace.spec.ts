@@ -841,7 +841,7 @@ test('Available and History share card geometry and inset list dividers', async 
   }
 });
 
-test('campaign panes fill desktop height and keep row hovers compact', async ({
+test('campaign panes fill the height below full-width controls and keep row hovers compact', async ({
   page,
   request,
 }) => {
@@ -873,6 +873,8 @@ test('campaign panes fill desktop height and keep row hovers compact', async ({
     const first = page.getByRole('button', { name: 'Open Campaign 01', exact: true });
     const search = page.getByRole('searchbox', { name: 'Search campaigns and rewards' });
     await expect(first).toBeVisible();
+    const toolbar = (await page.locator('.campaign-toolbar').boundingBox())!;
+    const searchBounds = (await search.boundingBox())!;
     await first.hover();
     await expect(first).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
     await expect(first.locator('.campaign-detail-icon')).toHaveCSS('width', '28px');
@@ -886,8 +888,12 @@ test('campaign panes fill desktop height and keep row hovers compact', async ({
     const detail = page.getByRole('complementary', { name: 'Campaign details' });
     await expect(detail).toBeVisible();
     const bounds = (await detail.boundingBox())!;
-    expect(bounds.y).toBe(28);
-    expect(bounds.height).toBe(viewport.height - 40);
+    expect(await page.locator('.campaign-toolbar').boundingBox()).toEqual(toolbar);
+    expect(await search.boundingBox()).toEqual(searchBounds);
+    expect(bounds.x + bounds.width).toBeCloseTo(toolbar.x + toolbar.width, 0);
+    expect(bounds.y).toBe((await list.boundingBox())!.y);
+    expect(bounds.y).toBe(toolbar.y + toolbar.height + 20);
+    expect(bounds.y + bounds.height).toBe(viewport.height - 12);
     const footer = (await page.getByRole('navigation', { name: 'Campaign pages' }).boundingBox())!;
     expect(viewport.height - footer.y - footer.height).toBe(12);
     await expect(first.locator('..')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
@@ -895,6 +901,21 @@ test('campaign panes fill desktop height and keep row hovers compact', async ({
     await mine.hover();
     await expect(mine).toHaveCSS('background-color', 'rgb(51, 51, 51)');
     await expect(mine.locator('..')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await page.getByRole('button', { name: 'Filters', exact: true }).click();
+    const filters = (await page
+      .getByRole('group', { name: 'Filters', exact: true })
+      .boundingBox())!;
+    const filteredBounds = (await detail.boundingBox())!;
+    expect(filters.x).toBe(toolbar.x);
+    expect(filters.width).toBeCloseTo(toolbar.width, 0);
+    expect(filteredBounds.y).toBe((await list.boundingBox())!.y);
+    expect(filteredBounds.y).toBeGreaterThan(bounds.y);
+    expect(filteredBounds.y + filteredBounds.height).toBe(viewport.height - 12);
+    await expect(
+      detail.getByRole('heading', { name: 'Campaign 01', exact: true }),
+    ).toBeInViewport();
+    await page.getByRole('button', { name: 'Filters', exact: true }).click();
+    expect(await detail.boundingBox()).toEqual(bounds);
     await page.screenshot({
       path: `../artifacts/campaign-pane-${viewport.width}-${viewport.height}.png`,
     });
@@ -932,9 +953,16 @@ test('campaign panes fill desktop height and keep row hovers compact', async ({
   await expect(history).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   await expect(history.locator('.campaign-detail-icon')).toHaveCSS('width', '28px');
   await history.click();
-  await expect(page.getByRole('complementary', { name: 'Campaign details' })).toHaveCSS(
-    'height',
-    '320px',
+  const historyBounds = (await page
+    .getByRole('complementary', { name: 'Campaign details' })
+    .boundingBox())!;
+  const historyList = (await page
+    .getByRole('region', { name: 'History', exact: true })
+    .boundingBox())!;
+  expect(historyBounds.y).toBe(historyList.y);
+  expect(historyBounds.y + historyBounds.height).toBe(348);
+  expect(historyBounds.y).toBeGreaterThan(
+    (await page.getByRole('searchbox', { name: 'Search campaigns and rewards' }).boundingBox())!.y,
   );
 });
 
