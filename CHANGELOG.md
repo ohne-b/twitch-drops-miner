@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.4.3](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.4.3) — 2026-10-04
+
+- correct conflicting live progress using newer Twitch account inventory, keep watching when only the disputed counter reaches 100%, and preserve pending reconciliation across reconnects ([#63](https://github.com/ohne-b/twitch-drops-miner/pull/63))
+- use 24-hour time throughout the dashboard, including Activity and tooltips, while preserving local dates and timezones
+- offer Docker Hub images alongside GHCR through a shared mirror that copies both supported architectures without rebuilding ([#62](https://github.com/ohne-b/twitch-drops-miner/pull/62))
+- replace duplicate comparison links in release notes with a single Changelog link ([#61](https://github.com/ohne-b/twitch-drops-miner/pull/61))
+
+Existing settings, credentials, history, service names and container mounts remain compatible.
+Watch cadence and claim requirements are unchanged.
+
 ## [v1.4.2](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.4.2) — 2026-10-04
 
 - align narrow campaign cards to equal row heights, with readable names and counts and actions below the campaign identity ([#56](https://github.com/ohne-b/twitch-drops-miner/pull/56))
