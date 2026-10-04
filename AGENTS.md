@@ -245,6 +245,12 @@ embed it and run without a build tool/runtime companion. Production builds never
   Default (manual order), Short events first and Ending soonest. Its tooltip reports the
   selected mode; accessible help explains that drag order is preserved for ties. Reuse
   autosave/conflict handling and disable the selector until reconnect hydration.
+  Mining preferences keeps only short hints visible. Native info popovers retain the selected
+  priority mode's full rules, other-game reward rules and ignore/dependency details, with
+  click/tap/keyboard access and outside-click/Escape dismissal. Keep priority rules associated
+  with the selector for assistive technology, and help available during reconnects. Use concise
+  labels: Also mine from other games, Allowed reward types and Ignore rewards by name. Keep
+  the two reward groups distinct and preserve all existing settings/mining behavior.
   Render strings as React text, validate external links/artwork, expand Twitch image placeholders.
   No injected HTML or CDN scripts. Art provides safe missing/broken-image fallbacks.
   Reward thumbnails contain their artwork; game covers retain cover sizing. Phone checkbox
