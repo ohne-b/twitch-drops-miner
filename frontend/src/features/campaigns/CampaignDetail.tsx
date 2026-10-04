@@ -32,7 +32,7 @@ export function CampaignDetail({
   const id = params.get('campaign') ?? '';
   const dropId = params.get('drop');
   const selectedLiveDrop = !!campaign?.drops.some((drop) => drop.id === dropId);
-  const selectedHistoryDrop = !!history?.entries.some((entry) => entry.id === dropId);
+  const selectedHistoryDrop = !campaign && !!history?.entries.some((entry) => entry.id === dropId);
   const dropAnchor =
     dropId &&
     (selectedLiveDrop ? `drop-${dropId}` : selectedHistoryDrop ? `history-drop-${dropId}` : null);
@@ -110,7 +110,7 @@ export function CampaignDetail({
               {t(historyOnly ? 'history_drop_missing' : 'drop_missing')}
             </p>
           )}
-        {historyError && (historyOnly || !campaign || (dropId && !selectedLiveDrop)) && (
+        {historyError && (historyOnly || !campaign || campaign.drops.some((drop) => drop.is_claimed) || (dropId && !selectedLiveDrop)) && (
           <Notice error>
             {t('history_error')}
             <IconButton path={mdiReload} label={t('retry')} onClick={retryHistory} />
@@ -214,7 +214,10 @@ export function CampaignDetail({
               )}
             </div>
             <div className="divide-y divide-divider">
-              {campaign.drops.map((drop) => (
+              {campaign.drops.map((drop) => {
+                const claim = history?.entries.find((entry) => entry.id === drop.id);
+                const benefits = drop.benefits.filter((benefit) => benefit.name !== drop.name);
+                return (
                 <section
                   id={`drop-${drop.id}`}
                   aria-current={drop.id === dropId ? 'true' : undefined}
@@ -226,15 +229,17 @@ export function CampaignDetail({
                     <div className="min-w-0 flex-1">
                       <h3 className="font-medium">{drop.name}</h3>
                       <p className="muted mt-1">
-                        {t(
-                          `eligibility_${drop.is_claimed ? 'claimed' : (drop.eligibility ?? 'unknown')}`,
-                        )}
+                        {drop.is_claimed && claim
+                          ? t(claim.claimed_at_is_observed ? 'first_observed' : 'claimed_at', {
+                              time: dateTime(claim.claimed_at),
+                            })
+                          : t(`eligibility_${drop.is_claimed ? 'claimed' : (drop.eligibility ?? 'unknown')}`)}
                       </p>
                     </div>
                   </div>
-                  <p className="muted mt-3">
-                    {drop.benefits.map((benefit) => benefit.name).join(', ')}
-                  </p>
+                  {!!benefits.length && (
+                    <p className="muted mt-3">{benefits.map((benefit) => benefit.name).join(', ')}</p>
+                  )}
                   {!drop.is_claimed && (
                     <div className="mt-3 space-y-2">
                       {drop.confirmed_at ? (
@@ -311,12 +316,13 @@ export function CampaignDetail({
                     </p>
                   )}
                 </section>
-              ))}
+                );
+              })}
             </div>
           </>
         )}
-        {history && (
-          <section className={campaign ? 'border-t border-divider pt-5' : ''}>
+        {!campaign && history && (
+          <section>
             <h3 className="section-title mb-3">
               {t(historyOnly ? 'recorded_claims' : 'gui.tabs.history', {
                 count: history.entries.length,
