@@ -435,7 +435,7 @@ checks both platforms/version/revision before registry writes, and copies them b
 Failed or pending newer validation cannot fall back to an older run. Missing/expired artifacts
 require rerunning validation; release and edge publishing never rebuild images. PR artifacts
 cannot be promoted. Ordinary merges only retain artifacts, never publish registry images.
-Keep the project's PolyForm Strict 1.0.0 license in `LICENSE.md` and the full upstream MIT
+Keep the project's PolyForm Noncommercial 1.0.0 license in `LICENSE.md` and the full upstream MIT
 license in `NOTICE.md`; third-party components retain their original licenses;
 include both with frontend asset notices in production images. Preserve 1000:1000 ownership,
 mounts and port. Health does not prove earning.
