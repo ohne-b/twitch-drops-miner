@@ -20,9 +20,10 @@ export function CampaignLink({ id, to, ...props }: LinkProps & { id: string }) {
               path: location.pathname + location.search + location.hash,
               focus: id,
               top: window.scrollY,
+              width: window.innerWidth,
               lists: Array.from(
                 document.querySelectorAll<HTMLElement>('[data-restore-scroll]'),
-              ).map((element) => [element.id, element.scrollTop]),
+              ).map((element) => [element.id, element.scrollTop, element.clientWidth]),
             },
           },
         });

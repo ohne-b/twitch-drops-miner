@@ -256,6 +256,8 @@ in view as the list narrows, including after changing between grid and list layo
 Details fill the page on smaller screens, with background scrolling locked until they close.
 Only the detail content scrolls; closing restores the list position.
 Details opened from Mining or Activity return to that page and its link on Close or Back.
+Channel search and Activity search/category/severity stay in the URL so the filtered view
+survives that round trip; after resizing, the original link is brought back into view.
 Campaign dates appear once above the rewards;
 individual rewards show dates only when their effective window differs from the campaign.
 Available details show each claimed reward once, with its recorded claim time beside the

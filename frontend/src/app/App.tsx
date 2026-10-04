@@ -51,12 +51,14 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
       origin?.path === location.pathname + location.search + location.hash
     ) {
       const frame = requestAnimationFrame(() => {
-        for (const [id, top] of origin.lists as [string, number][]) {
+        for (const [id, top, width] of origin.lists as [string, number, number][]) {
           const list = document.getElementById(id);
-          if (list) list.scrollTop = top;
+          if (list?.clientWidth === width) list.scrollTop = top;
         }
-        window.scrollTo(0, origin.top);
-        document.getElementById(origin.focus)?.focus({ preventScroll: true });
+        window.scrollTo(0, origin.width === window.innerWidth ? origin.top : 0);
+        const trigger = document.getElementById(origin.focus);
+        trigger?.focus({ preventScroll: true });
+        trigger?.scrollIntoView({ block: 'nearest' });
       });
       return () => cancelAnimationFrame(frame);
     }

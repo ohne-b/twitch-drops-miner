@@ -23,7 +23,7 @@ import {
 export default function Mining() {
   const { data, connected } = useMiner();
   const t = useT();
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const edit = params.get('edit') === 'priorities';
   const editLink = useRef<HTMLAnchorElement>(null);
   const previousEdit = useRef(edit);
@@ -31,7 +31,12 @@ export default function Mining() {
     if (previousEdit.current && !edit) editLink.current?.focus({ preventScroll: true });
     previousEdit.current = edit;
   }, [edit]);
-  const [search, setSearch] = useState('');
+  const search = params.get('q') ?? '';
+  function setSearch(value: string) {
+    const next = new URLSearchParams(params);
+    value ? next.set('q', value) : next.delete('q');
+    setParams(next, { replace: true });
+  }
   const [channelInput, setChannelInput] = useState('');
   const [manualMinutes, setManualMinutes] = useState('');
   const [enterChannel, setEnterChannel] = useState(false);

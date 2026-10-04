@@ -139,6 +139,43 @@ test('Mining and Activity details return to the originating link and scroll posi
   await expect(page).toHaveURL(/\/campaigns$/);
 });
 
+test('Detail return retains filters through query edits and reveals its trigger after resize', async ({
+  page,
+  request,
+}) => {
+  await request.post('/__test/event', {
+    headers,
+    data: { event: 'initial_state', data: { ...fixture, activity } },
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/activity');
+  await page.getByRole('searchbox').fill('reward 3');
+  await page.getByRole('combobox', { name: 'Filter category' }).selectOption('claims');
+  await page.getByRole('combobox', { name: 'Filter level' }).selectOption('info');
+  await page.locator('#activity-campaign-33').click();
+  await expect(page.getByRole('complementary', { name: 'Campaign details' })).toBeVisible();
+  await page.getByRole('searchbox').fill('Autumn');
+  await page.getByRole('combobox', { name: 'Sort campaigns' }).selectOption('newest');
+  await page.getByRole('button', { name: 'Change campaign layout' }).click();
+  await page.getByRole('button', { name: 'Filters', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Active', exact: true }).uncheck();
+  await page.setViewportSize({ width: 390, height: 500 });
+  await page.getByRole('button', { name: 'Close details' }).press('Escape');
+  await expect(page.getByRole('searchbox')).toHaveValue('reward 3');
+  await expect(page.getByRole('combobox', { name: 'Filter category' })).toHaveValue('claims');
+  await expect(page.getByRole('combobox', { name: 'Filter level' })).toHaveValue('info');
+  await expect(page.locator('#activity-campaign-33')).toBeFocused();
+  await expect(page.locator('#activity-campaign-33')).toBeInViewport();
+  await expect(page.locator('#activity-list article')).toHaveCount(11);
+  await page.goto('/');
+  await page.getByRole('searchbox', { name: 'Search channels' }).fill('north');
+  await page.locator('#mining-drop-details').click();
+  await expect(page.getByRole('complementary', { name: 'Campaign details' })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole('searchbox', { name: 'Search channels' })).toHaveValue('north');
+  await expect(page.locator('#channels-list .row')).toHaveCount(1);
+});
+
 test('Available rewards show claims once with truthful times and uncropped artwork', async ({
   page,
   request,

@@ -172,13 +172,13 @@ export default function Campaigns() {
     const next = new URLSearchParams(params);
     if (key !== 'page' && key !== 'campaign' && key !== 'drop') next.delete('page');
     value ? next.set(key, value) : next.delete(key);
-    setParams(next, { replace: true });
+    setParams(next, { replace: true, state: location.state });
   }
   function changeFilters(next: Filters, clearSearch = false) {
     setFilterDraft({ key: location.key, filters: next });
     const query = writeFilters(params, next);
     if (clearSearch) query.delete('q');
-    setParams(query, { replace: true });
+    setParams(query, { replace: true, state: location.state });
     const touched = Object.fromEntries(
       Object.entries(next).filter(
         ([key, value]) => JSON.stringify(value) !== JSON.stringify(filters[key as keyof Filters]),
@@ -303,7 +303,7 @@ export default function Campaigns() {
               onClick={() => {
                 const next = new URLSearchParams(params);
                 next.set('view', list ? 'grid' : 'list');
-                setParams(next, { replace: true });
+                setParams(next, { replace: true, state: location.state });
                 autosave.change('inventory_list_view', !list);
               }}
             />

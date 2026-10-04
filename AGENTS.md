@@ -345,7 +345,9 @@ embed it and run without a build tool/runtime companion. Production builds never
   details replaces the current detail history entry. Campaign/drop
   IDs form deep links; missing IDs and unknown account progress/linkage remain explicit.
   Links from Mining and Activity return to their originating route, scroll and trigger focus
-  on Close/Back. Activity uses the same Dock Right detail icon. Reward deep links retain
+  on Close/Back. Preserve their search/filter URL state and the return state through in-place
+  Campaigns query edits; restore matching-width offsets and reveal the trigger after resizing.
+  Activity uses the same Dock Right detail icon. Reward deep links retain
   scrolling and current-item semantics without a selection stripe or indentation.
   Show the campaign date range once; only show per-drop dates when the effective window differs
   from the campaign, comparing instants rather than timestamp strings. Keep claim timestamps.
