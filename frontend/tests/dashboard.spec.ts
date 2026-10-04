@@ -2400,11 +2400,9 @@ test('History shares sort, search, game filters and layout while paging recorded
   await page.getByText('Campaign 26', { exact: true }).click();
   await page.screenshot({ path: '../artifacts/history-phone.png', fullPage: true });
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-  await page.getByRole('button', { name: 'Close details', exact: true }).click();
-  await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
   campaignCount = 2500;
   await page.setViewportSize({ width: 320, height: 844 });
-  await page.goto('/campaigns?tab=history&page=99');
+  await page.goto('/campaigns?tab=history&page=99&game=');
   const pagination = page.getByRole('navigation', { name: 'Campaign pages' });
   await expect(pagination).toHaveText('100 / 100');
   const bounds = (await pagination.boundingBox())!;
