@@ -225,7 +225,7 @@ export function CampaignDetail({
                   className={`reward-detail py-5 ${drop.id === dropId ? 'selected' : ''}`}
                 >
                   <div className="flex items-start gap-3">
-                    <Art url={drop.benefits[0]?.image_url} className="size-12" />
+                    <Art url={drop.benefits[0]?.image_url} className="size-12" fit="contain" />
                     <div className="min-w-0 flex-1">
                       <h3 className="font-medium">{drop.name}</h3>
                       <p className="muted mt-1">
@@ -336,6 +336,7 @@ export function CampaignDetail({
                 className={`reward-detail flex gap-3 py-3 ${entry.id === dropId ? 'selected' : ''}`}
               >
                 <Art
+                  fit="contain"
                   url={
                     entry.image_url ||
                     history.metadata?.drops.find((drop) => drop.id === entry.id)?.benefits[0]

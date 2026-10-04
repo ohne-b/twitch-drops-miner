@@ -84,6 +84,7 @@ export default function Mining() {
                     ?.image_url ?? campaign?.game_box_art_url
                 }
                 className="size-16"
+                fit="contain"
               />
               <div className="min-w-0 flex-1">
                 <CampaignLink
@@ -360,7 +361,7 @@ export default function Mining() {
                           className="flex items-start gap-3"
                           key={drop.id || `${drop.name}/${position}`}
                         >
-                          <Art url={drop.image_url} className="size-9 [&_img]:object-contain" />
+                          <Art url={drop.image_url} className="size-9" fit="contain" />
                           <div className="min-w-0 flex-1">
                             <CampaignLink
                               id={`up-next-drop-${item.id}-${drop.id || position}`}
