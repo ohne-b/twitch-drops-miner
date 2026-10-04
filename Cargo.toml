@@ -1,6 +1,6 @@
 [package]
 name = "twitch-drops-miner"
-version = "1.4.2"
+version = "1.4.3"
 edition = "2024"
 rust-version = "1.94"
 license-file = "LICENSE.md"

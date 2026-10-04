@@ -9,6 +9,59 @@ test.beforeEach(async ({ request }) => {
   expect(await reset.json()).toEqual({ ok: true });
 });
 
+for (const [locale, date] of [
+  ['en-US', 'Oct 4, 2026'],
+  ['de-DE', '04.10.2026'],
+]) {
+  test.describe(`24-hour time in ${locale}`, () => {
+    test.use({ locale, timezoneId: 'Europe/Berlin' });
+    test('preserves local dates and timezone at midnight, noon and night', async ({
+      page,
+      request,
+    }) => {
+      const times = [
+        { utc: '2026-10-03T22:05:06Z', clock: '00:05:06' },
+        { utc: '2026-10-04T10:30:00Z', clock: '12:30:00' },
+        { utc: '2026-10-04T21:59:59Z', clock: '23:59:59' },
+      ];
+      const activity = times.map(({ utc }, id) => ({
+        id: id + 1,
+        first_at: times[0]!.utc,
+        last_at: utc,
+        category: 'mining',
+        severity: 'info',
+        code: 'status.message',
+        args: {},
+        message: `Event ${id + 1}`,
+        campaign_id: null,
+        drop_id: null,
+        channel_id: null,
+        count: 2,
+        recovered: false,
+      }));
+      expect(
+        (
+          await request.post('/__test/event', {
+            headers,
+            data: { event: 'initial_state', data: { ...fixture, activity } },
+          })
+        ).ok(),
+      ).toBeTruthy();
+      await page.goto('/activity');
+      for (const [index, { clock, utc }] of times.entries()) {
+        const row = page.getByRole('article').nth(index);
+        await expect(row.locator('time')).toHaveText(clock);
+        await expect(row.locator('time')).toHaveAttribute('datetime', utc);
+        await expect(row.locator('time')).toHaveAttribute('title', `${date}, ${clock.slice(0, 5)}`);
+        await expect(row.getByText('×2')).toHaveAttribute(
+          'title',
+          `2 occurrences, ${date}, 00:05 to ${date}, ${clock.slice(0, 5)}`,
+        );
+      }
+    });
+  });
+}
+
 for (const width of [1440, 390, 320]) {
   test(`workspace and details at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 960 });
@@ -397,7 +450,11 @@ test('campaign details show shared dates once and preserve distinct reward windo
       ranges.map((range) =>
         range
           .map((date) =>
-            new Date(date).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }),
+            new Date(date).toLocaleString(undefined, {
+              dateStyle: 'medium',
+              timeStyle: 'short',
+              hourCycle: 'h23',
+            }),
           )
           .join(' — '),
       ),

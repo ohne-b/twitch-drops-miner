@@ -206,6 +206,9 @@ Notification dismissal failures appear in Activity without postponing watch sche
 
 ## Using the dashboard
 
+Times use the 24-hour clock (`00:00–23:59`) in your browser's timezone. Dates keep your
+browser's local format; Activity also shows seconds.
+
 **Mining > Channels** shows live streams currently eligible for your selected games and
 rewards, plus your manually selected channel. Special-event campaigns can include other
 categories when their actual channel restriction allows it. Channel changes pause watching
