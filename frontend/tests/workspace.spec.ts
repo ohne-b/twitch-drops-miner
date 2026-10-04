@@ -405,7 +405,9 @@ test('campaign details show shared dates once and preserve distinct reward windo
     await expect(
       page.locator(`#drop-${id}`).getByText(windows[index + 1]!, { exact: true }),
     ).toBeVisible();
-  await expect(detail.getByText(/^Claimed /)).toBeVisible();
+  // The separate recorded claim is not appended to Available's live reward list.
+  await expect(detail.getByText(/^Claimed /)).toHaveCount(0);
+  await expect(detail.getByRole('heading', { name: 'History', exact: true })).toHaveCount(0);
 });
 
 test('History details contain only recorded claims even with live campaign metadata', async ({
