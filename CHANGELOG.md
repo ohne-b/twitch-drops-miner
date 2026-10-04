@@ -14,8 +14,6 @@
 Existing settings, credentials, history, service names and container mounts remain compatible.
 Mining selection, watch cadence and claim requirements are unchanged.
 
-[Compare v1.4.1...v1.4.2](https://github.com/ohne-b/twitch-drops-miner/compare/v1.4.1...v1.4.2)
-
 ## [v1.4.1](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.4.1) — 2026-10-04
 
 - align Available and History cards and list rows, with matching artwork, spacing, borders and inset dividers; keep phone text readable by placing counts and actions below the campaign identity ([#53](https://github.com/ohne-b/twitch-drops-miner/pull/53))
@@ -24,8 +22,6 @@ Mining selection, watch cadence and claim requirements are unchanged.
 
 Existing settings, credentials, history, service names and container mounts remain compatible.
 Mining selection, watch cadence and claim requirements are unchanged.
-
-[Compare v1.4.0...v1.4.1](https://github.com/ohne-b/twitch-drops-miner/compare/v1.4.0...v1.4.1)
 
 ## [v1.4.0](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.4.0) — 2026-10-03
 
@@ -40,16 +36,12 @@ Existing settings, credentials, history, service names and container mounts rema
 Mining selection, watch cadence and claim requirements are unchanged. Version-one durable
 records remain independent of dashboard presentation fields. Reload the dashboard after upgrading.
 
-[Compare v1.3.1...v1.4.0](https://github.com/ohne-b/twitch-drops-miner/compare/v1.3.1...v1.4.0)
-
 ## [v1.3.1](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.3.1) — 2026-10-02
 
 - fix the v1.3.0 inventory refresh and campaign discovery regression when unrestricted public campaigns omit their unused channel list; preserve strict Twitch account validation and claim evidence ([#47](https://github.com/ohne-b/twitch-drops-miner/pull/47))
 
 Existing settings, credentials, history, service names and container mounts remain compatible.
 Unavailable, stale or malformed catalog data still reports incomplete refreshes.
-
-[Compare v1.3.0...v1.3.1](https://github.com/ohne-b/twitch-drops-miner/compare/v1.3.0...v1.3.1)
 
 ## [v1.3.0](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.3.0) — 2026-10-02
 
@@ -64,8 +56,6 @@ Mining priority defaults to the existing manual order. Automatic priority uses k
 dates; it does not predict whether enough watch time remains. Completed watch time is never
 treated as a successful claim. Mock tests and image health checks do not prove live Twitch earning.
 
-[Compare v1.2.0...v1.3.0](https://github.com/ohne-b/twitch-drops-miner/compare/v1.2.0...v1.3.0)
-
 ## [v1.2.0](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.2.0) — 2026-09-29
 
 - standardize dashboard icons with the MDI React package and borderless icon actions, including campaign/history sorting, filtering, mining controls and game priorities ([#35](https://github.com/ohne-b/twitch-drops-miner/pull/35))
@@ -77,8 +67,6 @@ Existing data, credentials, settings, service names and container mounts remain 
 History is preserved on upgrade; only the explicit Clear All Cache action deletes recorded
 claims. Completed campaign records remain intact. Clipboard copying requires HTTPS or localhost.
 
-[Compare v1.1.5...v1.2.0](https://github.com/ohne-b/twitch-drops-miner/compare/v1.1.5...v1.2.0)
-
 ## [v1.1.5](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.1.5) — 2026-09-28
 
 - advance the Mining card using current Twitch reward evidence and stop selecting rewards whose confirmed watch requirement is complete ([#33](https://github.com/ohne-b/twitch-drops-miner/pull/33))
@@ -88,8 +76,6 @@ claims. Completed campaign records remain intact. Clipboard copying requires HTT
 Existing settings, credentials, data and container configuration remain compatible.
 Completed watch time is never treated as a successful claim. Offline regression tests
 verify local transitions and races; they do not prove live Twitch earning.
-
-[Compare v1.1.4...v1.1.5](https://github.com/ohne-b/twitch-drops-miner/compare/v1.1.4...v1.1.5)
 
 ## [v1.1.4](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.1.4) — 2026-09-28
 
@@ -101,8 +87,6 @@ Existing settings, credentials, data and container configuration remain compatib
 These changes restore transport behavior from the Python implementation; they do not
 guarantee that Twitch credits watch time or establish the cause of every disconnect.
 
-[Compare v1.1.3...v1.1.4](https://github.com/ohne-b/twitch-drops-miner/compare/v1.1.3...v1.1.4)
-
 ## [v1.1.3](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.1.3) — 2026-09-28
 
 - preserve valid Twitch logins when public channel pages or settings scripts return HTTP 401/403
@@ -110,8 +94,6 @@ guarantee that Twitch credits watch time or establish the cause of every disconn
 
 Existing settings, credentials, data and container configuration remain compatible.
 Device-code login is unchanged. Recovery does not guarantee that Twitch credits watch time.
-
-[Compare v1.1.2...v1.1.3](https://github.com/ohne-b/twitch-drops-miner/compare/v1.1.2...v1.1.3)
 
 ## [v1.1.2](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.1.2) — 2026-09-28
 
@@ -123,8 +105,6 @@ Existing settings, credentials, data and container configuration remain compatib
 History imports require available campaign metadata; CSV exports add a final
 `claimed_at_is_observed` column. Advanced diagnostics remain off by default.
 
-[Compare v1.1.1...v1.1.2](https://github.com/ohne-b/twitch-drops-miner/compare/v1.1.1...v1.1.2)
-
 ## [v1.1.1](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.1.1) — 2026-09-28
 
 - add opt-in automatic badge and emote mining across games, including required prerequisite drops
@@ -132,8 +112,6 @@ History imports require available campaign metadata; CSV exports add a final
 
 Both new options default off under Settings > Mining. Existing selections, settings,
 credentials, data and container configuration remain compatible.
-
-[Compare v1.1.0...v1.1.1](https://github.com/ohne-b/twitch-drops-miner/compare/v1.1.0...v1.1.1)
 
 ## [v1.1.0](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.1.0) — 2026-09-28
 

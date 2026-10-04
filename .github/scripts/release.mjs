@@ -47,7 +47,7 @@ export function releaseNotes(version, changelog) {
   const previous = next < 0 ? null : lines[next].match(/^## \[v([^\]]+)\]/)?.[1];
   if (previous) validateVersion(version, validateVersion(previous));
   const changes = previous ? `compare/v${previous}...v${version}` : `commits/v${version}`;
-  return `${notes}\n\nFull Changelog: ${repository}/${changes}\n\n` +
+  return `${notes}\n\nChangelog: ${repository}/${changes}\n\n` +
     `Please [open an issue](${repository}/issues/new) to report bugs or request features.\n`;
 }
 
