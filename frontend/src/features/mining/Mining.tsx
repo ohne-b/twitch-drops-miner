@@ -114,7 +114,7 @@ export default function Mining() {
               </div>
             </div>
             <div className="mt-5">
-              {data.mining?.state !== 'watching' && (
+              {data.mining?.state !== 'watching' && data.mining?.state !== 'awaiting_progress' && (
                 <p className="muted mb-3">
                   {t(
                     data.mining && data.mining.state !== 'unknown'
@@ -131,13 +131,15 @@ export default function Mining() {
                 />
               )}
               <div className="mt-2 flex flex-wrap justify-between gap-2 text-[13px]">
-                <span className="tabular-nums">
-                  {progress.confirmed_at
-                    ? t('minutes_progress', {
-                        current: progress.confirmed_minutes ?? 0,
-                        total: progress.required_minutes,
-                      })
-                    : t('progress_unknown')}
+                <span
+                  className="tabular-nums"
+                  title={progress.confirmed_at ? undefined : t('progress_unknown')}
+                  aria-description={progress.confirmed_at ? undefined : t('progress_unknown')}
+                >
+                  {t('minutes_progress', {
+                    current: progress.confirmed_at ? (progress.confirmed_minutes ?? 0) : 0,
+                    total: progress.required_minutes,
+                  })}
                 </span>
               </div>
             </div>

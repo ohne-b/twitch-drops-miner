@@ -211,6 +211,8 @@ browser's local format; Activity also shows seconds.
 
 The current reward's **Last confirmed** time sits beside the refresh button at the top right
 of Mining, in smaller, muted text. It appears only after Twitch confirms progress.
+Rewards without confirmed progress show `0 / required minutes` in Mining and Campaigns.
+Their tooltip identifies the unconfirmed value; no confirmation time is invented.
 
 **Mining > Channels** shows live streams currently eligible for your selected games and
 rewards, plus your manually selected channel. Special-event campaigns can include other
