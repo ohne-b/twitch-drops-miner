@@ -213,7 +213,7 @@ unfinished newer validation on the same commit cannot fall back to an older succ
 Commits made with a workflow token do not trigger push workflows; run **validation**
 manually on main before publishing when its latest commit has no matching push validation.
 SemVer build metadata uses `_` in place of `+` in the Docker tag.
-GHCR is the only publication registry, authenticated through the workflow's scoped
+GHCR is the primary publication registry, authenticated through the workflow's scoped
 GitHub token. The first release under the new image name needs public package visibility
 and anonymous-pull verification; existing version-0.1.0 images remain at their original
 GHCR address for compatibility. Do not overwrite or remove those published tags.
@@ -238,6 +238,23 @@ on main after exact-commit validation succeeds. It publishes only the GHCR `edge
 same scoped workflow token and tested artifacts, retaining their revision labels. It does not bump Cargo,
 create a GitHub release/version tag or move `latest`. The normal PR/review requirements apply.
 Both publishers use the shared image-promotion script; only validation builds images.
+
+After publication, both publishers call **Mirror Docker Hub image**. It copies the full
+published GHCR image by digest, preserving amd64/arm64 and verifying the destination digest.
+It never builds images, creates releases, or changes GHCR tags. Configure the `prod`
+environment before using it:
+
+- `DOCKERHUB_IMAGE` variable: a public Docker Hub repository, `namespace/repository`.
+- `DOCKERHUB_USERNAME` variable: the Docker ID with push access to that repository.
+- `DOCKERHUB_TOKEN` secret: that account's Docker Hub personal access token with Read & Write access.
+
+The mirror uses version tags (including prereleases) and `edge`. It updates Docker Hub's
+`latest` only when the copied stable version is GitHub's latest release and still matches
+GHCR's `latest` digest. Mirroring older releases never rolls `latest` back.
+If mirroring fails, the GHCR publication remains available. Run **Mirror Docker Hub image**
+manually on main with the published version (for example `1.4.2`) or `edge`; do not rerun
+the release publisher. This also mirrors existing releases without rebuilding or requiring
+retained CI artifacts. Verify anonymous pulls before advertising a new Docker Hub mirror.
 
 Keep upstream attribution and license links in README; contributor/PR tables are not
 maintained. README changes follow the same PR workflow as other documentation.

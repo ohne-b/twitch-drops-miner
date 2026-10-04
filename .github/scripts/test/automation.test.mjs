@@ -41,7 +41,7 @@ test('Cargo metadata validates and updates both version files without changing d
 });
 
 const releaseEntry = version => `## [v${version}](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v${version}) - 2026-09-26\n\n- a reviewed change\n`;
-test('release images use only GHCR and encode SemVer build metadata in Docker tags', () => {
+test('primary release images use GHCR and encode SemVer build metadata in Docker tags', () => {
   assert.deepEqual(releaseImages('0.1.0'), ['ghcr.io/ohne-b/twitch-drops-miner:0.1.0']);
   assert.deepEqual(releaseImages('0.2.0-rc.1+build.1'), [
     'ghcr.io/ohne-b/twitch-drops-miner:0.2.0-rc.1_build.1',
