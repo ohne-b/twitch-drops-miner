@@ -80,3 +80,9 @@ jobs:
             # Never advertise a stable image before its release and manifest are public.
             docker buildx imagetools create --tag "${IMAGE_TAGS%:*}:latest" "$IMAGE_TAGS"
           fi
+
+  mirror:
+    needs: publish
+    uses: ./.github/workflows/docker-mirror.yml
+    with:
+      version: ${{ inputs.version }}

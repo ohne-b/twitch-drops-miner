@@ -431,7 +431,13 @@ validated main and uses reviewed CHANGELOG notes/GHCR. Every release attaches an
 conventional commit messages and concise release change lists. The release script owns the
 single `Changelog:` link and issue footer; do not duplicate them in CHANGELOG entries.
 Accept exact-commit push or manual validation.
-Publish only to GHCR at ghcr.io/ohne-b/twitch-drops-miner using the scoped workflow token.
+Publish first to GHCR at ghcr.io/ohne-b/twitch-drops-miner using the scoped workflow token.
+Then mirror the published image to Docker Hub through the shared main-only `prod` workflow.
+Use the configured repository/username variables and token secret; never expose credentials
+to PR jobs. Copy all platforms by immutable source digest, preserve and verify that digest,
+and never rebuild or recreate releases for mirroring. Only the current stable release matching
+GHCR's latest digest may advance Docker Hub's latest; older releases and prereleases cannot.
+Failed mirrors leave GHCR intact and can be retried through the manual mirror action.
 Advance latest only after the stable release and its manifest are public. Preserve
 published old-name images and document promotion recovery and first-package visibility.
 Keep Buildx action pins identical between validation and publishing. README uses
@@ -441,7 +447,8 @@ rewrites README after merges. No ordinary code merge may publish a release or by
 independent review/checks.
 
 Manual Publish edge image may publish only `:edge` from exact validated current main, using
-the scoped workflow token and the same image platforms/action pins. It creates no GitHub
+the scoped workflow token and the same image platforms/action pins, then mirror it to Docker Hub.
+It creates no GitHub
 release, version tag or version bump and never changes `:latest`; the OCI revision identifies
 the build. Ordinary merges do not publish edge images either.
 

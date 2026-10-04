@@ -40,3 +40,9 @@ jobs:
         run: |
           command -v skopeo || { sudo apt-get update; sudo apt-get install -y --no-install-recommends skopeo; }
           node .github/scripts/publish-images.mjs "$VERSION" ghcr.io/ohne-b/twitch-drops-miner:edge
+
+  mirror:
+    needs: publish
+    uses: ./.github/workflows/docker-mirror.yml
+    with:
+      version: edge
