@@ -241,8 +241,8 @@ to Mining; edits continue to autosave. On desktop, the game list scrolls indepen
 search, priority controls and the settings beside it stay in place. Short windows give the
 settings column its own scrolling when needed; if an error or reconnect notice leaves too
 little space, the games column can scroll too, keeping its controls reachable and the page fixed.
-Game search results appear directly below the search controls, above the short priority hint.
-Mining preferences uses short hints and labels. Click or tap an info icon for the selected
+Game search results appear directly below the search controls, above the selected games.
+Mining preferences keeps explanations behind info icons. Click or tap one for the selected
 priority mode's rules, other-game reward rules or ignore/dependency details; Enter or Space
 also opens help, and Escape or clicking outside closes it. Help stays available while
 reconnecting. **Allowed reward types** filters mining across selected and other games.

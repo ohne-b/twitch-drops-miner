@@ -192,9 +192,6 @@ export default function MiningPreferences() {
                   </div>
                 )}
               </div>
-              <p id="mining-priority-help" className="muted shrink-0">
-                {t('selected_games_help')}
-              </p>
               <div
                 ref={gameList}
                 role="region"
@@ -270,7 +267,6 @@ export default function MiningPreferences() {
                 </fieldset>
                 <Field
                   label={t('gui.settings.drop_name_blacklist')}
-                  help={t('gui.settings.drop_name_blacklist_hint')}
                   detail={t('gui.settings.drop_name_blacklist_help')}
                 >
                   <textarea
