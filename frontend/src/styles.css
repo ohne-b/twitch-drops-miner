@@ -137,8 +137,14 @@
 .campaign-workspace {
   display: grid;
   align-items: stretch;
+  gap: 20px;
+}
+.campaign-columns {
+  display: grid;
+  min-height: 0;
   gap: 24px;
 }
+.campaign-tools,
 .campaign-browser {
   display: flex;
   min-height: 0;
@@ -177,7 +183,7 @@
     gap: 4px;
   }
 }
-.campaign-workspace.with-detail {
+.campaign-workspace.with-detail .campaign-columns {
   grid-template-columns: minmax(0, 1fr) minmax(360px, 42%);
 }
 .campaign-summary {
@@ -303,11 +309,13 @@
   .campaign-workspace {
     flex: 1;
     min-height: 0;
-    grid-template-rows: minmax(0, 1fr);
+    grid-template-rows: minmax(0, auto) minmax(160px, 1fr);
   }
+  .campaign-tools,
   .campaign-browser {
     overflow-y: auto;
   }
+  .campaign-tools > *,
   .campaign-browser > :not(.campaign-results) {
     flex-shrink: 0;
   }
@@ -371,7 +379,8 @@
   .campaign-detail .detail-body {
     overscroll-behavior-y: contain;
   }
-  .campaign-workspace.with-detail > .campaign-browser {
+  .campaign-workspace.with-detail > .campaign-tools,
+  .campaign-workspace.with-detail .campaign-browser {
     visibility: hidden;
   }
   .mining-frame {
@@ -379,7 +388,7 @@
     height: auto;
     min-height: 0;
   }
-  .campaign-workspace.with-detail {
+  .campaign-workspace.with-detail .campaign-columns {
     grid-template-columns: minmax(0, 1fr);
   }
   .campaign-detail {
