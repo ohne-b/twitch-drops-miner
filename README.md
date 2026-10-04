@@ -284,7 +284,8 @@ can be bookmarked; old or unavailable IDs show an explicit missing-record state.
 
 Search, filters, sorting, layout and pagination stay in the Campaigns URL. Opening a shared
 link does not change saved preferences. Available and History each show 25 campaign groups
-per page. Unknown progress remains unknown until Twitch supplies evidence.
+per page, with page controls beside the campaign count in the top toolbar.
+Unknown progress remains unknown until Twitch supplies evidence.
 History loads without a loading caption; request errors still offer Retry.
 
 Activity keeps the latest 1,000 events for the current process. Filter by category or severity,
@@ -414,8 +415,8 @@ and switch between list and grid layouts. The shared icon-only sort menu offers 
 choices as Available. History defaults to the most recently recorded claim, **Most Drops**
 counts recorded claims, and date sorts use campaign dates when available (older entries
 without dates come last). Claims are grouped by campaign, with 25 campaigns per page.
-Use the left/right chevrons beside the page count just below the results to navigate;
-unavailable directions are disabled. The desktop workspace leaves a compact margin below them.
+Use the left/right chevrons in the top toolbar to navigate; unavailable directions are disabled.
+The results use the remaining desktop height, with a compact bottom margin.
 The former `/history` link redirects here. History has no export or separate clear action.
 
 Docker stores application data in `/app/data` and logs in `/app/logs`, mounted to the

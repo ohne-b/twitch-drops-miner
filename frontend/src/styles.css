@@ -182,6 +182,9 @@
   .campaign-tabs {
     gap: 4px;
   }
+  .campaign-controls {
+    align-self: end;
+  }
 }
 .campaign-workspace.with-detail .campaign-columns {
   grid-template-columns: minmax(0, 1fr) minmax(360px, 42%);
