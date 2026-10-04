@@ -5,7 +5,7 @@ import {
   mdiArrowDown,
   mdiFilterOutline,
   mdiAlertCircleOutline,
-  mdiChevronRight,
+  mdiDockRight,
   mdiCheck,
   mdiInformationOutline,
 } from '@mdi/js';
@@ -142,7 +142,7 @@ export default function Activity() {
                 title={t('campaign_details')}
                 to={`/campaigns?campaign=${encodeURIComponent(event.campaign_id)}${event.drop_id ? `&drop=${encodeURIComponent(event.drop_id)}` : ''}`}
               >
-                <Icon path={mdiChevronRight} className="mdi-icon" />
+                <Icon path={mdiDockRight} className="mdi-icon" />
               </CampaignLink>
             )}
           </article>
