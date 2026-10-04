@@ -101,7 +101,7 @@ export function CampaignDetail({
         role="region"
         aria-label={title}
         tabIndex={0}
-        className="detail-body bg-inherit p-5 focus-visible:bg-field"
+        className="detail-body p-5 focus-visible:bg-field"
       >
         {dropId &&
           (campaign || history) &&
@@ -256,27 +256,26 @@ export function CampaignDetail({
                     )}
                     {!drop.is_claimed && (
                       <div className="mt-3 space-y-2">
-                        {drop.confirmed_at ? (
-                          <>
-                            <ProgressBar
-                              current={drop.confirmed_minutes ?? 0}
-                              total={drop.required_minutes}
-                              label={drop.name}
-                            />
-                            <p className="muted tabular-nums">
-                              {t('minutes_progress', {
-                                current: drop.confirmed_minutes ?? 0,
-                                total: drop.required_minutes,
-                              })}
-                            </p>
-                            <p className="muted">
-                              {t('last_confirmed', { time: dateTime(drop.confirmed_at) })}
-                            </p>
-                          </>
-                        ) : (
+                        {drop.confirmed_at && (
+                          <ProgressBar
+                            current={drop.confirmed_minutes ?? 0}
+                            total={drop.required_minutes}
+                            label={drop.name}
+                          />
+                        )}
+                        <p
+                          className="muted tabular-nums"
+                          title={drop.confirmed_at ? undefined : t('progress_unknown')}
+                          aria-description={drop.confirmed_at ? undefined : t('progress_unknown')}
+                        >
+                          {t('minutes_progress', {
+                            current: drop.confirmed_at ? (drop.confirmed_minutes ?? 0) : 0,
+                            total: drop.required_minutes,
+                          })}
+                        </p>
+                        {drop.confirmed_at && (
                           <p className="muted">
-                            {t('progress_unknown')} ·{' '}
-                            {t('watch_minutes', { count: drop.required_minutes })}
+                            {t('last_confirmed', { time: dateTime(drop.confirmed_at) })}
                           </p>
                         )}
                       </div>

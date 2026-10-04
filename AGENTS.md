@@ -296,8 +296,14 @@ embed it and run without a build tool/runtime companion. Production builds never
   anchor-scrolling the title or navigation out of view.
 - Mining: watching information only in Now mining, no status subtitle or Recent activity. Channels
   and Up next have equal desktop dimensions and internal scrolling; stack on narrow screens and
-  preserve access on short windows. Show confirmed values/timestamps without redundant labels
-  or the Watching for this reward caption.
+  preserve access on short windows. Show confirmed values without redundant labels
+  or the Watching for this reward caption. Put the current reward's Last confirmed timestamp
+  in the Mining page header beside refresh, in smaller, darker text with readable contrast.
+  Omit it when confirmation is unknown; let the header wrap on phones.
+  Known rewards without confirmed progress show `0 / required minutes` in Mining and Campaigns,
+  with an unconfirmed tooltip and accessible description. Suppress the redundant awaiting-progress
+  subtitle when a reward is shown. Keep unknown evidence unchanged; never display estimates as
+  confirmed minutes or invent a confirmation timestamp or a duration for an unknown reward.
   Channels, Up next and game-priority rows have inset separators and modest 4px scrollbar
   padding, smaller than Campaigns. Up next shows a shared date once only when reward windows
   match by instant and their upcoming state agrees; retain distinct per-drop dates.
@@ -344,8 +350,6 @@ embed it and run without a build tool/runtime companion. Production builds never
   At desktop widths tabs, search and filters stay full width above the list and detail columns.
   Both columns fill the remaining height with a compact 12px bottom margin; details keep the
   same height for short and long campaigns, with a fixed header and separately scrollable body.
-  The detail body inherits the panel's opaque background so browsers can composite scrolling;
-  preserve its distinct keyboard-focus background and the full-page layout's canvas color.
   Scroll campaign results independently with a small scrollbar gutter; allow the controls area
   to scroll in short windows and the workspace to scroll when notices or long titles leave too
   little room for usable controls and detail content. Omit selection stripes and

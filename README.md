@@ -209,6 +209,11 @@ Notification dismissal failures appear in Activity without postponing watch sche
 Times use the 24-hour clock (`00:00–23:59`) in your browser's timezone. Dates keep your
 browser's local format; Activity also shows seconds.
 
+The current reward's **Last confirmed** time sits beside the refresh button at the top right
+of Mining, in smaller, muted text. It appears only after Twitch confirms progress.
+Rewards without confirmed progress show `0 / required minutes` in Mining and Campaigns.
+Their tooltip identifies the unconfirmed value; no confirmation time is invented.
+
 **Mining > Channels** shows live streams currently eligible for your selected games and
 rewards, plus your manually selected channel. Special-event campaigns can include other
 categories when their actual channel restriction allows it. Channel changes pause watching
@@ -261,10 +266,9 @@ the sidebar footer has no divider above GitHub.
 Open a campaign or reward to inspect its dates, prerequisites, account linkage and confirmed
 progress. On wide screens, tabs, search and filters stay full width above the list and details.
 Both panes fill the remaining height, even for a single reward. The campaign list has a small
-gap before its scrollbar. Scroll the list and reward details independently; the detail heading
-stays visible and the detail body shares its panel's background. The controls area can scroll
-in short windows; when notices or long titles leave too little room, the workspace also scrolls
-to keep controls and rewards reachable.
+gap before its scrollbar. The list and detail body scroll independently, with the detail heading
+always visible. The controls area can scroll in short windows; when notices or long titles
+leave too little room, the workspace also scrolls to keep controls and rewards reachable.
 Opening desktop details keeps the selected campaign in view as the list narrows, including
 after changing between grid and list layouts.
 Details fill the page on smaller screens, with background scrolling locked until they close.

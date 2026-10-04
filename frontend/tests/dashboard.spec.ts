@@ -577,6 +577,108 @@ test('confirmed progress and compact desktop design', async ({ page }) => {
       .evaluate((element) => getComputedStyle(element, '::-webkit-scrollbar').width),
   ).toBe('3px');
 });
+test('mining confirmation stays in the page header at desktop and phone widths', async ({
+  page,
+  request,
+}) => {
+  const header = page.getByRole('heading', { name: 'Mining', exact: true }).locator('..');
+  const confirmed = header.locator('time');
+  const refresh = header.getByRole('button', { name: 'Refresh inventory', exact: true });
+  for (const width of [1440, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(confirmed).toContainText('Last confirmed:');
+    await expect(confirmed).toHaveAttribute('datetime', snapshot.current_drop!.confirmed_at!);
+    await expect(confirmed).toHaveCSS('color', 'rgb(136, 136, 136)');
+    await expect(confirmed).toHaveCSS('font-size', '12px');
+    const timeBox = (await confirmed.boundingBox())!;
+    const refreshBox = (await refresh.boundingBox())!;
+    if (width >= 640) {
+      expect(timeBox.x + timeBox.width).toBeLessThanOrEqual(refreshBox.x);
+      expect(timeBox.y + timeBox.height / 2).toBeCloseTo(refreshBox.y + refreshBox.height / 2, 0);
+    } else {
+      expect(timeBox.y).toBeGreaterThanOrEqual(refreshBox.y + refreshBox.height);
+      expect(timeBox.x + timeBox.width).toBeCloseTo(refreshBox.x + refreshBox.width, 0);
+    }
+    await expect(
+      page.getByRole('region', { name: 'Now mining', exact: true }).getByText(/Last confirmed:/),
+    ).toHaveCount(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    );
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await page.screenshot({ path: `../artifacts/mining-confirmation-${width}.png` });
+  }
+  await request.post('/__test/event', {
+    headers,
+    data: { event: 'drop_progress', data: { ...snapshot.current_drop, confirmed_at: null } },
+  });
+  await expect(confirmed).toHaveCount(0);
+  await expect(refresh).toBeVisible();
+});
+test('unconfirmed rewards show minute counts without inventing confirmation', async ({
+  page,
+  request,
+}) => {
+  expect(
+    (
+      await request.post('/__test/event', {
+        headers,
+        data: {
+          event: 'initial_state',
+          data: {
+            ...snapshot,
+            current_drop: { ...snapshot.current_drop, confirmed_at: null },
+            mining: { ...snapshot.mining, state: 'awaiting_progress' },
+            campaigns: snapshot.campaigns.map((campaign) => ({
+              ...campaign,
+              drops: campaign.drops.map((drop) => ({ ...drop, confirmed_at: null })),
+            })),
+          },
+        },
+      })
+    ).ok(),
+  ).toBe(true);
+  const mining = page.getByRole('region', { name: 'Now mining', exact: true });
+  const count = mining.getByText('0 / 60 min', { exact: true });
+  await expect(count).toBeVisible();
+  await expect(count).toHaveAttribute('title', 'No confirmed progress yet');
+  await expect(count).toHaveAccessibleDescription('No confirmed progress yet');
+  await expect(mining.getByText('No confirmed progress yet', { exact: true })).toHaveCount(0);
+  await expect(mining.getByRole('progressbar')).toHaveCount(0);
+  await expect(page.getByText(/Last confirmed:/)).toHaveCount(0);
+  await expect(page.getByText(/Waiting for Twitch progress/)).toHaveCount(0);
+
+  await page.goto('/campaigns?campaign=campaign-1');
+  const details = page.getByRole('complementary', { name: 'Campaign details' });
+  await expect(details.getByText('0 / 60 min', { exact: true })).toBeVisible();
+  await expect(details.getByText('0 / 120 min', { exact: true })).toBeVisible();
+  await expect(details.getByText('0 / 60 min', { exact: true })).toHaveAccessibleDescription(
+    'No confirmed progress yet',
+  );
+  await expect(details.getByText('Waiting for prerequisite claims', { exact: true })).toBeVisible();
+  await expect(details.getByRole('progressbar')).toHaveCount(0);
+  await expect(details.getByText(/Last confirmed:|Waiting for Twitch progress/)).toHaveCount(0);
+
+  await request.post('/__test/event', {
+    headers,
+    data: {
+      event: 'drop_progress',
+      data: { ...snapshot.current_drop, confirmed_minutes: 0 },
+    },
+  });
+  await page.goto('/');
+  await expect(count).toBeVisible();
+  await expect(count).not.toHaveAttribute('title');
+  await expect(mining.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '0');
+  await expect(page.getByText(/Last confirmed:/)).toBeVisible();
+  await request.post('/__test/event', {
+    headers,
+    data: { event: 'drop_progress_stop', data: {} },
+  });
+  await expect(mining.getByText('No confirmed progress yet', { exact: true })).toBeVisible();
+  await expect(mining.getByText(/\d+ \/ \d+ min/)).toHaveCount(0);
+  await expect(page.getByText(/Last confirmed:/)).toHaveCount(0);
+});
 test('Up next scrolls within its panel with reward artwork and safe fallbacks', async ({
   page,
   request,
