@@ -168,8 +168,12 @@ test('automatic reward types persist without changing games or display filters',
 }) => {
   await page.goto('/settings#mining');
   const before = await (await request.get('/api/settings')).json();
-  const badges = page.getByRole('checkbox', { name: 'Badges from any game', exact: true });
-  const emotes = page.getByRole('checkbox', { name: 'Emotes from any game', exact: true });
+  const badges = page
+    .getByRole('group', { name: 'Also mine from other games', exact: true })
+    .getByRole('checkbox', { name: 'Badges', exact: true });
+  const emotes = page
+    .getByRole('group', { name: 'Also mine from other games', exact: true })
+    .getByRole('checkbox', { name: 'Emotes', exact: true });
   await expect(badges).not.toBeChecked();
   await expect(emotes).not.toBeChecked();
   await badges.check();
@@ -753,7 +757,9 @@ test('keyboard focus remains visible without outlines across controls', async ({
       .toBe('rgb(51, 51, 51)');
   }
   await page.goto('/?edit=priorities');
-  const checkbox = page.getByRole('checkbox', { name: 'Badge', exact: true });
+  const checkbox = page
+    .getByRole('group', { name: 'Allowed reward types', exact: true })
+    .getByRole('checkbox', { name: 'Badges', exact: true });
   await checkbox.focus();
   expect(
     await checkbox.evaluate(
@@ -1900,7 +1906,7 @@ test('long international labels remain usable at phone, tablet and zoom-equivale
 
 test('autosave keeps text editing stable and blocks invalid values', async ({ page, request }) => {
   await page.goto('/?edit=priorities');
-  const ignored = page.getByLabel('Ignored Drop Keywords', { exact: true });
+  const ignored = page.getByLabel('Ignore rewards by name', { exact: true });
   await ignored.fill('Mask\n');
   await expect
     .poll(async () => (await (await request.get('/api/settings')).json()).drop_name_blacklist)

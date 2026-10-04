@@ -153,8 +153,8 @@ Use `--help` for host, port, data directory, and log directory options.
    eligible live channel and claims rewards when Twitch makes them available.
 
 > [!IMPORTANT]
-> Automatic mining watches selected games first. In **Mining > Edit**, opt into
-> **Automatically mine reward types** to also mine badges or emotes from other games.
+> Automatic mining watches selected games first. In **Mining > Edit**, enable **Badges** or
+> **Emotes** under **Also mine from other games** to include their rewards.
 > Both options default off. With an empty game list and both options off, automatic
 > watching pauses. Discovery never changes your game list. An explicit **Mine channel** request
 > temporarily overrides this list. **Stop mining** removes a game from the automatic
@@ -241,7 +241,11 @@ to Mining; edits continue to autosave. On desktop, the game list scrolls indepen
 search, priority controls and the settings beside it stay in place. Short windows give the
 settings column its own scrolling when needed; if an error or reconnect notice leaves too
 little space, the games column can scroll too, keeping its controls reachable and the page fixed.
-Game search results appear directly below the search field, above the priority explanation.
+Game search results appear directly below the search controls, above the short priority hint.
+Mining preferences uses short hints and labels. Click or tap an info icon for the selected
+priority mode's rules, other-game reward rules or ignore/dependency details; Enter or Space
+also opens help, and Escape or clicking outside closes it. Help stays available while
+reconnecting. **Allowed reward types** filters mining across selected and other games.
 Settings tabs switch in place, preserving drafts and browser back/forward navigation.
 They share the same content starting position, without repeated section headings
 or trailing separator lines. The Twitch account tab keeps its status and logout control;
@@ -352,7 +356,7 @@ that claim evidence is still pending.
 Twitch can report no current drop as a null session or an empty session object.
 Both continue normal watching and progress checks without confirming progress or claims.
 
-**Ignored Drop Keywords** accepts one literal substring per line, matched without regard
+**Ignore rewards by name** accepts one literal substring per line, matched without regard
 to case. Blank lines and duplicates are removed. A matching reward and dependent branches
 are ignored, while prerequisites shared with an allowed reward remain mineable. Ignored
 or skipped rewards are never treated as claimed. Twitch may still advance an ignored

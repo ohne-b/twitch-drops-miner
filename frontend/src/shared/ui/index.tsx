@@ -9,7 +9,14 @@ import {
   type ReactNode,
   type ReactElement,
 } from 'react';
-import { mdiClose, mdiMagnify, mdiImageOutline, mdiAlertCircleOutline, mdiLoading } from '@mdi/js';
+import {
+  mdiClose,
+  mdiMagnify,
+  mdiImageOutline,
+  mdiAlertCircleOutline,
+  mdiLoading,
+  mdiInformationOutline,
+} from '@mdi/js';
 import { Icon } from '@mdi/react';
 import { ApiError, safeUrl } from '../lib/api';
 import { useT } from '../lib/i18n';
@@ -50,21 +57,49 @@ export function Button({
 export function Input({ className = '', ...props }: ComponentProps<'input'>) {
   return <input className={`field ${className}`} {...props} />;
 }
+export function HelpButton({ label, text, id }: { label: string; text: string; id?: string }) {
+  const generatedId = useId();
+  const target = id ?? generatedId;
+  const t = useT();
+  return (
+    <>
+      <IconButton
+        path={mdiInformationOutline}
+        label={t('help_for', { topic: label })}
+        popoverTarget={target}
+      />
+      <span
+        id={target}
+        popover="auto"
+        role="note"
+        aria-label={t('help_for', { topic: label })}
+        className="help-popover"
+      >
+        <span id={`${target}-text`}>{text}</span>
+      </span>
+    </>
+  );
+}
 export function Field({
   label,
   help,
+  detail,
   children,
 }: {
   label: string;
   help?: string;
+  detail?: string;
   children: ReactElement<{ id?: string; 'aria-describedby'?: string }>;
 }) {
   const id = useId();
   return (
     <div className="grid content-start gap-2 text-soft">
-      <label htmlFor={id} className="text-[13px] font-medium">
-        {label}
-      </label>
+      <div className="flex items-center gap-1">
+        <label htmlFor={id} className="text-[13px] font-medium">
+          {label}
+        </label>
+        {detail && <HelpButton label={label} text={detail} />}
+      </div>
       {cloneElement(children, { id, 'aria-describedby': help ? `${id}-help` : undefined })}
       {help && (
         <p id={`${id}-help`} className="text-[13px] leading-relaxed text-muted">

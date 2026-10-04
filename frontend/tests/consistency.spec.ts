@@ -27,6 +27,92 @@ test.beforeEach(async ({ request }) => {
   });
 });
 
+test('mining preferences keeps detailed rules in accessible help without changing settings', async ({
+  page,
+  request,
+}) => {
+  await request.post('/api/settings', { headers, data: { mining_priority_mode: 'short_events' } });
+  let writes = 0;
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/settings')
+      writes++;
+  });
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 1024, height: 360 },
+    { width: 390, height: 844 },
+    { width: 320, height: 740 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/?edit=priorities');
+    const priority = page.getByRole('combobox', { name: 'Mining priority', exact: true });
+    await expect(priority).toBeEnabled();
+    await expect(priority).toHaveAccessibleDescription(/24 hours or less/);
+    await expect(page.locator('#mining-priority-help')).toHaveText(
+      'Selected games first. Drag to reorder.',
+    );
+    const hintTop = (await page.locator('#mining-priority-help').boundingBox())!.y;
+    const priorityHelp = page.getByRole('button', { name: 'Mining priority help', exact: true });
+    const rules = page.locator('#mining-priority-details');
+    await expect(rules).toBeHidden();
+    await priorityHelp.focus();
+    await priorityHelp.press('Enter');
+    await expect(rules).toBeVisible();
+    await expect(rules).toContainText('Your saved drag order breaks ties.');
+    expect((await page.locator('#mining-priority-help').boundingBox())!.y).toBe(hintTop);
+    const bounds = (await rules.boundingBox())!;
+    expect(bounds.x).toBeGreaterThanOrEqual(0);
+    expect(bounds.y).toBeGreaterThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(viewport.width);
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual(viewport.height);
+    await page.keyboard.press('Escape');
+    await expect(rules).toBeHidden();
+    await expect(priorityHelp).toBeFocused();
+    for (const [topic, detail] of [
+      ['Also mine from other games', 'including required prerequisite drops'],
+      ['Ignore rewards by name', 'case-insensitive literal substring'],
+    ] as const) {
+      const help = page.getByRole('button', { name: `${topic} help`, exact: true });
+      await help.click();
+      const note = page.getByRole('note', { name: `${topic} help`, exact: true });
+      await expect(note).toBeVisible();
+      await expect(note).toContainText(detail);
+      await expect(page.locator(':popover-open')).toHaveCount(1);
+      expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+      await page.mouse.click(8, 8);
+      await expect(note).toBeHidden();
+    }
+    await priorityHelp.scrollIntoViewIfNeeded();
+    await priorityHelp.click();
+    await page.getByRole('heading', { name: 'Mining preferences', exact: true }).click();
+    await expect(rules).toBeHidden();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width);
+    await page.screenshot({
+      path: `../artifacts/preferences-help-${viewport.width}.png`,
+      fullPage: true,
+    });
+  }
+  await page.context().setOffline(true);
+  try {
+    await request.post('/__test/reconnect', { headers, data: {} });
+    await expect(
+      page.getByRole('combobox', { name: 'Mining priority', exact: true }),
+    ).toBeDisabled();
+    for (const topic of ['Mining priority', 'Also mine from other games', 'Ignore rewards by name'])
+      await expect(page.getByRole('button', { name: `${topic} help`, exact: true })).toBeEnabled();
+    await expect(page.getByLabel('Ignore rewards by name', { exact: true })).toBeDisabled();
+    await expect(
+      page
+        .getByRole('group', { name: 'Allowed reward types', exact: true })
+        .getByRole('checkbox')
+        .first(),
+    ).toBeDisabled();
+  } finally {
+    await page.context().setOffline(false);
+  }
+  expect(writes).toBe(0);
+});
+
 test('Activity fits short desktop and phone viewports and distinguishes empty filters', async ({
   page,
   request,
@@ -304,7 +390,10 @@ test('Mining lists have modest gutters, inset separators and full phone touch ta
   expect((await grip.boundingBox())!.height).toBe(44);
   await grip.hover();
   await expect(grip).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-  const check = page.getByRole('checkbox', { name: 'Badge', exact: true }).locator('..');
+  const check = page
+    .getByRole('group', { name: 'Allowed reward types', exact: true })
+    .getByRole('checkbox', { name: 'Badges', exact: true })
+    .locator('..');
   expect((await check.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   await page.getByRole('searchbox', { name: 'Search games...' }).fill('Elder');
   const result = page.getByRole('region', { name: 'Search games...' }).getByRole('button').first();
