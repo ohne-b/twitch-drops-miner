@@ -2350,8 +2350,22 @@ test('History shares sort, search, game filters and layout while paging recorded
     await expect(button).toHaveText('');
     await expect(button).toHaveAttribute('title', label);
   }
-  await page.setViewportSize({ width: 390, height: 844 });
-  await next.scrollIntoViewIfNeeded();
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 844 });
+    const pagination = page.getByRole('navigation', { name: 'Campaign pages' });
+    await expect(pagination).toBeInViewport();
+    const bounds = (await pagination.boundingBox())!;
+    const search = (await page.getByRole('searchbox').boundingBox())!;
+    const filters = (await page
+      .getByRole('button', { name: 'Filters', exact: true })
+      .boundingBox())!;
+    expect(bounds.y).toBeGreaterThanOrEqual(search.y + search.height);
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual((await titles.first().boundingBox())!.y);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(filters.x);
+    expect(bounds.y).toBe(filters.y);
+    expect((await next.boundingBox())!.height).toBe(44);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+  }
   await page.screenshot({
     path: '../artifacts/history-pagination-icons-phone.png',
     fullPage: true,

@@ -376,8 +376,10 @@ embed it and run without a build tool/runtime companion. Production builds never
   for account-confirmed claimed rewards only. Never let old history mark a live unclaimed
   reward as claimed. Omit benefit names identical to the reward title, retaining other names.
   List filters/layout are shareable URL state; loading a shared URL does not autosave it.
-  Available and History paginate 25 campaign groups, with a compact gap between results and
-  pagination. Preserve full-size pagination hit targets. Mine remains a game-wide action.
+  Available and History paginate 25 campaign groups, with pagination beside the campaign count
+  in the top toolbar. On phones pagination wraps below the count, alongside filter/sort/view
+  controls. Results fill the remaining height without a pagination footer. Preserve full-size
+  pagination hit targets. Mine remains a game-wide action.
   Eligibility, normalized game identity, saved ranks and priority reasons come from shared
   backend policy; prerequisite boosts identify their actual target rewards.
 - Activity is a bounded session buffer of typed events with category, severity, safe message

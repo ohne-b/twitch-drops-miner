@@ -894,8 +894,13 @@ test('campaign panes fill the height below full-width controls and keep row hove
     expect(bounds.y).toBe((await list.boundingBox())!.y);
     expect(bounds.y).toBe(toolbar.y + toolbar.height + 20);
     expect(bounds.y + bounds.height).toBe(viewport.height - 12);
-    const footer = (await page.getByRole('navigation', { name: 'Campaign pages' }).boundingBox())!;
-    expect(viewport.height - footer.y - footer.height).toBe(12);
+    const pagination = (await page
+      .getByRole('navigation', { name: 'Campaign pages' })
+      .boundingBox())!;
+    expect(pagination.y).toBeGreaterThanOrEqual(toolbar.y);
+    expect(pagination.y + pagination.height).toBeLessThanOrEqual(toolbar.y + toolbar.height);
+    const listBounds = (await list.boundingBox())!;
+    expect(listBounds.y + listBounds.height).toBe(viewport.height - 12);
     await expect(first.locator('..')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
     const mine = page.getByRole('button', { name: 'Mine Game 1', exact: true });
     await mine.hover();
