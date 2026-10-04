@@ -85,6 +85,9 @@ export function CampaignDetail({
             history?.entries[0]?.image_url
           }
           className="size-12"
+          fit={
+            campaign?.game_box_art_url || history?.metadata?.game_box_art_url ? 'cover' : 'contain'
+          }
         />
         <div className="min-w-0 flex-1">
           <h2 ref={heading} tabIndex={-1} className="text-lg font-semibold">
@@ -110,12 +113,16 @@ export function CampaignDetail({
               {t(historyOnly ? 'history_drop_missing' : 'drop_missing')}
             </p>
           )}
-        {historyError && (historyOnly || !campaign || campaign.drops.some((drop) => drop.is_claimed) || (dropId && !selectedLiveDrop)) && (
-          <Notice error>
-            {t('history_error')}
-            <IconButton path={mdiReload} label={t('retry')} onClick={retryHistory} />
-          </Notice>
-        )}
+        {historyError &&
+          (historyOnly ||
+            !campaign ||
+            campaign.drops.some((drop) => drop.is_claimed) ||
+            (dropId && !selectedLiveDrop)) && (
+            <Notice error>
+              {t('history_error')}
+              <IconButton path={mdiReload} label={t('retry')} onClick={retryHistory} />
+            </Notice>
+          )}
         {!campaign && !history && !historyError && (
           <Empty
             title={t(
@@ -218,104 +225,113 @@ export function CampaignDetail({
                 const claim = history?.entries.find((entry) => entry.id === drop.id);
                 const benefits = drop.benefits.filter((benefit) => benefit.name !== drop.name);
                 return (
-                <section
-                  id={`drop-${drop.id}`}
-                  aria-current={drop.id === dropId ? 'true' : undefined}
-                  key={drop.id}
-                  className={`reward-detail py-5 ${drop.id === dropId ? 'selected' : ''}`}
-                >
-                  <div className="flex items-start gap-3">
-                    <Art url={drop.benefits[0]?.image_url} className="size-12" fit="contain" />
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-medium">{drop.name}</h3>
-                      <p className="muted mt-1">
-                        {drop.is_claimed && claim
-                          ? t(claim.claimed_at_is_observed ? 'first_observed' : 'claimed_at', {
-                              time: dateTime(claim.claimed_at),
-                            })
-                          : t(`eligibility_${drop.is_claimed ? 'claimed' : (drop.eligibility ?? 'unknown')}`)}
-                      </p>
-                    </div>
-                  </div>
-                  {!!benefits.length && (
-                    <p className="muted mt-3">{benefits.map((benefit) => benefit.name).join(', ')}</p>
-                  )}
-                  {!drop.is_claimed && (
-                    <div className="mt-3 space-y-2">
-                      {drop.confirmed_at ? (
-                        <>
-                          <ProgressBar
-                            current={drop.confirmed_minutes ?? 0}
-                            total={drop.required_minutes}
-                            label={drop.name}
-                          />
-                          <p className="muted tabular-nums">
-                            {t('minutes_progress', {
-                              current: drop.confirmed_minutes ?? 0,
-                              total: drop.required_minutes,
-                            })}
-                          </p>
-                          <p className="muted">
-                            {t('last_confirmed', { time: dateTime(drop.confirmed_at) })}
-                          </p>
-                        </>
-                      ) : (
-                        <p className="muted">
-                          {t('progress_unknown')} ·{' '}
-                          {t('watch_minutes', { count: drop.required_minutes })}
+                  <section
+                    id={`drop-${drop.id}`}
+                    aria-current={drop.id === dropId ? 'true' : undefined}
+                    key={drop.id}
+                    className={`reward-detail py-5 ${drop.id === dropId ? 'selected' : ''}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <Art url={drop.benefits[0]?.image_url} className="size-12" fit="contain" />
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-medium">{drop.name}</h3>
+                        <p className="muted mt-1">
+                          {drop.is_claimed &&
+                            claim?.claimed_at_is_observed &&
+                            `${t('eligibility_claimed')} · `}
+                          {drop.is_claimed && claim
+                            ? t(claim.claimed_at_is_observed ? 'first_observed' : 'claimed_at', {
+                                time: dateTime(claim.claimed_at),
+                              })
+                            : t(
+                                `eligibility_${drop.is_claimed ? 'claimed' : (drop.eligibility ?? 'unknown')}`,
+                              )}
                         </p>
-                      )}
-                    </div>
-                  )}
-                  {(Date.parse(drop.effective_starts_at ?? drop.starts_at) !==
-                    Date.parse(campaign.starts_at) ||
-                    Date.parse(drop.effective_ends_at ?? drop.ends_at) !==
-                      Date.parse(campaign.ends_at)) && (
-                    <p className="muted mt-3 text-xs">
-                      {dateTime(drop.effective_starts_at ?? drop.starts_at)} —{' '}
-                      {dateTime(drop.effective_ends_at ?? drop.ends_at)}
-                    </p>
-                  )}
-                  {!!drop.prerequisites?.length && (
-                    <div className="mt-3">
-                      <p className="muted text-xs">{t('requires_claims')}</p>
-                      <div className="flex flex-wrap gap-2">
-                        {drop.prerequisites.map((id) => {
-                          const prerequisite = campaign.drops.find((item) => item.id === id);
-                          return prerequisite ? (
-                            <button
-                              type="button"
-                              className="text-link text-[13px]"
-                              key={id}
-                              onClick={() => selectDrop(id)}
-                            >
-                              {prerequisite.name}
-                              {prerequisite.is_claimed
-                                ? ` · ${t('gui.inventory.status.claimed')}`
-                                : ''}
-                            </button>
-                          ) : (
-                            <span className="muted" key={id}>
-                              {t('prerequisite_missing')}
-                            </span>
-                          );
-                        })}
                       </div>
                     </div>
-                  )}
-                  {drop.ignored_keyword && (
-                    <p className="muted mt-2">
-                      {t('gui.inventory.ignored_keyword_reason', { keyword: drop.ignored_keyword })}
-                    </p>
-                  )}
-                  {drop.ignored_precondition && (
-                    <p className="muted mt-2">
-                      {t('gui.inventory.ignored_precondition_reason', {
-                        drop: drop.ignored_precondition,
-                      })}
-                    </p>
-                  )}
-                </section>
+                    {!!benefits.length && (
+                      <p className="muted mt-3">
+                        {benefits.map((benefit) => benefit.name).join(', ')}
+                      </p>
+                    )}
+                    {!drop.is_claimed && (
+                      <div className="mt-3 space-y-2">
+                        {drop.confirmed_at ? (
+                          <>
+                            <ProgressBar
+                              current={drop.confirmed_minutes ?? 0}
+                              total={drop.required_minutes}
+                              label={drop.name}
+                            />
+                            <p className="muted tabular-nums">
+                              {t('minutes_progress', {
+                                current: drop.confirmed_minutes ?? 0,
+                                total: drop.required_minutes,
+                              })}
+                            </p>
+                            <p className="muted">
+                              {t('last_confirmed', { time: dateTime(drop.confirmed_at) })}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="muted">
+                            {t('progress_unknown')} ·{' '}
+                            {t('watch_minutes', { count: drop.required_minutes })}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {(Date.parse(drop.effective_starts_at ?? drop.starts_at) !==
+                      Date.parse(campaign.starts_at) ||
+                      Date.parse(drop.effective_ends_at ?? drop.ends_at) !==
+                        Date.parse(campaign.ends_at)) && (
+                      <p className="muted mt-3 text-xs">
+                        {dateTime(drop.effective_starts_at ?? drop.starts_at)} —{' '}
+                        {dateTime(drop.effective_ends_at ?? drop.ends_at)}
+                      </p>
+                    )}
+                    {!!drop.prerequisites?.length && (
+                      <div className="mt-3">
+                        <p className="muted text-xs">{t('requires_claims')}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {drop.prerequisites.map((id) => {
+                            const prerequisite = campaign.drops.find((item) => item.id === id);
+                            return prerequisite ? (
+                              <button
+                                type="button"
+                                className="text-link text-[13px]"
+                                key={id}
+                                onClick={() => selectDrop(id)}
+                              >
+                                {prerequisite.name}
+                                {prerequisite.is_claimed
+                                  ? ` · ${t('gui.inventory.status.claimed')}`
+                                  : ''}
+                              </button>
+                            ) : (
+                              <span className="muted" key={id}>
+                                {t('prerequisite_missing')}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {drop.ignored_keyword && (
+                      <p className="muted mt-2">
+                        {t('gui.inventory.ignored_keyword_reason', {
+                          keyword: drop.ignored_keyword,
+                        })}
+                      </p>
+                    )}
+                    {drop.ignored_precondition && (
+                      <p className="muted mt-2">
+                        {t('gui.inventory.ignored_precondition_reason', {
+                          drop: drop.ignored_precondition,
+                        })}
+                      </p>
+                    )}
+                  </section>
                 );
               })}
             </div>

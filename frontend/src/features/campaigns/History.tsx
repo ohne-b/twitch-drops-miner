@@ -155,6 +155,7 @@ export default function History({
           name={group.name}
           game={group.game}
           image={group.metadata?.game_box_art_url || group.entries[0]?.image_url}
+          imageFit={group.metadata?.game_box_art_url ? 'cover' : 'contain'}
           time={dateTime(group.entries[0]?.claimed_at ?? '')}
           count={t('recorded_claims', { count: group.entries.length })}
           onOpen={() => onOpen(group.id)}
