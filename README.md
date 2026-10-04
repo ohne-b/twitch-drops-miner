@@ -349,13 +349,17 @@ existing progress appear first. Completed campaigns leave Available only when al
 are claimed; expiry alone does not count as completion. History lists recorded claims even
 when their campaigns still have unclaimed rewards.
 
-The **Now mining** card prefers current Twitch-reported reward progress. Confirmed watch
-completion releases automatic watching of that reward and prompts inventory reconciliation.
-Automatic checks for missing claim evidence are coalesced to at most once per minute,
-without pausing watch events. Estimates never prove a claim. Twitch must confirm it before
-it unlocks prerequisites,
-completes a campaign or enters **History**. Reported successor progress can appear while
-that claim evidence is still pending.
+The **Now mining** card uses Twitch-reported progress. If newer account inventory disagrees
+with the live counter for the same reward, the card uses inventory's minutes and confirmation
+time. The miner keeps watching and rechecks inventory at most once per minute until the
+counts agree or Twitch confirms the claim. A disputed live counter reaching 100% does not
+stop watching.
+
+Confirmed watch completion releases automatic watching of that reward and prompts inventory
+reconciliation. Missing claim evidence uses the same once-per-minute check, without pausing
+watch events. Estimates never prove a claim. Twitch must confirm it before it unlocks
+prerequisites, completes a campaign or enters **History**. Reported successor progress can
+appear while that claim evidence is still pending.
 
 Twitch can report no current drop as a null session or an empty session object.
 Both continue normal watching and progress checks without confirming progress or claims.

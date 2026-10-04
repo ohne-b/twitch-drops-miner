@@ -144,8 +144,15 @@ embed it and run without a build tool/runtime companion. Production builds never
   Successful inventory refreshes clear stale estimate ceilings on refreshed and retained
   drops, preserving confirmed progress and evidence newer than the request. Failed
   refreshes must not clear the ceiling or fabricate confirmation.
-  Lagging inventory cannot reduce confirmed minutes for unchanged watch requirements;
-  retain fresh account claim evidence and issued instance IDs independently.
+  Fresh account inventory may correct conflicting live progress for the same campaign/drop
+  and unchanged watch requirement. Keep the disputed live counter separate; use inventory
+  minutes/timestamps for display and eligibility, without estimates advancing them. Reconcile
+  through the existing once-per-minute refresh through the claim grace period. Older requests,
+  public metadata and partial-refresh retained records cannot resolve a dispute. Preserve
+  disputes across same-account network renewal; cache clear, logout and account changes cannot
+  restore them. Retain fresh account claims and issued instance IDs independently, including
+  completion backed by an issued instance. Claims clear disputes; runtime evidence never
+  changes stored history/archive formats. Disputed live completion cannot stop watching.
   Confirmed watch completion is no longer watch-eligible, but remains unclaimed until account
   evidence arrives. The automatic Mining card prefers current eligible Twitch reports;
   reported successor progress may display before prerequisite claim reconciliation, without
