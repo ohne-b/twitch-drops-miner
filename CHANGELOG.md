@@ -1,5 +1,19 @@
 # Changelog
 
+## [v1.4.2](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.4.2) — 2026-10-04
+
+- align narrow campaign cards to equal row heights, with readable names and counts and actions below the campaign identity ([#56](https://github.com/ohne-b/twitch-drops-miner/pull/56))
+- return campaign details to the originating Mining or Activity view with its search, filters, scroll position and keyboard focus; keep Settings tabs from scrolling the page ([#57](https://github.com/ohne-b/twitch-drops-miner/pull/57))
+- show claim dates beside claimed rewards without a duplicate History section, omit repeated reward names and shared Up next deadlines, and remove the reward selection stripe
+- preserve complete reward artwork and use matching game artwork for channels when their own image is missing
+- give mobile Campaigns a full-width search field, fit Activity to the available viewport, and distinguish an empty activity log from unmatched filters
+- align mining list dividers, add compact scrollbar spacing and retain full-size phone touch targets
+
+Existing settings, credentials, history, service names and container mounts remain compatible.
+Mining selection, watch cadence and claim requirements are unchanged.
+
+[Compare v1.4.1...v1.4.2](https://github.com/ohne-b/twitch-drops-miner/compare/v1.4.1...v1.4.2)
+
 ## [v1.4.1](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.4.1) — 2026-10-04
 
 - align Available and History cards and list rows, with matching artwork, spacing, borders and inset dividers; keep phone text readable by placing counts and actions below the campaign identity ([#53](https://github.com/ohne-b/twitch-drops-miner/pull/53))
