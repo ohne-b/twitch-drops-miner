@@ -10,7 +10,8 @@ export function CampaignLink({ id, to, ...props }: LinkProps & { id: string }) {
       id={id}
       to={to}
       onClick={(event) => {
-        if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        if (event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+          return;
         event.preventDefault();
         navigate(to, {
           state: {
@@ -19,8 +20,9 @@ export function CampaignLink({ id, to, ...props }: LinkProps & { id: string }) {
               path: location.pathname + location.search + location.hash,
               focus: id,
               top: window.scrollY,
-              lists: Array.from(document.querySelectorAll<HTMLElement>('[data-restore-scroll]'))
-                .map((element) => [element.id, element.scrollTop]),
+              lists: Array.from(
+                document.querySelectorAll<HTMLElement>('[data-restore-scroll]'),
+              ).map((element) => [element.id, element.scrollTop]),
             },
           },
         });

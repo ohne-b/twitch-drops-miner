@@ -1,6 +1,14 @@
 import { Icon } from '@mdi/react';
 import { useEffect, useRef, useState } from 'react';
-import { NavLink, Navigate, Route, Routes, useLocation, useNavigate, useNavigationType } from 'react-router';
+import {
+  NavLink,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useNavigationType,
+} from 'react-router';
 import {
   mdiPlayCircleOutline,
   mdiReload,
@@ -38,7 +46,10 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
     const previous = previousLocation.current;
     previousLocation.current = location;
     const origin = previous.state?.campaignReturn;
-    if (navigationType === 'POP' && origin?.path === location.pathname + location.search + location.hash) {
+    if (
+      navigationType === 'POP' &&
+      origin?.path === location.pathname + location.search + location.hash
+    ) {
       const frame = requestAnimationFrame(() => {
         for (const [id, top] of origin.lists as [string, number][]) {
           const list = document.getElementById(id);

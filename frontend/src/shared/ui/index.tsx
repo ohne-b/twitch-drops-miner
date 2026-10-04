@@ -140,7 +140,15 @@ export function Check({
     </label>
   );
 }
-export function Art({ url, className = '', fit = 'cover' }: { url?: string | null; className?: string; fit?: 'cover' | 'contain' }) {
+export function Art({
+  url,
+  className = '',
+  fit = 'cover',
+}: {
+  url?: string | null;
+  className?: string;
+  fit?: 'cover' | 'contain';
+}) {
   const [failed, setFailed] = useState(false);
   const source = safeUrl(url?.replaceAll('{width}', '80').replaceAll('{height}', '112'));
   useEffect(() => setFailed(false), [url]);

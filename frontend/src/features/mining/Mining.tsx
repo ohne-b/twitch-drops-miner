@@ -348,57 +348,72 @@ export default function Mining() {
                       start: Date.parse(drop.starts_at ?? ''),
                       end: Date.parse(drop.ends_at ?? ''),
                       upcoming,
-                      text: time ? t(upcoming ? 'gui.inventory.starts' : 'gui.inventory.ends', { time: dateTime(time) }) : '',
+                      text: time
+                        ? t(upcoming ? 'gui.inventory.starts' : 'gui.inventory.ends', {
+                            time: dateTime(time),
+                          })
+                        : '',
                     };
                   });
-                  const sharedDate = dates.length > 1 && dates.every((date) =>
-                    date.start === dates[0]?.start && date.end === dates[0]?.end && date.upcoming === dates[0]?.upcoming,
-                  );
+                  const sharedDate =
+                    dates.length > 1 &&
+                    dates.every(
+                      (date) =>
+                        date.start === dates[0]?.start &&
+                        date.end === dates[0]?.end &&
+                        date.upcoming === dates[0]?.upcoming,
+                    );
                   return (
-                  <div className="mt-3 ps-7 text-[13px]" key={item.id}>
-                    <CampaignLink
-                      id={`up-next-campaign-${item.id}`}
-                      className="text-link"
-                      to={`/campaigns?campaign=${encodeURIComponent(item.id)}`}
-                    >
-                      {item.name}
-                    </CampaignLink>
-                    {sharedDate && <p className="muted mt-1 text-xs">{dates[0]?.text}</p>}
-                    {item.priority && item.priority.reason !== 'saved_order' && (
-                      <p className="muted mt-1">
-                        {t(`reason_${item.priority.reason}`)}
-                        {item.priority.deadline && ` · ${dateTime(item.priority.deadline)}`}
-                      </p>
-                    )}
-                    <ul className="mt-2 space-y-2 text-muted">
-                      {item.drops.map((drop, position) => (
-                        <li
-                          className="flex items-start gap-3"
-                          key={drop.id || `${drop.name}/${position}`}
-                        >
-                          <Art url={drop.image_url} className="size-9" fit="contain" />
-                          <div className="min-w-0 flex-1">
-                            <CampaignLink
-                              id={`up-next-drop-${item.id}-${drop.id || position}`}
-                              className="hover:underline text-soft"
-                              to={`/campaigns?campaign=${encodeURIComponent(item.id)}${drop.id ? `&drop=${encodeURIComponent(drop.id)}` : ''}`}
-                            >
-                              {drop.name}
-                            </CampaignLink>
-                            {drop.eligibility && drop.eligibility !== 'ready' && (
-                              <p className="text-xs mt-1">{t(`eligibility_${drop.eligibility}`)}</p>
-                            )}
-                            {!sharedDate && dates[position]?.text && (
-                              <p className="text-xs mt-1">{dates[position]?.text}</p>
-                            )}
-                            {drop.benefits.some((benefit) => benefit !== drop.name) && (
-                              <p className="mt-0.5 text-xs">{drop.benefits.filter((benefit) => benefit !== drop.name).join(', ')}</p>
-                            )}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                    <div className="mt-3 ps-7 text-[13px]" key={item.id}>
+                      <CampaignLink
+                        id={`up-next-campaign-${item.id}`}
+                        className="text-link"
+                        to={`/campaigns?campaign=${encodeURIComponent(item.id)}`}
+                      >
+                        {item.name}
+                      </CampaignLink>
+                      {sharedDate && <p className="muted mt-1 text-xs">{dates[0]?.text}</p>}
+                      {item.priority && item.priority.reason !== 'saved_order' && (
+                        <p className="muted mt-1">
+                          {t(`reason_${item.priority.reason}`)}
+                          {item.priority.deadline && ` · ${dateTime(item.priority.deadline)}`}
+                        </p>
+                      )}
+                      <ul className="mt-2 space-y-2 text-muted">
+                        {item.drops.map((drop, position) => (
+                          <li
+                            className="flex items-start gap-3"
+                            key={drop.id || `${drop.name}/${position}`}
+                          >
+                            <Art url={drop.image_url} className="size-9" fit="contain" />
+                            <div className="min-w-0 flex-1">
+                              <CampaignLink
+                                id={`up-next-drop-${item.id}-${drop.id || position}`}
+                                className="hover:underline text-soft"
+                                to={`/campaigns?campaign=${encodeURIComponent(item.id)}${drop.id ? `&drop=${encodeURIComponent(drop.id)}` : ''}`}
+                              >
+                                {drop.name}
+                              </CampaignLink>
+                              {drop.eligibility && drop.eligibility !== 'ready' && (
+                                <p className="text-xs mt-1">
+                                  {t(`eligibility_${drop.eligibility}`)}
+                                </p>
+                              )}
+                              {!sharedDate && dates[position]?.text && (
+                                <p className="text-xs mt-1">{dates[position]?.text}</p>
+                              )}
+                              {drop.benefits.some((benefit) => benefit !== drop.name) && (
+                                <p className="mt-0.5 text-xs">
+                                  {drop.benefits
+                                    .filter((benefit) => benefit !== drop.name)
+                                    .join(', ')}
+                                </p>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   );
                 })}
               </div>

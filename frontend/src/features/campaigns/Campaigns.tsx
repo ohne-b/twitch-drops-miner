@@ -234,7 +234,10 @@ export default function Campaigns() {
       <div className="campaign-browser min-w-0">
         <header className="campaign-toolbar">
           <h1 className="sr-only">{t('campaigns')}</h1>
-          <nav aria-label={t('campaign_views')} className="campaign-tabs flex gap-5 text-[13px] text-muted">
+          <nav
+            aria-label={t('campaign_views')}
+            className="campaign-tabs flex gap-5 text-[13px] text-muted"
+          >
             {[false, true].map((value) => (
               <Link
                 key={String(value)}
@@ -267,43 +270,43 @@ export default function Campaigns() {
             />
           </div>
           <div className="campaign-controls flex items-center justify-end gap-2">
-          <IconButton
-            path={mdiFilterOutline}
-            label={t('filters')}
-            aria-expanded={showFilters}
-            onClick={() => setShowFilters(!showFilters)}
-          />
-          <div
-            className="icon-button"
-            title={`${t(historyTab ? 'sort_history' : 'sort_campaigns')}: ${t(`sort_${sort}`)}`}
-          >
-            <Icon className="mdi-icon pointer-events-none" path={mdiSortAscending} />
-            <select
-              className="icon-select absolute inset-0 size-full cursor-pointer opacity-0"
-              aria-label={t(historyTab ? 'sort_history' : 'sort_campaigns')}
-              value={sort}
-              onChange={(event) =>
-                setQuery('sort', event.target.value === 'default' ? '' : event.target.value)
-              }
+            <IconButton
+              path={mdiFilterOutline}
+              label={t('filters')}
+              aria-expanded={showFilters}
+              onClick={() => setShowFilters(!showFilters)}
+            />
+            <div
+              className="icon-button"
+              title={`${t(historyTab ? 'sort_history' : 'sort_campaigns')}: ${t(`sort_${sort}`)}`}
             >
-              {campaignSorts.map((value) => (
-                <option key={value} value={value}>
-                  {t(`sort_${value}`)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <IconButton
-            path={list ? mdiViewGridOutline : mdiViewList}
-            label={t('toggle_view')}
-            disabled={!connected || settingsBusy}
-            onClick={() => {
-              const next = new URLSearchParams(params);
-              next.set('view', list ? 'grid' : 'list');
-              setParams(next, { replace: true });
-              autosave.change('inventory_list_view', !list);
-            }}
-          />
+              <Icon className="mdi-icon pointer-events-none" path={mdiSortAscending} />
+              <select
+                className="icon-select absolute inset-0 size-full cursor-pointer opacity-0"
+                aria-label={t(historyTab ? 'sort_history' : 'sort_campaigns')}
+                value={sort}
+                onChange={(event) =>
+                  setQuery('sort', event.target.value === 'default' ? '' : event.target.value)
+                }
+              >
+                {campaignSorts.map((value) => (
+                  <option key={value} value={value}>
+                    {t(`sort_${value}`)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <IconButton
+              path={list ? mdiViewGridOutline : mdiViewList}
+              label={t('toggle_view')}
+              disabled={!connected || settingsBusy}
+              onClick={() => {
+                const next = new URLSearchParams(params);
+                next.set('view', list ? 'grid' : 'list');
+                setParams(next, { replace: true });
+                autosave.change('inventory_list_view', !list);
+              }}
+            />
           </div>
         </header>
         {!historyTab &&

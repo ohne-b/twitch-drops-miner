@@ -125,18 +125,30 @@
   align-items: center;
   gap: 20px 16px;
 }
-.campaign-tabs { grid-area: tabs; }
-.campaign-total { grid-area: total; }
-.campaign-refresh { grid-area: refresh; }
-.campaign-search { grid-area: search; }
-.campaign-controls { grid-area: controls; }
+.campaign-tabs {
+  grid-area: tabs;
+}
+.campaign-total {
+  grid-area: total;
+}
+.campaign-refresh {
+  grid-area: refresh;
+}
+.campaign-search {
+  grid-area: search;
+}
+.campaign-controls {
+  grid-area: controls;
+}
 @media (max-width: 767px) {
   .campaign-toolbar {
     grid-template-columns: minmax(0, 1fr) auto auto;
     grid-template-areas: 'tabs tabs refresh' 'search search search' 'total controls controls';
     gap: 8px;
   }
-  .campaign-tabs { gap: 4px; }
+  .campaign-tabs {
+    gap: 4px;
+  }
 }
 .campaign-workspace.with-detail {
   grid-template-columns: minmax(0, 1fr) minmax(360px, 42%);
