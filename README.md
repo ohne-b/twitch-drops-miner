@@ -259,11 +259,12 @@ or trailing separator lines. The Twitch account tab keeps its status and logout 
 the sidebar footer has no divider above GitHub.
 
 Open a campaign or reward to inspect its dates, prerequisites, account linkage and confirmed
-progress. On wide screens, details fill the available height beside the list, even for a
-single reward. The campaign list has a small gap before its scrollbar. The list and detail body
-scroll independently, with the detail heading always visible. In short windows, the left column
-can also scroll to keep filters reachable. Opening desktop details keeps the selected campaign
-in view as the list narrows, including after changing between grid and list layouts.
+progress. On wide screens, tabs, search and filters stay full width above the list and details.
+Both panes fill the remaining height, even for a single reward. The campaign list has a small
+gap before its scrollbar. The list and detail body scroll independently, with the detail heading
+always visible. In short windows, the controls area can scroll to keep filters reachable.
+Opening desktop details keeps the selected campaign in view as the list narrows, including
+after changing between grid and list layouts.
 Details fill the page on smaller screens, with background scrolling locked until they close.
 Only the detail content scrolls; closing restores the list position.
 Details opened from Mining or Activity return to that page and its link on Close or Back.
