@@ -232,9 +232,9 @@ export default function Campaigns() {
   return (
     <div className={`campaign-workspace ${detailId ? 'with-detail' : ''}`}>
       <div className="campaign-browser min-w-0">
-        <header className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <header className="campaign-toolbar">
           <h1 className="sr-only">{t('campaigns')}</h1>
-          <nav aria-label={t('campaign_views')} className="flex gap-5 text-[13px] text-muted">
+          <nav aria-label={t('campaign_views')} className="campaign-tabs flex gap-5 text-[13px] text-muted">
             {[false, true].map((value) => (
               <Link
                 key={String(value)}
@@ -250,27 +250,23 @@ export default function Campaigns() {
               </Link>
             ))}
           </nav>
-          <p className="muted text-right">
+          <p className="campaign-total muted">
             {t('campaign_count', {
               count: historyTab ? historical.length : campaigns.length,
               total,
             })}
           </p>
-          <div className="ms-auto">
+          <div className="campaign-refresh justify-self-end">
             <InventoryRefreshButton />
           </div>
-        </header>
-        {!historyTab &&
-          data.inventory_status?.available === false &&
-          data.inventory_status.checked_at && <Notice error>{t('campaigns_unavailable')}</Notice>}
-        <div className="flex items-center gap-2">
-          <div className="min-w-0 flex-1">
+          <div className="campaign-search min-w-0">
             <Search
               value={search}
               onChange={(value) => setQuery('q', value)}
               label={t('search_campaigns')}
             />
           </div>
+          <div className="campaign-controls flex items-center justify-end gap-2">
           <IconButton
             path={mdiFilterOutline}
             label={t('filters')}
@@ -308,7 +304,11 @@ export default function Campaigns() {
               autosave.change('inventory_list_view', !list);
             }}
           />
-        </div>
+          </div>
+        </header>
+        {!historyTab &&
+          data.inventory_status?.available === false &&
+          data.inventory_status.checked_at && <Notice error>{t('campaigns_unavailable')}</Notice>}
         {showFilters && (
           <div
             role="group"
