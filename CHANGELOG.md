@@ -4,7 +4,8 @@
 
 - keep campaign tabs, search and filters full width above the list and details, with fixed detail headers and reachable controls in short windows ([#65](https://github.com/ohne-b/twitch-drops-miner/pull/65))
 - move campaign pagination into the top toolbar, remove the bottom pagination gap and wrap crowded controls on narrow phones
-- reduce repainting during campaign-detail scrolling by giving the scrollable body an opaque background
+- move Last confirmed into the Mining page header with smaller, darker text and a compact phone layout ([#68](https://github.com/ohne-b/twitch-drops-miner/pull/68))
+- show `0 / required minutes` for unconfirmed rewards in Mining and Campaigns, with an unconfirmed tooltip and no invented timestamps
 - switch the project license to PolyForm Noncommercial 1.0.0, with matching package and image metadata; preserve upstream MIT and third-party notices
 
 Existing settings, credentials, history, service names and container mounts remain compatible.
