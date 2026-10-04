@@ -58,10 +58,18 @@ export default function Mining() {
     );
   return (
     <div className="mining-workspace flex flex-col gap-5 xl:min-h-0 xl:flex-1">
-      <div className="flex shrink-0 flex-wrap items-start justify-between gap-3">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <h1 className="text-[22px] font-semibold">{t('mining')}</h1>
+        {progress?.confirmed_at && (
+          <time
+            dateTime={progress.confirmed_at}
+            className="order-last w-full text-right text-xs text-[#888888] sm:order-none sm:ms-auto sm:w-auto"
+          >
+            {t('last_confirmed', { time: dateTime(progress.confirmed_at) })}
+          </time>
+        )}
         <InventoryRefreshButton />
-      </div>
+      </header>
       <ActionResult action={action} />
       <section className="panel shrink-0 p-5 md:p-6" aria-labelledby="mining-heading">
         <div className="mb-5 flex items-center justify-between gap-3">
@@ -106,7 +114,7 @@ export default function Mining() {
               </div>
             </div>
             <div className="mt-5">
-              {data.mining?.state !== 'watching' && (
+              {data.mining?.state !== 'watching' && data.mining?.state !== 'awaiting_progress' && (
                 <p className="muted mb-3">
                   {t(
                     data.mining && data.mining.state !== 'unknown'
@@ -123,20 +131,17 @@ export default function Mining() {
                 />
               )}
               <div className="mt-2 flex flex-wrap justify-between gap-2 text-[13px]">
-                <span className="tabular-nums">
-                  {progress.confirmed_at
-                    ? t('minutes_progress', {
-                        current: progress.confirmed_minutes ?? 0,
-                        total: progress.required_minutes,
-                      })
-                    : t('progress_unknown')}
+                <span
+                  className="tabular-nums"
+                  title={progress.confirmed_at ? undefined : t('progress_unknown')}
+                  aria-description={progress.confirmed_at ? undefined : t('progress_unknown')}
+                >
+                  {t('minutes_progress', {
+                    current: progress.confirmed_at ? (progress.confirmed_minutes ?? 0) : 0,
+                    total: progress.required_minutes,
+                  })}
                 </span>
               </div>
-              {progress.confirmed_at && (
-                <p className="muted mt-2">
-                  {t('last_confirmed', { time: dateTime(progress.confirmed_at) })}
-                </p>
-              )}
             </div>
           </>
         ) : data.manual_mode.active ? (
