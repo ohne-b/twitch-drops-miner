@@ -215,7 +215,7 @@ export default function Mining() {
             tabIndex={0}
           >
             {(enterChannel || data.manual_mode.error) && (
-              <div className="space-y-3 border-b border-divider p-4">
+              <div className="mx-4 space-y-3 border-b border-divider py-4">
                 {enterChannel && (
                   <form
                     className="space-y-2"
@@ -329,7 +329,7 @@ export default function Mining() {
             tabIndex={0}
           >
             {data.wanted_items.map((game, index) => (
-              <div key={game.game_name} className="border-b border-divider p-4 last:border-0">
+              <div key={game.game_name} className="mx-4 border-b border-divider py-4 last:border-0">
                 <div className="flex items-center gap-3">
                   <span className="w-4 text-[13px] tabular-nums text-muted">{index + 1}</span>
                   <Art url={game.game_icon} className="size-8" />
