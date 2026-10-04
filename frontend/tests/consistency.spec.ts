@@ -191,6 +191,7 @@ test('Available rewards show claims once with truthful times and uncropped artwo
     }),
   );
   const campaign = structuredClone(fixture.campaigns[0]!);
+  campaign.game_box_art_url = image;
   campaign.claimed_drops = 1;
   campaign.drops[0]!.is_claimed = true;
   campaign.drops[0]!.benefits.push({
@@ -201,6 +202,7 @@ test('Available rewards show claims once with truthful times and uncropped artwo
   campaign.drops.forEach((drop) => {
     drop.benefits[0]!.image_url = image;
   });
+  campaign.drops[0]!.benefits[0]!.image_url = '';
   const entries = campaign.drops.map((drop) => ({
     id: drop.id,
     campaign_id: campaign.id,
@@ -221,6 +223,15 @@ test('Available rewards show claims once with truthful times and uncropped artwo
     route.fulfill({ json: { ...(await (await route.fetch()).json()), entries } }),
   );
   await page.goto('/');
+  await expect(page.locator('[aria-labelledby="mining-heading"] img')).toHaveCSS(
+    'object-fit',
+    'cover',
+  );
+  campaign.drops[0]!.benefits[0]!.image_url = image;
+  await request.post('/__test/event', {
+    headers,
+    data: { event: 'initial_state', data: { ...fixture, campaigns: [campaign] } },
+  });
   await expect(page.locator('[aria-labelledby="mining-heading"] img')).toHaveCSS(
     'object-fit',
     'contain',

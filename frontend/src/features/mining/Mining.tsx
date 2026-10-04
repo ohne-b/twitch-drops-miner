@@ -45,6 +45,7 @@ export default function Mining() {
   if (edit) return <MiningPreferences />;
   const progress = data.current_drop;
   const campaign = data.campaigns.find((item) => item.id === progress?.campaign_id);
+  const reward = campaign?.drops.find((drop) => drop.id === progress?.drop_id);
   const watching = data.channels.find((channel) => channel.watching);
   const channels = data.channels
     .filter((channel) =>
@@ -84,12 +85,9 @@ export default function Mining() {
           <>
             <div className="flex items-start gap-4">
               <Art
-                url={
-                  campaign?.drops.find((drop) => drop.id === progress.drop_id)?.benefits[0]
-                    ?.image_url ?? campaign?.game_box_art_url
-                }
+                url={reward?.benefits[0]?.image_url || campaign?.game_box_art_url}
                 className="size-16"
-                fit="contain"
+                fit={reward?.benefits[0]?.image_url ? 'contain' : 'cover'}
               />
               <div className="min-w-0 flex-1">
                 <CampaignLink
@@ -113,7 +111,7 @@ export default function Mining() {
                   {t(
                     data.mining && data.mining.state !== 'unknown'
                       ? `mining_state_${data.mining.state}`
-                      : `eligibility_${campaign?.drops.find((drop) => drop.id === progress.drop_id)?.eligibility ?? 'unknown'}`,
+                      : `eligibility_${reward?.eligibility ?? 'unknown'}`,
                   )}
                 </p>
               )}
