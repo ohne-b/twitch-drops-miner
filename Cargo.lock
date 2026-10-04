@@ -2621,7 +2621,7 @@ dependencies = [
 
 [[package]]
 name = "twitch-drops-miner"
-version = "1.4.1"
+version = "1.4.2"
 dependencies = [
  "anyhow",
  "axum",
