@@ -124,11 +124,17 @@ impl Mining {
             .find(|d| d.id == id)
         {
             // Delayed progress cannot undo confirmed completion or restore an old card.
-            if minutes < drop.confirmed_minutes {
+            let previous_report = drop.reported_minutes.unwrap_or(drop.confirmed_minutes);
+            if minutes < previous_report.max(drop.confirmed_minutes) {
                 return false;
             }
-            let advanced = minutes > drop.confirmed_minutes;
-            drop.confirm(minutes, Utc::now());
+            let advanced = minutes > previous_report;
+            if !drop.progress_disputed {
+                drop.confirm(minutes, Utc::now());
+            }
+            drop.reported_minutes = (!drop.claimed).then_some(minutes.min(drop.required_minutes));
+            drop.estimated_minutes = 0;
+            let disputed = drop.progress_disputed;
             let completed = !drop.claimed
                 && drop.watch_reward()
                 && drop.confirmed_minutes >= drop.required_minutes;
@@ -154,7 +160,7 @@ impl Mining {
             {
                 self.last_progress = Some((id.to_owned(), Instant::now()));
             }
-            if completed || blocked {
+            if completed || blocked || disputed {
                 self.request_progress_refresh();
             }
             self.publish = true;
@@ -166,7 +172,7 @@ impl Mining {
     }
 
     pub(super) fn request_progress_refresh(&mut self) {
-        // Unknown rewards and watched completion both need account inventory evidence.
+        // Unknown rewards, disputed progress and completion need account inventory evidence.
         if Instant::now() >= self.next_progress_refresh {
             self.next_progress_refresh = Instant::now() + Duration::from_secs(60);
             self.refresh = true;

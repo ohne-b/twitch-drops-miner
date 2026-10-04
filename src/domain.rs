@@ -137,6 +137,9 @@ pub struct Drop {
     pub confirmed_minutes: u32,
     pub estimated_minutes: u32,
     pub confirmed_at: Option<DateTime<Utc>>,
+    // Runtime evidence only; never included in saved history or completion records.
+    pub reported_minutes: Option<u32>,
+    pub progress_disputed: bool,
     pub claimed: bool,
     pub claimed_at: Option<DateTime<Utc>>,
     pub claim_id: Option<String>,
@@ -198,6 +201,8 @@ impl Drop {
             confirmed_minutes,
             estimated_minutes: 0,
             confirmed_at: account.map(|_| now),
+            reported_minutes: None,
+            progress_disputed: false,
             claimed,
             claimed_at: awarded_at.filter(|_| claimed),
             claim_id: account
@@ -238,6 +243,50 @@ impl Drop {
         };
         self.estimated_minutes = 0;
         self.confirmed_at = Some(now);
+        self.reported_minutes = None;
+        self.progress_disputed = false;
+    }
+
+    pub fn reconcile_inventory(&mut self, previous: &Self, requested_at: DateTime<Utc>) {
+        if self.id != previous.id {
+            return;
+        }
+        if !self.claimed && self.claim_id.is_none() {
+            self.claim_id = previous.claim_id.clone();
+        }
+        if self.claimed || self.required_minutes != previous.required_minutes {
+            return;
+        }
+        if previous
+            .confirmed_at
+            .is_some_and(|at| at > requested_at || self.confirmed_at.is_none())
+        {
+            // An older request or public metadata cannot replace account evidence.
+            self.confirmed_minutes = previous.confirmed_minutes;
+            self.confirmed_at = previous.confirmed_at;
+            self.estimated_minutes = previous.estimated_minutes;
+            self.claimed = previous.claimed;
+            self.claimed_at = previous.claimed_at;
+            if previous.claim_id.is_some() {
+                self.claim_id = previous.claim_id.clone();
+            }
+            self.reported_minutes = previous.reported_minutes;
+            self.progress_disputed = previous.progress_disputed;
+        } else if !previous.claimed
+            && previous.claim_id.is_some()
+            && previous.confirmed_minutes >= previous.required_minutes
+        {
+            // Keep completion backed by an issued claim instance while claiming it.
+            self.confirmed_minutes = previous.confirmed_minutes;
+            self.confirmed_at = previous.confirmed_at;
+        } else {
+            // Fresh account inventory can contradict a live counter. Keep that counter
+            // separately until inventory catches up, rather than retaining its maximum.
+            self.reported_minutes = previous
+                .reported_minutes
+                .filter(|minutes| *minutes > self.confirmed_minutes);
+            self.progress_disputed = self.reported_minutes.is_some();
+        }
     }
 
     pub fn mark_claimed(&mut self, now: DateTime<Utc>) {
@@ -489,6 +538,13 @@ impl Campaign {
             })
     }
 
+    pub fn needs_progress_refresh(&self, now: DateTime<Utc>) -> bool {
+        self.needs_claim_refresh(now)
+            || !self.upcoming(now)
+                && now < self.ends_at + Duration::hours(24)
+                && self.drops.iter().any(|d| !d.claimed && d.progress_disputed)
+    }
+
     pub fn is_prerequisite(&self, id: &str, drop: &Drop) -> bool {
         let by_id: HashMap<_, _> = self.drops.iter().map(|d| (d.id.as_str(), d)).collect();
         let mut pending: Vec<_> = drop.prerequisites.iter().map(String::as_str).collect();
@@ -598,7 +654,7 @@ impl Campaign {
             .collect();
         let mut stalled = false;
         for drop in &mut self.drops {
-            if eligible.contains(&drop.id) {
+            if eligible.contains(&drop.id) && !drop.progress_disputed {
                 drop.estimated_minutes += 1;
                 stalled |= drop.estimated_minutes >= MAX_ESTIMATED_MINUTES;
             }
@@ -909,6 +965,53 @@ mod tests {
     }
     fn campaign(drops: Vec<Value>) -> Campaign {
         Campaign::parse(&raw_campaign(drops), &HashMap::new(), now()).unwrap()
+    }
+
+    #[test]
+    fn inventory_disputes_respect_request_order_identity_and_claim_evidence() {
+        let mut previous = campaign(vec![raw_drop("reward", &[])]).drops.remove(0);
+        previous.confirm(42, now());
+        previous.reported_minutes = Some(42);
+        let mut account = previous.clone();
+        account.confirm(23, now() + Duration::seconds(2));
+
+        let mut old_request = account.clone();
+        old_request.reconcile_inventory(&previous, now() - Duration::seconds(1));
+        assert_eq!(old_request.confirmed_minutes, 42);
+        assert!(!old_request.progress_disputed);
+
+        account.reconcile_inventory(&previous, now() + Duration::seconds(1));
+        assert_eq!(account.confirmed_minutes, 23);
+        assert!(account.progress_disputed);
+        assert_eq!(account.reported_minutes, Some(42));
+        assert_eq!(account.confirmed_at, Some(now() + Duration::seconds(2)));
+
+        let mut public = campaign(vec![raw_drop("reward", &[])]).drops.remove(0);
+        public.reconcile_inventory(&account, now() + Duration::seconds(3));
+        assert_eq!(public.confirmed_minutes, 23);
+        assert!(public.progress_disputed);
+        assert_eq!(public.reported_minutes, Some(42));
+
+        let mut other = campaign(vec![raw_drop("different", &[])]).drops.remove(0);
+        other.reconcile_inventory(&account, now() + Duration::seconds(3));
+        assert_eq!(other.confirmed_minutes, 0);
+        assert!(!other.progress_disputed);
+        let mut changed = account.clone();
+        changed.confirm(10, now() + Duration::seconds(4));
+        changed.required_minutes = 120;
+        changed.reconcile_inventory(&account, now() + Duration::seconds(3));
+        assert_eq!(changed.confirmed_minutes, 10);
+        assert!(!changed.progress_disputed);
+
+        let mut caught_up = account.clone();
+        caught_up.confirm(42, now() + Duration::seconds(4));
+        caught_up.reconcile_inventory(&account, now() + Duration::seconds(3));
+        assert!(!caught_up.progress_disputed);
+        assert_eq!(caught_up.reported_minutes, None);
+        account.mark_claimed(now() + Duration::seconds(4));
+        assert_eq!(account.confirmed_minutes, 60);
+        assert!(!account.progress_disputed);
+        assert_eq!(account.reported_minutes, None);
     }
 
     #[test]

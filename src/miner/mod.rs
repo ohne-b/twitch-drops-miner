@@ -78,6 +78,8 @@ struct Resume {
     channel: Option<Channel>,
     lookup: Option<(String, u64)>,
     seen: Intent,
+    user_id: Option<u64>,
+    disputed_campaigns: Vec<Campaign>,
 }
 
 pub struct Miner {
@@ -184,6 +186,13 @@ struct Mining {
 }
 impl Mining {
     fn restore(&mut self, saved: &Resume) {
+        if saved.user_id == Some(self.client.user_id) {
+            for campaign in &saved.disputed_campaigns {
+                if !self.campaigns.iter().any(|c| c.id == campaign.id) {
+                    self.campaigns.push(campaign.clone());
+                }
+            }
+        }
         self.manual = saved.manual;
         self.seen = saved.seen.clone();
         self.lookup = saved.lookup.clone();
@@ -201,6 +210,16 @@ impl Mining {
     fn resume(&self) -> Resume {
         let manual = self.manual;
         Resume {
+            user_id: Some(self.client.user_id),
+            disputed_campaigns: self
+                .campaigns
+                .iter()
+                .filter(|c| {
+                    c.needs_progress_refresh(Utc::now())
+                        && c.drops.iter().any(|d| d.progress_disputed)
+                })
+                .cloned()
+                .collect(),
             manual,
             channel: manual.and_then(|manual| {
                 self.channels
@@ -387,9 +406,12 @@ impl Mining {
     async fn schedule(&mut self, settings: &Settings) {
         let now = Instant::now();
         let wall = Utc::now();
-        // Retry delayed/missing claim evidence even if completion left no watchable channel.
+        // Recheck disputed progress and missing claims even without a watchable channel.
         if now >= self.next_progress_refresh
-            && self.campaigns.iter().any(|c| c.needs_claim_refresh(wall))
+            && self
+                .campaigns
+                .iter()
+                .any(|c| c.needs_progress_refresh(wall))
         {
             self.request_progress_refresh();
         }
@@ -713,58 +735,32 @@ impl Mining {
                 requested_at,
                 refresh_sequence,
             } => {
+                for campaign in &mut inventory.campaigns {
+                    for drop in &mut campaign.drops {
+                        if let Some(previous) = self
+                            .campaigns
+                            .iter()
+                            .find(|c| c.id == campaign.id)
+                            .and_then(|c| c.drops.iter().find(|d| d.id == drop.id))
+                        {
+                            drop.reconcile_inventory(previous, requested_at);
+                        }
+                    }
+                }
                 if !inventory.status.available {
                     for previous in &self.campaigns {
                         if (previous.active(Utc::now())
                             || previous.upcoming(Utc::now())
-                            || previous.needs_claim_refresh(Utc::now()))
+                            || previous.needs_progress_refresh(Utc::now()))
                             && !inventory.campaigns.iter().any(|c| c.id == previous.id)
                         {
+                            // Retained records are not fresh inventory confirmations.
                             inventory.campaigns.push(previous.clone());
                         }
                     }
                 }
                 for campaign in &mut inventory.campaigns {
                     for drop in &mut campaign.drops {
-                        // An issued claim instance remains valid until claimed. Catalog
-                        // refreshes often lag the account's claim-ready event.
-                        if !drop.claimed && drop.claim_id.is_none() {
-                            drop.claim_id = self
-                                .campaigns
-                                .iter()
-                                .find(|c| c.id == campaign.id)
-                                .and_then(|c| c.drops.iter().find(|d| d.id == drop.id))
-                                .and_then(|d| d.claim_id.clone());
-                        }
-                        if let Some(previous) = self
-                            .campaigns
-                            .iter()
-                            .find(|c| c.id == campaign.id)
-                            .and_then(|c| c.drops.iter().find(|d| d.id == drop.id))
-                            && !drop.claimed
-                            && previous.required_minutes == drop.required_minutes
-                        {
-                            if previous
-                                .confirmed_at
-                                .is_some_and(|at| at > requested_at || drop.confirmed_at.is_none())
-                            {
-                                drop.confirmed_minutes = previous.confirmed_minutes;
-                                drop.confirmed_at = previous.confirmed_at;
-                                drop.estimated_minutes = previous.estimated_minutes;
-                                drop.claimed = previous.claimed;
-                                drop.claimed_at = previous.claimed_at;
-                                if previous.claim_id.is_some() {
-                                    drop.claim_id = previous.claim_id.clone();
-                                }
-                            } else if !previous.claimed
-                                && previous.confirmed_minutes > drop.confirmed_minutes
-                            {
-                                // Inventory can lag CurrentDrop/PubSub even when requested later.
-                                // Retain watch evidence, but keep new claim state and instance IDs.
-                                drop.confirmed_minutes = previous.confirmed_minutes;
-                                drop.confirmed_at = previous.confirmed_at;
-                            }
-                        }
                         // A completed refresh must release the estimate ceiling, including
                         // retained records, without overwriting newer account evidence.
                         if drop.estimated_minutes >= MAX_ESTIMATED_MINUTES

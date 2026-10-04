@@ -935,7 +935,12 @@ async fn completed_transition_recovers_failed_and_delayed_inventory_and_claim_ev
             if attempt < 2 {
                 assert!(!miner.campaigns[0].drops[0].claimed);
                 assert!(miner.campaigns[0].drops[0].claim_id.is_none());
-                assert_eq!(miner.campaigns[0].drops[0].confirmed_minutes, 60);
+                // Failed refreshes preserve evidence; fresh contrary inventory corrects it.
+                assert_eq!(
+                    miner.campaigns[0].drops[0].confirmed_minutes,
+                    if attempt == 0 { 60 } else { 59 }
+                );
+                assert_eq!(miner.campaigns[0].drops[0].progress_disputed, attempt == 1);
                 assert_eq!(History::load(dir.path()).total(), 0);
                 assert!(miner.next_progress_refresh > Instant::now() + Duration::from_secs(59));
                 miner.channels_dirty = false;
@@ -1987,6 +1992,229 @@ async fn successful_inventory_refresh_recovers_stalled_public_and_retained_rewar
             pool.close().await;
         }
     }
+}
+
+#[tokio::test]
+async fn conflicting_live_progress_uses_inventory_and_keeps_watching_until_reconciled() {
+    let server = MockServer::start().await;
+    let (dir, mut miner, _intent, mut pool) = miner(&server).await;
+    let settings = select(&mut miner).await;
+    miner.confirm("drop-one", 42, &settings);
+    let requested_at = Utc::now();
+    let mut record = campaign_json("one");
+    record["timeBasedDrops"][0]["self"]["currentMinutesWatched"] = json!(23);
+    let campaign = Campaign::parse(&record, &HashMap::new(), Utc::now()).unwrap();
+    let confirmed_at = campaign.drops[0].confirmed_at;
+    miner
+        .complete(
+            Job::Inventory {
+                requested_at,
+                refresh_sequence: 0,
+                result: Ok(Inventory {
+                    campaigns: vec![campaign],
+                    status: InventoryStatus {
+                        available: true,
+                        ..Default::default()
+                    },
+                    awards: HashMap::new(),
+                    rejected_account_ids: HashSet::new(),
+                }),
+            },
+            &pool,
+        )
+        .await
+        .unwrap();
+    assert_eq!(miner.campaigns[0].drops[0].confirmed_minutes, 23);
+    // Both live sources must remain provisional, including reported completion.
+    miner
+        .event(Event::Progress {
+            id: "drop-one".into(),
+            minutes: 43,
+        })
+        .await
+        .unwrap();
+    miner
+        .complete(
+            Job::Poll {
+                channel: 10,
+                requested_at: Instant::now(),
+                result: Ok(Some(("drop-one".into(), 60))),
+            },
+            &pool,
+        )
+        .await
+        .unwrap();
+    miner.reselect(&settings).await;
+    miner.publish(&settings).await.unwrap();
+    let snapshot = miner.app.snapshot.read().await;
+    let progress = snapshot.current_drop.as_ref().unwrap();
+    assert_eq!(progress.confirmed_minutes, 23);
+    assert_eq!(progress.confirmed_at, confirmed_at);
+    assert_eq!(snapshot.campaigns[0].drops[0].confirmed_minutes, 23);
+    assert_eq!(miner.watching, Some(10));
+    assert_eq!(History::load(dir.path()).total(), 0);
+    drop(snapshot);
+    // Missing live reports must not accumulate enough estimates to stop this reward.
+    for _ in 0..MAX_ESTIMATED_MINUTES + 1 {
+        assert!(!miner.campaigns[0].bump_estimates(&settings, Utc::now()));
+    }
+    assert!(miner.campaigns[0].can_watch(&miner.channels[0], &settings, Utc::now()));
+    // Only account completion resolves the disagreement; it is still not a claim.
+    record["timeBasedDrops"][0]["self"]["currentMinutesWatched"] = json!(60);
+    miner
+        .complete(
+            Job::Inventory {
+                requested_at: Utc::now(),
+                refresh_sequence: 0,
+                result: Ok(Inventory {
+                    campaigns: vec![Campaign::parse(&record, &HashMap::new(), Utc::now()).unwrap()],
+                    status: InventoryStatus {
+                        available: true,
+                        ..Default::default()
+                    },
+                    awards: HashMap::new(),
+                    rejected_account_ids: HashSet::new(),
+                }),
+            },
+            &pool,
+        )
+        .await
+        .unwrap();
+    miner.reselect(&settings).await;
+    assert_eq!(miner.campaigns[0].drops[0].confirmed_minutes, 60);
+    assert!(miner.watching.is_none());
+    assert!(!miner.campaigns[0].drops[0].claimed);
+    assert_eq!(History::load(dir.path()).total(), 0);
+    pool.close().await;
+}
+
+#[tokio::test]
+async fn disputed_progress_survives_partial_refresh_and_same_account_renewal() {
+    let server = MockServer::start().await;
+    let (_dir, mut miner, intent, mut pool) = miner(&server).await;
+    let settings = select(&mut miner).await;
+    let drop = &mut miner.campaigns[0].drops[0];
+    drop.confirm(23, Utc::now());
+    drop.reported_minutes = Some(42);
+    drop.progress_disputed = true;
+    let inventory = |campaigns, available| Job::Inventory {
+        requested_at: Utc::now(),
+        refresh_sequence: 0,
+        result: Ok(Inventory {
+            campaigns,
+            status: InventoryStatus {
+                available,
+                ..Default::default()
+            },
+            awards: HashMap::new(),
+            rejected_account_ids: HashSet::new(),
+        }),
+    };
+    miner
+        .complete(inventory(vec![], false), &pool)
+        .await
+        .unwrap();
+    assert!(miner.campaigns[0].drops[0].progress_disputed);
+    miner.confirm("drop-one", 43, &settings);
+    assert_eq!(miner.campaigns[0].drops[0].confirmed_minutes, 23);
+    // A public catalog record also supplies no new account evidence.
+    let mut record = campaign_json("one");
+    record["timeBasedDrops"][0]["self"] = serde_json::Value::Null;
+    let public = Campaign::parse(&record, &HashMap::new(), Utc::now()).unwrap();
+    miner
+        .complete(inventory(vec![public], true), &pool)
+        .await
+        .unwrap();
+    assert!(miner.campaigns[0].drops[0].progress_disputed);
+    assert_eq!(miner.campaigns[0].drops[0].confirmed_minutes, 23);
+
+    let saved = miner.resume();
+    miner.campaigns.clear();
+    miner.restore(&saved);
+    assert!(miner.campaigns[0].drops[0].progress_disputed);
+    miner.confirm("drop-one", 60, &settings);
+    assert_eq!(miner.campaigns[0].drops[0].confirmed_minutes, 23);
+    let mut other_account = miner.resume();
+    other_account.user_id = Some(miner.client.user_id + 1);
+    miner.campaigns.clear();
+    miner.restore(&other_account);
+    assert!(miner.campaigns.is_empty());
+    miner.restore(&saved);
+    // Neither a different campaign nor a replaced reward inherits a live counter.
+    let other = Campaign::parse(&campaign_json("other"), &HashMap::new(), Utc::now()).unwrap();
+    miner
+        .complete(inventory(vec![other], true), &pool)
+        .await
+        .unwrap();
+    assert!(!miner.campaigns[0].drops[0].progress_disputed);
+    assert_eq!(miner.campaigns[0].drops[0].confirmed_minutes, 12);
+
+    miner.campaigns.clear();
+    miner.restore(&saved);
+    intent.send_modify(|intent| intent.clear += 1);
+    miner.apply_intent(&pool).await;
+    assert!(miner.resume().disputed_campaigns.is_empty());
+    pool.close().await;
+}
+
+#[tokio::test(start_paused = true)]
+async fn disputed_progress_retries_once_per_minute_without_claim_status_or_estimates() {
+    let server = MockServer::start().await;
+    let (_dir, mut miner, _intent, mut pool) = miner(&server).await;
+    let settings = select(&mut miner).await;
+    miner.status.checked_at = Some(Utc::now());
+    let drop = &mut miner.campaigns[0].drops[0];
+    drop.confirm(23, Utc::now());
+    drop.reported_minutes = Some(42);
+    drop.progress_disputed = true;
+    miner.next_watch = Instant::now() + Duration::from_secs(600);
+    miner.next_progress_refresh = Instant::now() + Duration::from_secs(60);
+    miner.busy.insert(JobKind::Inventory);
+    // Channel loss should show waiting for a channel, not waiting for a claim.
+    miner.event(Event::Offline(10)).await.unwrap();
+    miner.reselect(&settings).await;
+    miner.publish(&settings).await.unwrap();
+    assert_eq!(
+        miner.app.snapshot.read().await.mining.state,
+        crate::dto::MiningState::WaitingChannel
+    );
+    tokio::time::advance(Duration::from_secs(59)).await;
+    miner.schedule(&settings).await;
+    assert!(!miner.refresh);
+    tokio::time::advance(Duration::from_secs(1)).await;
+    miner.schedule(&settings).await;
+    assert!(miner.refresh);
+    miner.refresh = false;
+    miner
+        .complete(
+            Job::Inventory {
+                requested_at: Utc::now(),
+                refresh_sequence: 0,
+                result: Err(TwitchError::Network),
+            },
+            &pool,
+        )
+        .await
+        .unwrap();
+    for _ in 0..5 {
+        miner.confirm("drop-one", 60, &settings);
+        miner.schedule(&settings).await;
+        assert!(!miner.refresh);
+    }
+    assert_eq!(miner.campaigns[0].drops[0].confirmed_minutes, 23);
+    assert!(miner.campaigns[0].drops[0].progress_disputed);
+    tokio::time::advance(Duration::from_secs(60)).await;
+    miner.schedule(&settings).await;
+    assert!(miner.refresh);
+    miner.refresh = false;
+    miner.campaigns[0].ends_at = Utc::now() - chrono::Duration::hours(24);
+    tokio::time::advance(Duration::from_secs(60)).await;
+    miner.schedule(&settings).await;
+    assert!(
+        !miner.refresh,
+        "expired disputes must stop reconciling at the claim deadline"
+    );
+    pool.close().await;
 }
 
 #[tokio::test]
