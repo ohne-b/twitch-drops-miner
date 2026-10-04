@@ -217,6 +217,7 @@ export function CampaignDetail({
               {campaign.drops.map((drop) => (
                 <section
                   id={`drop-${drop.id}`}
+                  aria-current={drop.id === dropId ? 'true' : undefined}
                   key={drop.id}
                   className={`reward-detail py-5 ${drop.id === dropId ? 'selected' : ''}`}
                 >
@@ -324,6 +325,7 @@ export function CampaignDetail({
             {history.entries.map((entry) => (
               <div
                 id={`history-drop-${entry.id}`}
+                aria-current={entry.id === dropId ? 'true' : undefined}
                 key={entry.id}
                 className={`reward-detail flex gap-3 py-3 ${entry.id === dropId ? 'selected' : ''}`}
               >

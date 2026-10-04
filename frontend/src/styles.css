@@ -268,10 +268,6 @@
 .reward-detail {
   scroll-margin-top: 12px;
 }
-.reward-detail.selected {
-  border-left: 2px solid var(--color-accent);
-  padding-left: 12px;
-}
 .activity-frame {
   display: flex;
   flex-direction: column;
