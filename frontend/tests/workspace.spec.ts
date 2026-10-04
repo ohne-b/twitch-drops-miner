@@ -1106,6 +1106,7 @@ test('reload restores a nested draft for review without overwriting unrelated se
   request,
 }) => {
   await page.goto('/?edit=priorities');
+  await expect(page.getByRole('combobox', { name: 'Mining priority' })).toBeEnabled();
   const before = await (await request.get('/api/settings')).json();
   await page.evaluate(
     (revision) =>
