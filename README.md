@@ -522,10 +522,12 @@ labeled `1.3.2` need one manual upgrade to join the release series starting at `
 
 ### Connection timeouts
 
-Open **Settings > Connection > Connection Quality**. If requests time out at **1 or 2**,
-try **3** and keep it there if mining is stable.
+**Connection Quality** defaults to **3**: **15 seconds to connect** and **30 seconds per
+request**. Existing saved choices are kept.
 
-- **3** allows **15 seconds to connect** and **30 seconds per request**.
+If requests time out at **1 or 2**, try **3** in **Settings > Connection**. Keep it if
+mining is stable.
+
 - The watch interval stays **59 seconds**. Higher settings allow more time for requests,
   but also take longer to report a timeout.
 - Changing the setting also reconnects Twitch. An improvement may come from the longer

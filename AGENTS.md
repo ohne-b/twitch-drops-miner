@@ -174,7 +174,8 @@ embed it and run without a build tool/runtime companion. Production builds never
   new channel choices until fresh channel eligibility is available. Cache clear
   preserves settings, credentials and completed campaigns, and clears local claim history with
   durable cleared-ID tombstones before refreshing; failure to persist must fail the clear.
-- Requests use bounded concurrency/rate, retries and cancellation. Quality 1..6 controls connect
+- Requests use bounded concurrency/rate, retries and cancellation. Connection Quality defaults
+  to 3 for new or missing settings; preserve explicit saved values. Quality 1..6 controls connect
   timeout 5×quality and total 10×quality seconds; the saved refresh interval actually schedules
   inventory work. Slow discovery must not block watch cadence. Duplicate idle prompts collapse.
   Nonfatal notification dismissal failures remain visible but never extend or clear the shared
