@@ -298,9 +298,10 @@ embed it and run without a build tool/runtime companion. Production builds never
   and Up next have equal desktop dimensions and internal scrolling; stack on narrow screens and
   preserve access on short windows. Show confirmed values without redundant labels
   or the Watching for this reward caption. Put the current reward's Last confirmed timestamp
-  in the Mining page header beside refresh, in smaller, darker text with readable contrast.
-  Omit it when confirmation is unknown; let the header wrap on phones.
-  Known rewards without confirmed progress show `0 / required minutes` in Mining and Campaigns,
+  inside Now mining beside the selection mode, in smaller, darker text with readable contrast.
+  Omit it when confirmation is unknown; let the card header wrap on phones.
+  Known rewards without confirmed progress show an empty progress bar and `0 / required minutes`
+  in Mining and Campaigns,
   with an unconfirmed tooltip and accessible description. Suppress the redundant awaiting-progress
   subtitle when a reward is shown. Keep unknown evidence unchanged; never display estimates as
   confirmed minutes or invent a confirmation timestamp or a duration for an unknown reward.
