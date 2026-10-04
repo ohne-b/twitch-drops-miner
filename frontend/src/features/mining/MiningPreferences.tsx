@@ -174,7 +174,7 @@ export default function MiningPreferences() {
                         <button
                           type="button"
                           key={game}
-                          className="block w-full px-3 py-2 text-start text-[13px] hover:bg-hover"
+                          className="block w-full px-3 py-2 text-start text-[13px] hover:bg-hover max-md:min-h-11"
                           onClick={() => addGame(game)}
                         >
                           {game}

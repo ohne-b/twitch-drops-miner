@@ -128,7 +128,7 @@ export function Check({
   disabled?: boolean;
 }) {
   return (
-    <label className="flex min-h-9 cursor-pointer items-center gap-2.5 text-soft">
+    <label className="flex min-h-9 cursor-pointer items-center gap-2.5 text-soft max-md:min-h-11">
       <input
         type="checkbox"
         checked={checked}

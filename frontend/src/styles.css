@@ -585,6 +585,9 @@ label:has(> input[type='checkbox']:focus-visible) {
     .icon-button {
       @apply size-11;
     }
+    .drag-handle {
+      @apply size-11;
+    }
     .authorization-row > * {
       @apply h-11;
     }
