@@ -58,10 +58,18 @@ export default function Mining() {
     );
   return (
     <div className="mining-workspace flex flex-col gap-5 xl:min-h-0 xl:flex-1">
-      <div className="flex shrink-0 flex-wrap items-start justify-between gap-3">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <h1 className="text-[22px] font-semibold">{t('mining')}</h1>
+        {progress?.confirmed_at && (
+          <time
+            dateTime={progress.confirmed_at}
+            className="order-last w-full text-right text-xs text-[#888888] sm:order-none sm:ms-auto sm:w-auto"
+          >
+            {t('last_confirmed', { time: dateTime(progress.confirmed_at) })}
+          </time>
+        )}
         <InventoryRefreshButton />
-      </div>
+      </header>
       <ActionResult action={action} />
       <section className="panel shrink-0 p-5 md:p-6" aria-labelledby="mining-heading">
         <div className="mb-5 flex items-center justify-between gap-3">
@@ -132,11 +140,6 @@ export default function Mining() {
                     : t('progress_unknown')}
                 </span>
               </div>
-              {progress.confirmed_at && (
-                <p className="muted mt-2">
-                  {t('last_confirmed', { time: dateTime(progress.confirmed_at) })}
-                </p>
-              )}
             </div>
           </>
         ) : data.manual_mode.active ? (

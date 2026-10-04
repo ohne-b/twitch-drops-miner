@@ -296,8 +296,10 @@ embed it and run without a build tool/runtime companion. Production builds never
   anchor-scrolling the title or navigation out of view.
 - Mining: watching information only in Now mining, no status subtitle or Recent activity. Channels
   and Up next have equal desktop dimensions and internal scrolling; stack on narrow screens and
-  preserve access on short windows. Show confirmed values/timestamps without redundant labels
-  or the Watching for this reward caption.
+  preserve access on short windows. Show confirmed values without redundant labels
+  or the Watching for this reward caption. Put the current reward's Last confirmed timestamp
+  in the Mining page header beside refresh, in smaller, darker text with readable contrast.
+  Omit it when confirmation is unknown; let the header wrap on phones.
   Channels, Up next and game-priority rows have inset separators and modest 4px scrollbar
   padding, smaller than Campaigns. Up next shows a shared date once only when reward windows
   match by instant and their upcoming state agrees; retain distinct per-drop dates.

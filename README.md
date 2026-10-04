@@ -209,6 +209,9 @@ Notification dismissal failures appear in Activity without postponing watch sche
 Times use the 24-hour clock (`00:00–23:59`) in your browser's timezone. Dates keep your
 browser's local format; Activity also shows seconds.
 
+The current reward's **Last confirmed** time sits beside the refresh button at the top right
+of Mining, in smaller, muted text. It appears only after Twitch confirms progress.
+
 **Mining > Channels** shows live streams currently eligible for your selected games and
 rewards, plus your manually selected channel. Special-event campaigns can include other
 categories when their actual channel restriction allows it. Channel changes pause watching
