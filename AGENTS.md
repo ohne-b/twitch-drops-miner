@@ -344,6 +344,8 @@ embed it and run without a build tool/runtime companion. Production builds never
   At desktop widths tabs, search and filters stay full width above the list and detail columns.
   Both columns fill the remaining height with a compact 12px bottom margin; details keep the
   same height for short and long campaigns, with a fixed header and separately scrollable body.
+  The detail body inherits the panel's opaque background so browsers can composite scrolling;
+  preserve its distinct keyboard-focus background and the full-page layout's canvas color.
   Scroll campaign results independently with a small scrollbar gutter; allow the controls area
   to scroll in short windows and the workspace to scroll when notices or long titles leave too
   little room for usable controls and detail content. Omit selection stripes and

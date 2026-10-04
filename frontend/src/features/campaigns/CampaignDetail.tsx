@@ -101,7 +101,7 @@ export function CampaignDetail({
         role="region"
         aria-label={title}
         tabIndex={0}
-        className="detail-body p-5 focus-visible:bg-field"
+        className="detail-body bg-inherit p-5 focus-visible:bg-field"
       >
         {dropId &&
           (campaign || history) &&
