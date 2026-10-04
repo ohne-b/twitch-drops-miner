@@ -496,7 +496,7 @@ async fn concurrent_settings_edits_conflict_and_failed_writes_preserve_revision(
             .settings
             .values
             .connection_quality,
-        1
+        saved.connection_quality
     );
 }
 

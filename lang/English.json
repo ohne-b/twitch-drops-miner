@@ -79,7 +79,6 @@
         "settings": {
             "mining_benefits": "Allowed reward types",
             "drop_name_blacklist": "Ignore rewards by name",
-            "drop_name_blacklist_hint": "One phrase per line. Matches any part of a name.",
             "drop_name_blacklist_help": "Enter one keyword per line. Matching is a case-insensitive literal substring. Matching drops and their dependent branches are ignored; prerequisite-only branches are skipped while shared prerequisites remain mineable.",
             "clear_all_cache": "Clear All Cache",
             "search_games": "Search games...",
@@ -243,7 +242,6 @@
             "no_game_priorities": "No games selected for mining.",
             "twitch_logout": "Log out of Twitch",
             "clear_filters": "Clear filters",
-            "selected_games_help": "Selected games first. Drag to reorder.",
             "help_for": "{topic} help",
             "mining_priority": "Mining priority",
             "priority_manual": "Default (manual order)",

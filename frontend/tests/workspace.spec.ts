@@ -33,7 +33,7 @@ for (const width of [1440, 390, 320]) {
     await expect(results.getByRole('button', { name: 'The Elder Scrolls Online' })).toBeVisible();
     const bounds = (await results.boundingBox())!;
     expect(bounds.y + bounds.height).toBeLessThan(
-      (await page.locator('#mining-priority-help').boundingBox())!.y,
+      (await page.getByRole('region', { name: 'Game priorities', exact: true }).boundingBox())!.y,
     );
     await search.fill('');
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
@@ -155,9 +155,7 @@ test('only the game list scrolls while desktop preferences controls stay in plac
     await expect(match).toBeInViewport({ ratio: 0.99 });
     const resultBounds = (await results.boundingBox())!;
     expect(resultBounds.y).toBeGreaterThan(searchTop);
-    expect(resultBounds.y + resultBounds.height).toBeLessThan(
-      (await page.locator('#mining-priority-help').boundingBox())!.y,
-    );
+    expect(resultBounds.y + resultBounds.height).toBeLessThan((await list.boundingBox())!.y);
     const firstMatchHandle = list.getByRole('button', { name: /^Reorder/ }).first();
     await firstMatchHandle.focus();
     await expect(firstMatchHandle).toBeInViewport({ ratio: 0.99 });
@@ -206,7 +204,7 @@ test('short preferences with save conflicts and reconnects keep controls reachab
   const results = page.getByRole('region', { name: 'Search games...' });
   const resultBounds = (await results.boundingBox())!;
   expect(resultBounds.y + resultBounds.height).toBeLessThan(
-    (await page.locator('#mining-priority-help').boundingBox())!.y,
+    (await page.getByRole('region', { name: 'Game priorities', exact: true }).boundingBox())!.y,
   );
   const match = results.getByRole('button', { name: 'Sea of Thieves', exact: true });
   await match.focus();

@@ -48,10 +48,14 @@ test('mining preferences keeps detailed rules in accessible help without changin
     const priority = page.getByRole('combobox', { name: 'Mining priority', exact: true });
     await expect(priority).toBeEnabled();
     await expect(priority).toHaveAccessibleDescription(/24 hours or less/);
-    await expect(page.locator('#mining-priority-help')).toHaveText(
-      'Selected games first. Drag to reorder.',
-    );
-    const hintTop = (await page.locator('#mining-priority-help').boundingBox())!.y;
+    await expect(
+      page.getByText('Selected games first. Drag to reorder.', { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByText('One phrase per line. Matches any part of a name.', { exact: true }),
+    ).toHaveCount(0);
+    const games = page.getByRole('region', { name: 'Game priorities', exact: true });
+    const gamesTop = (await games.boundingBox())!.y;
     const priorityHelp = page.getByRole('button', { name: 'Mining priority help', exact: true });
     const rules = page.locator('#mining-priority-details');
     await expect(rules).toBeHidden();
@@ -59,7 +63,7 @@ test('mining preferences keeps detailed rules in accessible help without changin
     await priorityHelp.press('Enter');
     await expect(rules).toBeVisible();
     await expect(rules).toContainText('Your saved drag order breaks ties.');
-    expect((await page.locator('#mining-priority-help').boundingBox())!.y).toBe(hintTop);
+    expect((await games.boundingBox())!.y).toBe(gamesTop);
     const bounds = (await rules.boundingBox())!;
     expect(bounds.x).toBeGreaterThanOrEqual(0);
     expect(bounds.y).toBeGreaterThanOrEqual(0);

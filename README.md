@@ -241,8 +241,8 @@ to Mining; edits continue to autosave. On desktop, the game list scrolls indepen
 search, priority controls and the settings beside it stay in place. Short windows give the
 settings column its own scrolling when needed; if an error or reconnect notice leaves too
 little space, the games column can scroll too, keeping its controls reachable and the page fixed.
-Game search results appear directly below the search controls, above the short priority hint.
-Mining preferences uses short hints and labels. Click or tap an info icon for the selected
+Game search results appear directly below the search controls, above the selected games.
+Mining preferences keeps explanations behind info icons. Click or tap one for the selected
 priority mode's rules, other-game reward rules or ignore/dependency details; Enter or Space
 also opens help, and Escape or clicking outside closes it. Help stays available while
 reconnecting. **Allowed reward types** filters mining across selected and other games.
@@ -508,83 +508,74 @@ labeled `1.3.2` need one manual upgrade to join the release series starting at `
 
 ## Troubleshooting
 
-Basic error summaries are written to the server's stderr (Docker logs) and the rotating
-`logs/TDM.*.log` files, not the dashboard's Activity page. For a recent failure:
+### Common problems
+
+| Problem | What to check |
+| --- | --- |
+| Requests time out | Try a higher **Connection Quality**; see [Connection timeouts](#connection-timeouts). |
+| No campaigns appear | Clear campaign filters, then use **Refresh inventory**. For a failed or partial catalog refresh, wait and retry; relogging or clearing cache cannot repair the feed or add missing entries. |
+| Mining is idle | Select a game or enable automatic badges/emotes. Check live channels, account linking, campaign dates, prerequisites, allowed reward types and ignored names. |
+| Progress is stuck | Compare confirmed progress with Twitch's inventory and stop simultaneous manual viewing. Local estimates and **Dashboard connected** do not prove Twitch is awarding progress. |
+| HTTP 401/403 errors | Public-page failures keep your saved login. Reauthorize when Twitch reports an authentication failure. |
+| The container cannot write data or logs | Check directory permissions for UID/GID `1000:1000`. Run only one miner per data directory. |
+| Writes or live updates fail behind a proxy | Open the exact `PUBLIC_BASE_URL`, check Socket.IO support and review [dashboard protection](#dashboard-password-and-remote-access). |
+
+### Connection timeouts
+
+**Connection Quality** defaults to **3**: **15 seconds to connect** and **30 seconds per
+request**. Existing saved choices are kept.
+
+If requests time out at **1 or 2**, try **3** in **Settings > Connection**. Keep it if
+mining is stable.
+
+- The watch interval stays **59 seconds**. Higher settings allow more time for requests,
+  but also take longer to report a timeout.
+- Changing the setting also reconnects Twitch. An improvement may come from the longer
+  timeout or the reconnect; it does not tell us which helped.
+
+Transient watch failures already get up to five attempts. Three consecutive failed watch
+operations trigger a reconnect, preserving settings and any manual channel timer.
+
+### Logs
+
+Read recent server errors:
 
 ```bash
 docker compose logs --since=30m --tail=200 twitch-drops-miner
 ```
 
-Normal logs identify operations, HTTP status/retry attempts, JSON syntax positions,
-rejected field types and catalog problems. Unknown GraphQL messages are fingerprinted.
+The same errors go to `logs/TDM.*.log`; detailed server diagnostics stay out of **Activity**.
+Normal logs include operations, HTTP status, retry attempts, parsing errors and catalog
+failures. File logs retain up to five daily files; Docker retention follows your Compose settings.
 
-Idle HTTP connections expire after 15 seconds, before the next 59-second watch event.
-Transient watch connection errors, HTTP 429 and HTTP 5xx responses use up to five attempts,
-starting with a one-second retry delay and increasing to two, four and eight seconds.
-HTTP `Retry-After` is respected within a 1–60 second bound. Retries reuse the same watch
-payload and remain cancellable; they never add local progress or replay a successful HTTP 204.
-After retries are exhausted, failed watch requests discard their cached beacon address.
-After three consecutive failed watch operations for the current stream, the miner renews its Twitch connections
-automatically, preserving settings and any manual channel timer. Changing **Connection
-Quality** also rebuilds connections and changes timeouts; it is no longer necessary to
-toggle it just to trigger recovery from repeated watch failures. This does not bypass
-an unavailable Twitch endpoint or guarantee that Twitch credits watch time.
+### Advanced diagnostics
 
-HTTP 401/403 responses from public Twitch pages or settings scripts enter watch recovery
-without discarding your saved login. Authentication failures from Twitch's authenticated
-API still require reauthorization. After 15 unconfirmed estimates, a successful inventory
-refresh clears the stale estimate limit, including for campaigns retained during a partial
-refresh. Confirmed progress is preserved; failed refreshes do not reset the limit.
+Use this when normal logs do not explain a failure. It adds request timings, response
+metadata, nested network errors and bounded, redacted JSON previews. It is **off by
+default**, even with `-v` or `-vv`.
 
-**Advanced diagnostics are off by default**, including with `-v`/`-vv`. To enable them,
-add this entry under the miner service's **existing** `environment` section in Compose:
+For Docker, add this to the miner's **existing** `environment` section:
 
 ```yaml
   TDM_DIAGNOSTICS: "true"
 ```
 
-Keep the other environment entries, mounts and ports. Recreate only the miner with
-`docker compose up -d --no-deps twitch-drops-miner`. For a standalone executable, use
-`--diagnostics` or `TDM_DIAGNOSTICS=true`. Startup logs confirm when the mode is enabled.
-Set the variable to `"false"` (or remove it) and recreate the container to switch it off.
-This is a server setting; it adds no dashboard controls or Activity messages.
+Keep the other environment entries, mounts and ports, then recreate only the miner:
 
-Advanced logs add a request correlation ID, endpoint category, method, status, elapsed
-time, HTTP version, selected response headers, body size/fingerprint, and redacted JSON
-response previews, including unfamiliar Twitch error messages and successful responses
-that the application may subsequently reject. Transport failures include nested error
-causes, even when no HTTP response was received. Retry-response capture has a one-second
-budget and cannot replace the retry decision.
+```bash
+docker compose up -d --no-deps twitch-drops-miner
+```
 
-Captures remove known request/proxy/cookie credentials, sensitive JSON fields, URLs,
-credential-bearing text and opaque token-like strings. They are **not exact raw dumps**:
-JSON previews are capped at 16 KiB, 256 nodes, 12 levels, 32 array entries, 64 object fields
-and 1 KiB per string, with omissions marked. Input strings larger than 16 KiB are withheld
-whole to bound redaction work without exposing partial credentials. Non-JSON bodies are
-withheld because their credentials cannot be identified structurally; size/fingerprint and available parser
-errors remain. Credential-inventory overflow also withholds the preview. Transport
-chains are limited to 12 causes and 1 KiB per cause. WebSocket frames are never captured.
+For a standalone binary, use `--diagnostics` or `TDM_DIAGNOSTICS=true`.
+Startup logs confirm when it is enabled.
 
-Enable this only while reproducing a problem: it logs additional HTTP traffic and can
-include account/campaign metadata, so review logs before sharing them. Existing file
-rotation retains at most five daily files; Docker retention depends on Compose.
-Diagnostics cannot recover earlier failures or prove that Twitch awarded watch time.
-
-- **No campaigns appear:** clear the campaign filters and check **Activity**. The public
-  catalog can be unavailable, stale or incomplete; **Refresh inventory** reports a failed
-  or partial refresh in its button. Previously known active campaigns stay available during
-  a partial refresh, and manual watching still works. Reauthorizing Twitch or clearing cache
-  cannot repair a catalog-service outage or add campaigns missing from its feed.
-- **Mining is idle:** select a game, check account linking, campaign dates, prerequisites,
-  reward filters, and ignore rules. Progress requires an eligible live channel.
-- **Progress seems stuck:** compare Twitch's inventory with the dashboard's confirmed
-  values and local estimates, and stop simultaneous manual viewing. A healthy process
-  or **Dashboard connected** status does not prove Twitch is awarding progress.
-- **The container cannot write data or logs:** check that the mounted directories are
-  writable by UID/GID `1000:1000` and that another miner is not using the same data directory.
-- **Writes or live updates fail behind a proxy:** open the configured `PUBLIC_BASE_URL`
-  exactly, check the proxy's Socket.IO support, and review the
-  [protection configuration](#dashboard-password-and-remote-access).
+- Reproduce the problem while diagnostics are on; earlier failures cannot be recovered.
+- Previews are limited to 16 KiB and may omit content. Non-JSON bodies and WebSocket
+  frames are not captured.
+- Logs can still contain account/campaign metadata. Review them before sharing; never
+  upload credentials or your data directory.
+- When done, remove the option or set `TDM_DIAGNOSTICS` to `"false"`, then recreate the
+  container or restart the standalone process.
 
 ## Contributing
 
