@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from '@mdi/react';
-import { Link } from 'react-router';
+import { CampaignLink } from '../campaigns/CampaignLink';
 import {
   mdiArrowDown,
   mdiFilterOutline,
@@ -84,6 +84,8 @@ export default function Activity() {
       </div>
       <div
         ref={ref}
+        id="activity-list"
+        data-restore-scroll
         tabIndex={0}
         aria-label={t('activity')}
         className="panel activity-list overflow-y-auto"
@@ -133,14 +135,15 @@ export default function Activity() {
               </span>
             )}
             {event.campaign_id && (
-              <Link
+              <CampaignLink
+                id={`activity-campaign-${event.id}`}
                 className="icon-button"
                 aria-label={t('campaign_details')}
                 title={t('campaign_details')}
                 to={`/campaigns?campaign=${encodeURIComponent(event.campaign_id)}${event.drop_id ? `&drop=${encodeURIComponent(event.drop_id)}` : ''}`}
               >
                 <Icon path={mdiChevronRight} className="mdi-icon" />
-              </Link>
+              </CampaignLink>
             )}
           </article>
         ))}

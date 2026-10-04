@@ -1,4 +1,5 @@
 import MiningPreferences from './MiningPreferences';
+import { CampaignLink } from '../campaigns/CampaignLink';
 import { Icon } from '@mdi/react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
@@ -85,12 +86,13 @@ export default function Mining() {
                 className="size-16"
               />
               <div className="min-w-0 flex-1">
-                <Link
+                <CampaignLink
+                  id="mining-drop-details"
                   className="text-lg font-semibold hover:underline"
                   to={`/campaigns?campaign=${encodeURIComponent(progress.campaign_id)}&drop=${encodeURIComponent(progress.drop_id)}`}
                 >
                   {progress.drop_name}
-                </Link>
+                </CampaignLink>
                 <p className="muted mt-1">
                   {progress.game_name} / {progress.campaign_name}
                 </p>
@@ -204,6 +206,8 @@ export default function Mining() {
             <Search value={search} onChange={setSearch} label={t('search_channels')} />
           </div>
           <div
+            id="channels-list"
+            data-restore-scroll
             className="min-h-0 max-h-[440px] overflow-y-auto focus-visible:bg-field xl:max-h-none xl:flex-1"
             role="region"
             aria-labelledby="channels-heading"
@@ -316,6 +320,8 @@ export default function Mining() {
             </Link>
           </div>
           <div
+            id="up-next-list"
+            data-restore-scroll
             className="min-h-0 max-h-[440px] overflow-y-auto focus-visible:bg-field xl:max-h-none xl:flex-1"
             role="region"
             aria-labelledby="up-next-heading"
@@ -335,12 +341,13 @@ export default function Mining() {
                 </div>
                 {game.campaigns.map((item) => (
                   <div className="mt-3 ps-7 text-[13px]" key={item.id}>
-                    <Link
+                    <CampaignLink
+                      id={`up-next-campaign-${item.id}`}
                       className="text-link"
                       to={`/campaigns?campaign=${encodeURIComponent(item.id)}`}
                     >
                       {item.name}
-                    </Link>
+                    </CampaignLink>
                     {item.priority && item.priority.reason !== 'saved_order' && (
                       <p className="muted mt-1">
                         {t(`reason_${item.priority.reason}`)}
@@ -355,12 +362,13 @@ export default function Mining() {
                         >
                           <Art url={drop.image_url} className="size-9 [&_img]:object-contain" />
                           <div className="min-w-0 flex-1">
-                            <Link
+                            <CampaignLink
+                              id={`up-next-drop-${item.id}-${drop.id || position}`}
                               className="hover:underline text-soft"
                               to={`/campaigns?campaign=${encodeURIComponent(item.id)}${drop.id ? `&drop=${encodeURIComponent(drop.id)}` : ''}`}
                             >
                               {drop.name}
-                            </Link>
+                            </CampaignLink>
                             {drop.eligibility && drop.eligibility !== 'ready' && (
                               <p className="text-xs mt-1">{t(`eligibility_${drop.eligibility}`)}</p>
                             )}

@@ -1,6 +1,6 @@
 import { Icon } from '@mdi/react';
-import { useEffect, useState } from 'react';
-import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router';
+import { useEffect, useRef, useState } from 'react';
+import { NavLink, Navigate, Route, Routes, useLocation, useNavigate, useNavigationType } from 'react-router';
 import {
   mdiPlayCircleOutline,
   mdiReload,
@@ -25,6 +25,8 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
   const { data, connected, incompatible, autosave } = useMiner();
   const t = useT();
   const location = useLocation();
+  const navigationType = useNavigationType();
+  const previousLocation = useRef(location);
   const [logoutError, setLogoutError] = useState(false);
   const links = [
     ['/', 'mining', mdiPlayCircleOutline],
@@ -33,9 +35,24 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
     ['/settings', 'gui.tabs.settings', mdiCogOutline],
   ] as const;
   useEffect(() => {
+    const previous = previousLocation.current;
+    previousLocation.current = location;
+    const origin = previous.state?.campaignReturn;
+    if (navigationType === 'POP' && origin?.path === location.pathname + location.search + location.hash) {
+      const frame = requestAnimationFrame(() => {
+        for (const [id, top] of origin.lists as [string, number][]) {
+          const list = document.getElementById(id);
+          if (list) list.scrollTop = top;
+        }
+        window.scrollTo(0, origin.top);
+        document.getElementById(origin.focus)?.focus({ preventScroll: true });
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+    if (previous.pathname === location.pathname) return;
     if (location.search.includes('campaign=')) return;
     window.scrollTo(0, 0);
-  }, [location.pathname]);
+  }, [location, navigationType]);
   return (
     <div className="app-shell min-h-dvh">
       <a href="#main" className="sr-only fixed z-50 bg-soft p-3 text-canvas focus:not-sr-only">

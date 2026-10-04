@@ -200,7 +200,7 @@ export default function Campaigns() {
       { pathname: location.pathname, search: next.toString() },
       {
         replace: !!detailId,
-        state: { campaignDetail: location.state?.campaignDetail || !detailId },
+        state: { ...location.state, campaignDetail: location.state?.campaignDetail || !detailId },
       },
     );
   }
