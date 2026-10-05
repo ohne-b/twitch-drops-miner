@@ -366,8 +366,10 @@ embed it and run without a build tool/runtime companion. Production builds never
 - Campaigns starts with Settings-style Available/History icon tabs and the total campaign count
   immediately left of refresh on the right. Omit the filtered count; match Last confirmed's
   12px/#888888 text. Keep the page heading screen-reader-only. Clear filters stays beside All games
-  inside Filters. On phones give tabs and search full-width rows, then filter/sort/view controls
-  and the count/refresh pair, wrapping when needed. Native icon-styled sorting offers Default, Newest (campaign start descending),
+  inside Filters. On phones put pagination to the right of the tabs, then a full-width search
+  row, followed by filter/sort/view controls and the count/refresh pair, wrapping when needed.
+  Below 360px omit the decorative tab icons to make room; retain both text labels.
+  Native icon-styled sorting offers Default, Newest (campaign start descending),
   Ending Soonest (end ascending), Most Drops (total descending), and A-Z (campaign name).
   Default retains progress-first ordering; ties use that same deterministic order. Sort is
   URL state preserved by searches, filter resets and tab changes, never a mining setting.
@@ -408,7 +410,7 @@ embed it and run without a build tool/runtime companion. Production builds never
   reward as claimed. Omit benefit names identical to the reward title, retaining other names.
   List filters/layout are shareable URL state; loading a shared URL does not autosave it.
   Available and History paginate 25 campaign groups, with pagination centered across the
-  top toolbar on desktop and on its own row below the controls on phones.
+  top toolbar on desktop and beside the tabs on phones, wrapping above search when needed.
   Results fill the remaining height without a pagination
   footer. Preserve full-size pagination hit targets. Mine remains a game-wide action.
   Eligibility, normalized game identity, saved ranks and priority reasons come from shared
