@@ -335,8 +335,9 @@ with confirmed progress first), **Newest** (latest campaign start), **Ending Soo
 through searches, tab changes and reloads; it does not change mining priorities.
 Icon-only actions have circular hover backgrounds. Search-clear actions stay inset
 inside the field, and game-priority drag grips remain visible as plain six-dot handles.
-On phones, tabs and search have their own rows, the count stays beside refresh, and pagination
-is centered below the controls. Checkboxes, search results and drag handles keep
+On phones, pagination sits beside the tabs, search fills the next row, and the count stays
+beside refresh with the filter controls. Crowded controls wrap without shrinking touch targets.
+Checkboxes, search results and drag handles keep
 44px touch targets. Channels, Up next and game priorities use inset separators and a smaller
 scrollbar gap than Campaigns. Up next shows identical reward windows once per campaign.
 Channel thumbnails use the current game's catalog artwork when stream metadata omits it;

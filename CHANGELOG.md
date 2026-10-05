@@ -4,7 +4,7 @@
 
 - show your Twitch avatar, equipped badges and chat-colored name in the sidebar, with dark colors lightened for readability ([#71](https://github.com/ohne-b/twitch-drops-miner/pull/71))
 - add the account identity and badge collection to Settings > Twitch account, with badge descriptions and explicit feedback when Twitch does not provide the full collection
-- simplify the Campaigns count, place it beside refresh and center pagination, with a separate pagination row on phones
+- simplify the Campaigns count, place it beside refresh and center desktop pagination; keep phone pagination beside the tabs
 - show an empty progress bar for known rewards at zero minutes, keep Last confirmed beside the selection mode inside Now mining, and balance the card's artwork and spacing ([#70](https://github.com/ohne-b/twitch-drops-miner/pull/70))
 
 Existing settings, credentials, history, service names and container mounts remain compatible.

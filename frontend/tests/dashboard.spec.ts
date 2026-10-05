@@ -2557,15 +2557,14 @@ test('History shares sort, search, game filters and layout while paging recorded
     await expect(pagination).toBeInViewport();
     const bounds = (await pagination.boundingBox())!;
     const search = (await page.getByRole('searchbox').boundingBox())!;
-    const filters = (await page
-      .getByRole('button', { name: 'Filters', exact: true })
-      .boundingBox())!;
-    expect(bounds.y).toBeGreaterThanOrEqual(search.y + search.height);
-    expect(bounds.y + bounds.height).toBeLessThanOrEqual((await titles.first().boundingBox())!.y);
-    expect(bounds.y).toBeGreaterThanOrEqual(filters.y + filters.height);
-    expect(bounds.x + bounds.width / 2).toBeCloseTo(width / 2, 0);
+    const tabs = (await page.getByRole('navigation', { name: 'Campaign views' }).boundingBox())!;
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual(search.y);
+    expect(bounds.x).toBeGreaterThanOrEqual(tabs.x + tabs.width);
+    expect(bounds.y + bounds.height / 2).toBeCloseTo(tabs.y + tabs.height / 2, 0);
+    expect(bounds.x + bounds.width).toBeCloseTo(width - 16, 0);
     expect((await next.boundingBox())!.height).toBe(44);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+    await page.screenshot({ path: `../artifacts/history-pagination-${width}-phone.png` });
   }
   await page.screenshot({
     path: '../artifacts/history-pagination-icons-phone.png',
@@ -2606,8 +2605,8 @@ test('History shares sort, search, game filters and layout while paging recorded
   const pagination = page.getByRole('navigation', { name: 'Campaign pages' });
   await expect(pagination).toHaveText('100 / 100');
   const bounds = (await pagination.boundingBox())!;
-  const filters = (await page.getByRole('button', { name: 'Filters', exact: true }).boundingBox())!;
-  expect(bounds.y).toBeGreaterThanOrEqual(filters.y + filters.height);
+  const search = (await page.getByRole('searchbox').boundingBox())!;
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(search.y);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
   await expect(next).toBeDisabled();
   await previous.click();
