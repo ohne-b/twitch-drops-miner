@@ -4,15 +4,12 @@ use serde_json::{Value, json};
 use url::Url;
 
 use super::{TwitchClient, TwitchError};
-use crate::dto::{AccountBadge, AccountLink, AccountProfile};
+use crate::dto::{AccountBadge, AccountProfile};
 
 const PROFILE: &str = r#"query AccountProfile($id: ID!) {
   user(id: $id) {
-    id login displayName profileImageURL(width: 300) bannerImageURL
-    chatColor description createdAt followers { totalCount }
-    roles { isPartner isAffiliate isStaff isGlobalMod }
+    id login displayName profileImageURL(width: 300) chatColor
     displayBadges { id title description imageURL(size: QUADRUPLE) }
-    channel { socialMedias { name url } }
   }
 }"#;
 const BADGES: &str = r#"query AccountBadges {
@@ -81,44 +78,15 @@ impl AccountProfile {
             return None;
         }
         Some(Self {
-            display_name: text(&user["displayName"], 100).unwrap_or_else(|| login.clone()),
-            login,
+            display_name: text(&user["displayName"], 100).unwrap_or(login),
             avatar_url: artwork(&user["profileImageURL"]),
-            banner_url: artwork(&user["bannerImageURL"]),
             color: text(&user["chatColor"], 7).filter(|color| {
                 color.len() == 7
                     && color.starts_with('#')
                     && color[1..].bytes().all(|c| c.is_ascii_hexdigit())
             }),
-            description: text(&user["description"], 2000),
-            created_at: user["createdAt"]
-                .as_str()
-                .and_then(|date| date.parse().ok()),
-            followers: user["followers"]["totalCount"].as_u64(),
-            roles: [
-                ("isPartner", "partner"),
-                ("isAffiliate", "affiliate"),
-                ("isStaff", "staff"),
-                ("isGlobalMod", "global_mod"),
-            ]
-            .into_iter()
-            .filter(|(field, _)| user["roles"][field].as_bool() == Some(true))
-            .map(|(_, role)| role.to_owned())
-            .collect(),
             badges: parse_badges(&user["displayBadges"]).unwrap_or_default(),
             available_badges: None,
-            socials: user["channel"]["socialMedias"]
-                .as_array()
-                .into_iter()
-                .flatten()
-                .take(10)
-                .filter_map(|link| {
-                    Some(AccountLink {
-                        name: text(&link["name"], 100)?,
-                        url: safe_url(&link["url"])?,
-                    })
-                })
-                .collect(),
         })
     }
 }
@@ -134,15 +102,13 @@ fn text(value: &Value, limit: usize) -> Option<String> {
         .map(str::to_owned)
 }
 
-fn safe_url(value: &Value) -> Option<String> {
-    let url = Url::parse(&text(value, 2048)?).ok()?;
-    (url.scheme() == "https" && url.username().is_empty() && url.password().is_none())
-        .then(|| url.to_string())
-}
-
 fn artwork(value: &Value) -> Option<String> {
-    let value = safe_url(value)?;
-    (Url::parse(&value).ok()?.host_str()? == "static-cdn.jtvnw.net").then_some(value)
+    let url = Url::parse(&text(value, 2048)?).ok()?;
+    (url.scheme() == "https"
+        && url.username().is_empty()
+        && url.password().is_none()
+        && url.host_str() == Some("static-cdn.jtvnw.net"))
+    .then(|| url.to_string())
 }
 
 fn parse_badges(value: &Value) -> Option<Vec<AccountBadge>> {
@@ -175,8 +141,7 @@ mod tests {
 
     fn user() -> Value {
         json!({"id":"42", "login":"miner", "displayName":"Miner", "chatColor":"#008000",
-            "profileImageURL":"https://static-cdn.jtvnw.net/avatar.png", "createdAt":"2023-04-09T16:03:17Z",
-            "followers":{"totalCount":0}, "roles":{"isPartner":true},
+            "profileImageURL":"https://static-cdn.jtvnw.net/avatar.png",
             "displayBadges":[{"id":"event", "title":"Event badge", "description":"Earned during an event", "imageURL":"https://static-cdn.jtvnw.net/badge.png"}]})
     }
 
@@ -195,8 +160,6 @@ mod tests {
         let profile = client.account_profile().await.unwrap().unwrap();
         assert_eq!(profile.display_name, "Miner");
         assert_eq!(profile.color.as_deref(), Some("#008000"));
-        assert_eq!(profile.followers, Some(0));
-        assert_eq!(profile.roles, ["partner"]);
         assert_eq!(profile.available_badges, Some(profile.badges));
         assert_eq!(server.received_requests().await.unwrap().len(), 2);
     }
@@ -257,17 +220,21 @@ mod tests {
         value["login"] = json!("miner");
         value["chatColor"] = json!("red;background:url(example)");
         value["profileImageURL"] = json!("https://static-cdn.jtvnw.net.evil.test/image.png");
-        value["bannerImageURL"] = json!("https://user:secret@static-cdn.jtvnw.net/banner.png");
-        value["createdAt"] = json!("not a date");
-        value["channel"] = json!({"socialMedias":[{"name":"Unsafe", "url":"javascript:alert(1)"}, {"name":"Site", "url":"https://example.org"}]});
         let profile = AccountProfile::parse(&value, 42).unwrap();
-        assert!(
-            profile.color.is_none()
-                && profile.avatar_url.is_none()
-                && profile.banner_url.is_none()
-                && profile.created_at.is_none()
-        );
-        assert_eq!(profile.socials.len(), 1);
+        assert!(profile.color.is_none() && profile.avatar_url.is_none());
+        for url in [
+            "javascript:alert(1)",
+            "http://static-cdn.jtvnw.net/image.png",
+            "https://user:secret@static-cdn.jtvnw.net/image.png",
+        ] {
+            value["profileImageURL"] = json!(url);
+            assert!(
+                AccountProfile::parse(&value, 42)
+                    .unwrap()
+                    .avatar_url
+                    .is_none()
+            );
+        }
         let badge = user()["displayBadges"][0].clone();
         assert_eq!(
             parse_badges(&json!([badge.clone(), badge.clone()]))
