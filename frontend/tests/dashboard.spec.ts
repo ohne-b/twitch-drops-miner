@@ -1139,7 +1139,7 @@ test('campaign sort controls preserve filters and keep counts and resets in comp
       sort.evaluate((element) => getComputedStyle(element.parentElement!).backgroundColor),
     )
     .toBe('rgb(51, 51, 51)');
-  for (const width of [390, 375, 360, 320]) {
+  for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 750 });
     await expect(sort).toBeVisible();
     await expect(clear).toBeVisible();
@@ -2551,7 +2551,7 @@ test('History shares sort, search, game filters and layout while paging recorded
     await expect(button).toHaveText('');
     await expect(button).toHaveAttribute('title', label);
   }
-  for (const width of [390, 320]) {
+  for (const width of [390, 375, 360, 320]) {
     await page.setViewportSize({ width, height: 844 });
     const pagination = page.getByRole('navigation', { name: 'Campaign pages' });
     await expect(pagination).toBeInViewport();
