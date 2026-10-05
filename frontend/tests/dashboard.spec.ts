@@ -414,7 +414,7 @@ for (const width of [1280, 320]) {
     });
     await page.goto('/settings');
     const account = page.locator('#account');
-    const status = account.getByText('Logged in', { exact: true });
+    const status = account.getByRole('button', { name: 'View Twitch account profile' });
     const logout = account.getByRole('button', { name: 'Log out of Twitch', exact: true });
     await expect(logout).toBeEnabled();
     const h = (await status.boundingBox())!;
@@ -422,9 +422,7 @@ for (const width of [1280, 320]) {
     expect(l.x).toBeGreaterThanOrEqual(h.x + h.width);
     expect(l.x - (h.x + h.width)).toBeLessThanOrEqual(12);
     expect(l.y + l.height / 2).toBeCloseTo(h.y + h.height / 2, 0);
-    expect(
-      (await account.getByText('Twitch ID: 123456', { exact: true }).boundingBox())!.y,
-    ).toBeGreaterThan(l.y + l.height);
+    await expect(account.getByText('Twitch ID: 123456', { exact: true })).toHaveCount(0);
     await account.screenshot({ path: `../artifacts/account-controls-${width}.png` });
 
     await page.getByRole('link', { name: 'Maintenance', exact: true }).click();
@@ -2357,7 +2355,9 @@ test('icon actions and authorization row use compact accessible controls', async
     .poll(() => filters.evaluate((node) => getComputedStyle(node).backgroundColor))
     .toBe('rgb(51, 51, 51)');
   await page.goto('/settings');
-  await expect(page.locator('#account')).toContainText('Logged in');
+  await expect(
+    page.locator('#account').getByRole('button', { name: 'View Twitch account profile' }),
+  ).toBeVisible();
   await expect(page.locator('#account')).not.toContainText('Dashboard connected');
   await expect(page.locator('#connection')).toContainText('Dashboard connected');
   await page.getByRole('button', { name: 'Log out of Twitch', exact: true }).click();
