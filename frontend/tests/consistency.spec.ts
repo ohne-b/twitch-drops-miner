@@ -404,7 +404,7 @@ test('Mining lists have modest gutters, inset separators and full phone touch ta
   expect((await result.boundingBox())!.height).toBeGreaterThanOrEqual(44);
 });
 
-test('Campaigns keeps refresh beside tabs and gives search the full phone width', async ({
+test('Campaigns keeps the total beside refresh and gives search the full phone width', async ({
   page,
 }) => {
   for (const width of [320, 390, 1440]) {
@@ -415,7 +415,11 @@ test('Campaigns keeps refresh beside tabs and gives search the full phone width'
       const refresh = (await page
         .getByRole('button', { name: 'Refresh inventory', exact: true })
         .boundingBox())!;
-      expect(Math.abs(tabs.y + tabs.height / 2 - refresh.y - refresh.height / 2)).toBeLessThan(1);
+      if (width >= 768)
+        expect(Math.abs(tabs.y + tabs.height / 2 - refresh.y - refresh.height / 2)).toBeLessThan(1);
+      const count = (await page.locator('.campaign-refresh p').boundingBox())!;
+      expect(count.x + count.width).toBeLessThan(refresh.x);
+      expect(Math.abs(count.y + count.height / 2 - refresh.y - refresh.height / 2)).toBeLessThan(1);
       const search = (await page.getByRole('searchbox').boundingBox())!;
       if (width < 768) expect(search.width).toBe(width - 32);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);

@@ -253,34 +253,32 @@ export default function Campaigns() {
               </Link>
             ))}
           </nav>
-          <div className="campaign-total flex flex-wrap items-center gap-x-4 gap-y-1">
-            <p className="muted">
-              {t('campaign_count', {
-                count: historyTab ? historical.length : campaigns.length,
-                total,
-              })}
+          {(historyTab ? historical : campaigns).length > 25 && (
+            <nav
+              className="campaign-pages flex shrink-0 items-center justify-center gap-1"
+              aria-label={t('campaign_pages')}
+            >
+              <IconButton
+                path={mdiChevronLeft}
+                label={t('gui.history.previous')}
+                disabled={page === 0}
+                onClick={() => setQuery('page', String(page - 1))}
+              />
+              <span className="muted whitespace-nowrap tabular-nums">
+                {page + 1} / {Math.ceil((historyTab ? historical : campaigns).length / 25)}
+              </span>
+              <IconButton
+                path={mdiChevronRight}
+                label={t('gui.history.next')}
+                disabled={(page + 1) * 25 >= (historyTab ? historical : campaigns).length}
+                onClick={() => setQuery('page', String(page + 1))}
+              />
+            </nav>
+          )}
+          <div className="campaign-refresh flex items-center justify-self-end gap-3">
+            <p className="text-xs whitespace-nowrap text-[#888888]">
+              {t('campaign_count', { total })}
             </p>
-            {(historyTab ? historical : campaigns).length > 25 && (
-              <nav className="flex shrink-0 items-center gap-1" aria-label={t('campaign_pages')}>
-                <IconButton
-                  path={mdiChevronLeft}
-                  label={t('gui.history.previous')}
-                  disabled={page === 0}
-                  onClick={() => setQuery('page', String(page - 1))}
-                />
-                <span className="muted whitespace-nowrap tabular-nums">
-                  {page + 1} / {Math.ceil((historyTab ? historical : campaigns).length / 25)}
-                </span>
-                <IconButton
-                  path={mdiChevronRight}
-                  label={t('gui.history.next')}
-                  disabled={(page + 1) * 25 >= (historyTab ? historical : campaigns).length}
-                  onClick={() => setQuery('page', String(page + 1))}
-                />
-              </nav>
-            )}
-          </div>
-          <div className="campaign-refresh justify-self-end">
             <InventoryRefreshButton />
           </div>
           <div className="campaign-search min-w-0">

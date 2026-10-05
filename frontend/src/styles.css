@@ -159,16 +159,18 @@
 }
 .campaign-toolbar {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-areas: 'tabs total refresh' 'search search controls';
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'tabs refresh' 'search controls';
   align-items: center;
   gap: 20px 16px;
 }
 .campaign-tabs {
   grid-area: tabs;
+  justify-self: start;
 }
-.campaign-total {
-  grid-area: total;
+.campaign-pages {
+  grid-area: 1 / 1 / 2 / -1;
+  justify-self: center;
 }
 .campaign-refresh {
   grid-area: refresh;
@@ -186,24 +188,23 @@
     gap: 8px;
   }
   .campaign-tabs {
-    flex: 1;
+    flex-basis: 100%;
     gap: 4px;
   }
   .campaign-refresh {
-    order: 1;
+    order: 3;
+    margin-inline-start: auto;
   }
   .campaign-search {
-    order: 2;
+    order: 1;
     flex-basis: 100%;
   }
-  .campaign-total {
-    order: 3;
-    flex: 1;
+  .campaign-pages {
+    order: 4;
+    flex-basis: 100%;
   }
   .campaign-controls {
-    order: 4;
-    align-self: end;
-    margin-inline-start: auto;
+    order: 2;
   }
 }
 .campaign-workspace.with-detail .campaign-columns {
