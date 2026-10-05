@@ -175,7 +175,8 @@ Login uses Twitch's Smart TV device authorization flow. The saved session surviv
 restarts; enter your Twitch password only on Twitch's authorization page.
 
 Your avatar, equipped badges and chat-colored name appear at the bottom of the desktop
-sidebar. Click them to open **Settings > Twitch account**. On desktop and phones, this
+sidebar, aligned below the matching-size GitHub logo. Click the account identity to open
+**Settings > Twitch account**. On desktop and phones, this
 page shows your avatar, name, equipped badges and badge collection. Tap a badge for its
 description. Dark name colors are lightened for readability without changing their hue.
 

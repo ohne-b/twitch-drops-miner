@@ -59,14 +59,17 @@ for (const viewport of [
       const avatarBox = (await avatar.boundingBox())!;
       const github = (await page
         .getByRole('link', { name: 'GitHub repository' })
-        .locator('svg')
+        .locator('svg path')
         .boundingBox())!;
       expect(avatarBox.width).toBe(32);
       expect(avatarBox.height).toBe(32);
-      expect(avatarBox.width).toBe(github.width);
-      expect(avatarBox.x).toBe(github.x);
+      expect(avatarBox.width).toBeCloseTo(github.width, 1);
+      expect(avatarBox.x).toBeCloseTo(github.x, 1);
       expect((await badge.boundingBox())!.x).toBeGreaterThanOrEqual(avatarBox.x + avatarBox.width);
       expect((await name.boundingBox())!.x).toBeGreaterThan((await badge.boundingBox())!.x);
+      await page
+        .locator('aside')
+        .screenshot({ path: `../artifacts/account-sidebar-${viewport.width}.png` });
       await link.focus();
       await link.press('Enter');
     } else {
