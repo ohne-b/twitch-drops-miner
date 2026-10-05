@@ -65,6 +65,67 @@ async fn finish_job(mining: &mut Mining, pool: &PubSub) {
 }
 
 #[tokio::test]
+async fn profile_survives_network_renewal_but_not_logout_or_account_changes() {
+    let server = MockServer::start().await;
+    let (_dir, mining, _intent, mut pool) = miner(&server).await;
+    let profile = crate::dto::AccountProfile {
+        login: "miner".into(),
+        ..Default::default()
+    };
+    session::publish_login(
+        &mining.app,
+        Login {
+            user_id: Some(42),
+            profile: Some(profile.clone()),
+            ..Default::default()
+        },
+    )
+    .await;
+    session::publish_login(
+        &mining.app,
+        Login {
+            user_id: Some(42),
+            ..Default::default()
+        },
+    )
+    .await;
+    assert_eq!(
+        mining.app.snapshot.read().await.login.profile,
+        Some(profile)
+    );
+    session::publish_login(
+        &mining.app,
+        Login {
+            user_id: Some(43),
+            ..Default::default()
+        },
+    )
+    .await;
+    assert!(mining.app.snapshot.read().await.login.profile.is_none());
+    gql_mock(
+        &server,
+        |_| json!({"data":{"user":{"id":"42","login":"miner"}}}),
+    )
+    .await;
+    session::refresh_profile(mining.app.clone(), mining.client.clone())
+        .await
+        .unwrap();
+    assert!(
+        mining.app.snapshot.read().await.login.profile.is_none(),
+        "late data cannot replace a different account"
+    );
+    reset_session(&mining.app).await;
+    session::refresh_profile(mining.app.clone(), mining.client.clone())
+        .await
+        .unwrap();
+    assert!(
+        mining.app.snapshot.read().await.login.profile.is_none(),
+        "late data cannot undo logout"
+    );
+    pool.close().await;
+}
+
+#[tokio::test]
 async fn authenticated_inventory_failure_keeps_login_and_recovers_only_after_success() {
     let server = MockServer::start().await;
     let (_dir, mut mining, _intent, mut pool) = miner(&server).await;

@@ -426,6 +426,8 @@ pub(super) fn operation(request: &Value) -> &'static str {
     // Request variables and arbitrary operation names must never enter logs.
     match request["operationName"].as_str().unwrap_or_default() {
         "Inventory" => "Inventory",
+        "AccountProfile" => "AccountProfile",
+        "AccountBadges" => "AccountBadges",
         "DirectoryPage_Game" => "DirectoryPage_Game",
         "VideoPlayerStreamInfoOverlayChannel" => "VideoPlayerStreamInfoOverlayChannel",
         "DropCurrentSessionContext" => "DropCurrentSessionContext",

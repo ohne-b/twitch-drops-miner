@@ -4,6 +4,7 @@ mod diagnostics;
 pub mod inventory;
 pub mod oauth;
 pub mod operations;
+mod profile;
 pub mod pubsub;
 #[cfg(test)]
 pub(crate) mod tests;
