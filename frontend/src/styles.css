@@ -205,7 +205,7 @@
     order: 2;
   }
 }
-@media (max-width: 359px) {
+@media (max-width: 374px) {
   .campaign-tabs .mdi-icon {
     display: none;
   }
