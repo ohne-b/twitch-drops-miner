@@ -63,8 +63,8 @@ export default function Mining() {
         <InventoryRefreshButton />
       </header>
       <ActionResult action={action} />
-      <section className="panel shrink-0 p-4 md:p-5" aria-labelledby="mining-heading">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+      <section className="panel shrink-0 p-4 md:px-5 md:py-6" aria-labelledby="mining-heading">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 md:mb-5">
           <h2 id="mining-heading" className="section-title">
             {t('now_mining')}
           </h2>
@@ -112,7 +112,7 @@ export default function Mining() {
                 )}
               </div>
             </div>
-            <div className="mt-4">
+            <div className="mt-4 md:mt-5">
               {data.mining?.state !== 'watching' && data.mining?.state !== 'awaiting_progress' && (
                 <p className="muted mb-3">
                   {t(
