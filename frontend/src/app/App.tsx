@@ -27,6 +27,7 @@ import Mining from '../features/mining/Mining';
 import Campaigns from '../features/campaigns/Campaigns';
 import Activity from '../features/activity/Activity';
 import Settings from '../features/settings/Settings';
+import Account from '../features/account/Account';
 import Login from '../features/settings/Login';
 import logo from '../assets/twitch-drops-miner-logo.svg?no-inline';
 function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<void> }) {
@@ -112,7 +113,12 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
             <Icon path={mdiGithub} className="mdi-icon size-8!" />
           </a>
           {data?.login.user_id != null && (
-            <p className="mt-2 text-xs tabular-nums text-muted">Twitch: {data.login.user_id}</p>
+            <Account
+              key={data.login.user_id}
+              userId={data.login.user_id}
+              profile={data.login.profile}
+              compact
+            />
           )}
           {auth.enabled && (
             <Button

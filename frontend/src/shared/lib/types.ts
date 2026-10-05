@@ -102,7 +102,28 @@ export interface OAuth {
 export interface TwitchLogin {
   status: string;
   user_id: number | null;
+  profile?: AccountProfile;
   oauth_pending?: OAuth;
+}
+export interface AccountBadge {
+  id: string;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+}
+export interface AccountProfile {
+  login: string;
+  display_name: string;
+  avatar_url: string | null;
+  banner_url: string | null;
+  color: string | null;
+  description: string | null;
+  created_at: string | null;
+  followers: number | null;
+  roles: string[];
+  badges: AccountBadge[];
+  available_badges: AccountBadge[] | null;
+  socials: { name: string; url: string }[];
 }
 export interface Progress {
   drop_id: string;
