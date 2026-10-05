@@ -368,7 +368,7 @@ embed it and run without a build tool/runtime companion. Production builds never
   12px/#888888 text. Keep the page heading screen-reader-only. Clear filters stays beside All games
   inside Filters. On phones put pagination to the right of the tabs, then a full-width search
   row, followed by filter/sort/view controls and the count/refresh pair, wrapping when needed.
-  Below 360px omit the decorative tab icons to make room; retain both text labels.
+  Below 375px omit the decorative tab icons to make room; retain both text labels.
   Native icon-styled sorting offers Default, Newest (campaign start descending),
   Ending Soonest (end ascending), Most Drops (total descending), and A-Z (campaign name).
   Default retains progress-first ordering; ties use that same deterministic order. Sort is

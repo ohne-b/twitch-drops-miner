@@ -1139,7 +1139,7 @@ test('campaign sort controls preserve filters and keep counts and resets in comp
       sort.evaluate((element) => getComputedStyle(element.parentElement!).backgroundColor),
     )
     .toBe('rgb(51, 51, 51)');
-  for (const width of [390, 320]) {
+  for (const width of [390, 375, 360, 320]) {
     await page.setViewportSize({ width, height: 750 });
     await expect(sort).toBeVisible();
     await expect(clear).toBeVisible();
