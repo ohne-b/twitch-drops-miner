@@ -33,30 +33,10 @@
   min-height: 80px;
 }
 .account-trigger {
-  padding: 4px;
+  padding: 6px;
 }
 .account-trigger:hover {
   background: var(--color-field);
-}
-.account-card {
-  position: fixed;
-  inset: 0;
-  width: min(380px, calc(100vw - 32px));
-  max-height: calc(100dvh - 32px);
-  margin: auto;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  border: 1px solid var(--color-divider);
-  border-radius: 8px;
-  background: var(--color-surface);
-  color: var(--color-text);
-  box-shadow: 0 12px 40px #0006;
-}
-@media (min-width: 1024px) {
-  .account-card-sidebar {
-    inset: auto auto 16px 200px;
-    margin: 0;
-  }
 }
 .primary-nav {
   display: flex;

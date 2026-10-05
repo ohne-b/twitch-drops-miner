@@ -414,7 +414,7 @@ for (const width of [1280, 320]) {
     });
     await page.goto('/settings');
     const account = page.locator('#account');
-    const status = account.getByRole('button', { name: 'View Twitch account profile' });
+    const status = account.locator('.account-identity');
     const logout = account.getByRole('button', { name: 'Log out of Twitch', exact: true });
     await expect(logout).toBeEnabled();
     const h = (await status.boundingBox())!;
@@ -551,14 +551,14 @@ test('confirmed progress and compact desktop design', async ({ page }) => {
   await expect(page.getByText('48 / 60 min')).toHaveCount(0);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await expect(
-    page.locator('aside').getByRole('button', { name: 'View Twitch account profile' }),
+    page.locator('aside').getByRole('link', { name: 'Twitch account', exact: true }),
   ).toBeVisible();
   const github = page.getByRole('link', { name: 'GitHub repository' }).locator('svg');
   const githubBox = (await github.boundingBox())!;
   expect(githubBox.width).toBe(32);
   const accountBox = (await page
     .locator('aside')
-    .getByRole('button', { name: 'View Twitch account profile' })
+    .getByRole('link', { name: 'Twitch account', exact: true })
     .boundingBox())!;
   expect(githubBox.y + githubBox.height).toBeLessThan(accountBox.y);
   const channels = page
@@ -900,7 +900,7 @@ test('Overview fits the desktop viewport and only scrolls the page when space is
   expect((await page.locator('aside').boundingBox())!.y).toBeCloseTo(0, 0);
   await expect(page.getByRole('navigation').getByRole('link', { name: 'Mining' })).toBeInViewport();
   await expect(
-    page.locator('aside').getByRole('button', { name: 'View Twitch account profile' }),
+    page.locator('aside').getByRole('link', { name: 'Twitch account', exact: true }),
   ).toBeInViewport();
   await page.screenshot({ path: '../artifacts/overview-short-window.png', fullPage: true });
 });
@@ -2362,9 +2362,7 @@ test('icon actions and authorization row use compact accessible controls', async
     .poll(() => filters.evaluate((node) => getComputedStyle(node).backgroundColor))
     .toBe('rgb(51, 51, 51)');
   await page.goto('/settings');
-  await expect(
-    page.locator('#account').getByRole('button', { name: 'View Twitch account profile' }),
-  ).toBeVisible();
+  await expect(page.locator('#account .account-identity')).toBeVisible();
   await expect(page.locator('#account')).not.toContainText('Dashboard connected');
   await expect(page.locator('#connection')).toContainText('Dashboard connected');
   await page.getByRole('button', { name: 'Log out of Twitch', exact: true }).click();

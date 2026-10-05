@@ -336,19 +336,12 @@
             "mining_state_no_rewards": "No eligible rewards right now",
             "mining_state_manual_offline": "Waiting for your channel to go live",
             "mining_state_manual_watching": "Watching your selected channel",
-            "profile_open": "View {name} profile",
-            "profile_twitch": "Open Twitch channel",
-            "profile_created": "Account created",
-            "profile_followers": "Followers",
-            "profile_id": "Twitch ID",
-            "profile_badges": "Global badges",
+            "profile_open": "Twitch account: {name}",
+            "profile_badges": "Badges",
             "profile_equipped_badge": "{name} (equipped)",
             "profile_badges_unavailable": "Full badge collection unavailable.",
             "profile_unavailable": "Profile details are currently unavailable.",
-            "profile_role_partner": "Partner",
-            "profile_role_affiliate": "Affiliate",
-            "profile_role_staff": "Twitch staff",
-            "profile_role_global_mod": "Global moderator"
+            "profile_badges_empty": "No badges available."
         },
         "backend": {
             "proxy_empty": "Proxy URL is empty.",

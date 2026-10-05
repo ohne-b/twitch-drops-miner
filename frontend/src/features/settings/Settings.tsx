@@ -21,7 +21,7 @@ import type {
 import { request, safeUrl } from '../../shared/lib/api';
 import { useMiner } from '../../app/MinerProvider';
 import { plainText, useT } from '../../shared/lib/i18n';
-import Account from '../account/Account';
+import AccountIdentity, { AccountBadges } from '../account/Account';
 import {
   ActionResult,
   Button,
@@ -315,11 +315,7 @@ function SettingsContent({ settings, auth }: { settings: SettingsData; auth: Aut
       <Section hidden={section !== 'account'} id="account">
         <div className="flex min-h-9 items-center gap-2 max-md:min-h-11">
           {data?.login.user_id ? (
-            <Account
-              key={data.login.user_id}
-              userId={data.login.user_id}
-              profile={data.login.profile}
-            />
+            <AccountIdentity profile={data.login.profile} />
           ) : (
             <p className="text-soft">{plainText(data?.login.status ?? '')}</p>
           )}
@@ -333,6 +329,9 @@ function SettingsContent({ settings, auth }: { settings: SettingsData; auth: Aut
           )}
         </div>
         <ActionResult action={logoutAction} />
+        {data?.login.user_id && (
+          <AccountBadges key={data.login.user_id} profile={data.login.profile} />
+        )}
         {oauth ? (
           <div className="grid gap-3">
             <div className="authorization-row">
