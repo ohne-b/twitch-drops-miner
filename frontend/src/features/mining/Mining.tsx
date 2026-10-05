@@ -63,8 +63,8 @@ export default function Mining() {
         <InventoryRefreshButton />
       </header>
       <ActionResult action={action} />
-      <section className="panel shrink-0 p-5 md:p-6" aria-labelledby="mining-heading">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <section className="panel shrink-0 p-4 md:p-5" aria-labelledby="mining-heading">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <h2 id="mining-heading" className="section-title">
             {t('now_mining')}
           </h2>
@@ -90,10 +90,10 @@ export default function Mining() {
         </div>
         {progress ? (
           <>
-            <div className="flex items-start gap-4">
+            <div className="flex items-center gap-3 md:gap-4">
               <Art
                 url={reward?.benefits[0]?.image_url || campaign?.game_box_art_url}
-                className="size-16"
+                className="size-20"
                 fit={reward?.benefits[0]?.image_url ? 'contain' : 'cover'}
               />
               <div className="min-w-0 flex-1">
@@ -112,7 +112,7 @@ export default function Mining() {
                 )}
               </div>
             </div>
-            <div className="mt-5">
+            <div className="mt-4">
               {data.mining?.state !== 'watching' && data.mining?.state !== 'awaiting_progress' && (
                 <p className="muted mb-3">
                   {t(
@@ -152,6 +152,7 @@ export default function Mining() {
           </p>
         ) : (
           <Empty
+            className="py-5"
             title={t(
               data.mining?.state === 'watching'
                 ? 'progress_unknown'
@@ -177,19 +178,24 @@ export default function Mining() {
             </Link>
           </Empty>
         )}
-        {(data.manual_mode.active || data.manual_mode.pending_channel) && (
-          <IconButton
-            path={mdiRefreshAuto}
-            label={t('gui.progress.return_to_auto')}
-            className="mt-4"
-            disabled={!connected || action.busy}
-            onClick={() => void action.run(() => request('/api/mode/exit-manual', {}))}
-          />
-        )}
-        {data.manual_mode.expires_at && (
-          <p className="muted mt-2">
-            {t('gui.channels.auto_at', { time: dateTime(data.manual_mode.expires_at) })}
-          </p>
+        {(data.manual_mode.active ||
+          data.manual_mode.pending_channel ||
+          data.manual_mode.expires_at) && (
+          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
+            {(data.manual_mode.active || data.manual_mode.pending_channel) && (
+              <IconButton
+                path={mdiRefreshAuto}
+                label={t('gui.progress.return_to_auto')}
+                disabled={!connected || action.busy}
+                onClick={() => void action.run(() => request('/api/mode/exit-manual', {}))}
+              />
+            )}
+            {data.manual_mode.expires_at && (
+              <p className="muted">
+                {t('gui.channels.auto_at', { time: dateTime(data.manual_mode.expires_at) })}
+              </p>
+            )}
+          </div>
         )}
       </section>
       {/* Long lists must not contribute to the page's intrinsic minimum height. */}

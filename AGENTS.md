@@ -299,7 +299,11 @@ embed it and run without a build tool/runtime companion. Production builds never
   preserve access on short windows. Show confirmed values without redundant labels
   or the Watching for this reward caption. Put the current reward's Last confirmed timestamp
   inside Now mining beside the selection mode, in smaller, darker text with readable contrast.
-  Omit it when confirmation is unknown; let the card header wrap on phones.
+  Omit it when confirmation is unknown; let the card header wrap on phones with an 8px row gap.
+  Now mining uses 20px desktop/16px phone padding, 16px section gaps, and an 80px
+  contained reward thumbnail centered beside its text with a 16px desktop/12px phone gap.
+  Keep the 6px progress track and 8px count gap. Group the manual return action and timer
+  in one wrapping row, preserving phone hit targets. Its empty state adds 20px vertical padding.
   Known rewards without confirmed progress show an empty progress bar and `0 / required minutes`
   in Mining and Campaigns,
   with an unconfirmed tooltip and accessible description. Suppress the redundant awaiting-progress
