@@ -550,11 +550,16 @@ test('confirmed progress and compact desktop design', async ({ page }) => {
   );
   await expect(page.getByText('48 / 60 min')).toHaveCount(0);
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await expect(page.getByText('Twitch: 123456', { exact: true })).toBeVisible();
+  await expect(
+    page.locator('aside').getByRole('button', { name: 'View Twitch account profile' }),
+  ).toBeVisible();
   const github = page.getByRole('link', { name: 'GitHub repository' }).locator('svg');
   const githubBox = (await github.boundingBox())!;
   expect(githubBox.width).toBe(32);
-  const accountBox = (await page.getByText('Twitch: 123456', { exact: true }).boundingBox())!;
+  const accountBox = (await page
+    .locator('aside')
+    .getByRole('button', { name: 'View Twitch account profile' })
+    .boundingBox())!;
   expect(githubBox.y + githubBox.height).toBeLessThan(accountBox.y);
   const channels = page
     .locator('section')
@@ -894,7 +899,9 @@ test('Overview fits the desktop viewport and only scrolls the page when space is
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   expect((await page.locator('aside').boundingBox())!.y).toBeCloseTo(0, 0);
   await expect(page.getByRole('navigation').getByRole('link', { name: 'Mining' })).toBeInViewport();
-  await expect(page.getByText('Twitch: 123456', { exact: true })).toBeInViewport();
+  await expect(
+    page.locator('aside').getByRole('button', { name: 'View Twitch account profile' }),
+  ).toBeInViewport();
   await page.screenshot({ path: '../artifacts/overview-short-window.png', fullPage: true });
 });
 test('every route loads directly and stays usable on a phone', async ({ page }) => {
