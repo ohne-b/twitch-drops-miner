@@ -174,19 +174,17 @@ allows matching badges/emotes when their automatic rule is enabled.
 Login uses Twitch's Smart TV device authorization flow. The saved session survives
 restarts; enter your Twitch password only on Twitch's authorization page.
 
-Your avatar, chat-colored name and equipped global badges appear at the bottom of the
-desktop sidebar. Click them to open your profile card with its banner, bio, account
-creation date, follower count, social links and available global badges. Tap a badge
-for its description. On phones, open the same card from **Settings > Twitch account**;
-Settings shows only your avatar and name beside the logout action. Dark name colors
-are lightened for readability without changing their hue.
+Your avatar, equipped badges and chat-colored name appear at the bottom of the desktop
+sidebar. Click them to open **Settings > Twitch account**. On desktop and phones, this
+page shows your avatar, name, equipped badges and badge collection. Tap a badge for its
+description. Dark name colors are lightened for readability without changing their hue.
 
 Profile details load separately from mining through Twitch's GraphQL API, using the
 existing login without additional permissions. They refresh when the Twitch connection
 is renewed, normally hourly. If Twitch does not provide the full badge collection, the
-card says so and still shows equipped badges. Unavailable profile data never delays
-watching. Profile details are not added to saved settings or credentials. Channel-specific subscription badges are
-not included.
+page says so and still shows equipped badges. Unavailable profile data never delays
+watching. Profile details are not added to saved settings or credentials. Channel-specific
+subscription badges are not included.
 
 Campaign discovery uses the [SunkwiBOT public catalog](https://github.com/SunkwiBOT/twitch-drops-api).
 It supplies game/reward metadata, dates, prerequisites and participating channels. Account

@@ -267,14 +267,14 @@ embed it and run without a build tool/runtime companion. Production builds never
   Reward thumbnails contain their artwork; game covers retain cover sizing. Phone checkbox
   labels, game search results and drag grips have at least 44px touch targets without enlarging
   glyphs or adding pointer hover backgrounds to grips.
-- Sidebar: enlarged GitHub glyph above the Twitch avatar, chat-colored name and equipped
-  global badges, overriding shared icon sizing, with no divider above the footer. Clicking
-  the identity opens a native, dismissible profile popover with banner, bio, account date,
-  follower count, roles, social links and all available global badges. Badges have no borders;
-  click/tap/keyboard reveals descriptions. Keep it reachable on phones through Settings,
-  bounded on short windows, and dismiss it on navigation, account changes or sidebar hiding.
+- Sidebar: 32px GitHub glyph above an equally sized, aligned Twitch avatar, followed by
+  equipped badges and the chat-colored name, with no divider above the footer. The identity
+  links to Settings > Twitch account. Settings shows a 48px avatar, colored name, equipped
+  badges and adjacent logout action, followed by the collection labeled Badges. Badge
+  buttons have no borders; click/tap/keyboard reveals descriptions. Use the same account
+  settings page on phones, without a separate profile popup. Omit banner, bio, account date,
+  followers, roles, social links and the separate account ID row.
   Lighten dark chat colors only enough for readable contrast, preserving their hue.
-  Settings shows only the avatar/name identity beside logout, without badges or a separate ID row.
   Profile metadata uses bounded, cancellable GraphQL reads owned by the authenticated network
   generation, concurrently with mining, using the existing login with no new scopes. Refresh
   once per generation (normally hourly), preserve same-account metadata during renewal, and
@@ -283,7 +283,7 @@ embed it and run without a build tool/runtime companion. Production builds never
   failures leave it explicitly unavailable while retaining equipped badges. Do not include
   channel subscription badges or infer badge ownership from the global artwork catalog.
   Authenticated 401/403 and cancellation retain existing session handling. Validate identities,
-  bounded metadata, image URLs and colors; unknown profile fields remain absent.
+  bounded metadata, image URLs and colors; fetch only identity, color and badge fields.
   Connection status lives in Settings > Connection and is labeled Dashboard connected, separate
   from Twitch. The Twitch logout icon stays immediately beside the account identity.
   Logged-out authorization status stays visible. Device authorization keeps the
