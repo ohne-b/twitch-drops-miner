@@ -300,7 +300,8 @@ embed it and run without a build tool/runtime companion. Production builds never
   or the Watching for this reward caption. Put the current reward's Last confirmed timestamp
   inside Now mining beside the selection mode, in smaller, darker text with readable contrast.
   Omit it when confirmation is unknown; let the card header wrap on phones with an 8px row gap.
-  Now mining uses 20px desktop/16px phone padding, 16px section gaps, and an 80px
+  Now mining uses 24px vertical/20px horizontal desktop padding and 16px phone padding.
+  Header-to-reward and reward-to-progress gaps are 20px desktop/16px phone, with an 80px
   contained reward thumbnail centered beside its text with a 16px desktop/12px phone gap.
   Keep the 6px progress track and 8px count gap. Group the manual return action and timer
   in one wrapping row, preserving phone hit targets. Its empty state adds 20px vertical padding.
