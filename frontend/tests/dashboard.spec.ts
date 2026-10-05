@@ -936,6 +936,7 @@ test('keyboard focus remains visible without outlines across controls', async ({
   expect(await field.evaluate((element) => getComputedStyle(element).outlineStyle)).toBe('none');
   for (const name of ['Log out of Twitch', 'Enable password protection']) {
     await page
+      .getByRole('navigation', { name: 'Settings sections' })
       .getByRole('link', {
         name: name === 'Log out of Twitch' ? 'Twitch account' : 'Dashboard access',
         exact: true,
@@ -1325,14 +1326,15 @@ test('game priorities show icons instead of editable numbers', async ({ page, re
 
 test('Twitch logout leaves the dashboard available and shows the next login', async ({ page }) => {
   await page.goto('/settings');
-  await page.getByRole('link', { name: 'Connection', exact: true }).click();
+  const tabs = page.getByRole('navigation', { name: 'Settings sections' });
+  await tabs.getByRole('link', { name: 'Connection', exact: true }).click();
   await expect(page.getByText('Dashboard connected', { exact: true })).toBeVisible();
-  await page.getByRole('link', { name: 'Twitch account', exact: true }).click();
+  await tabs.getByRole('link', { name: 'Twitch account', exact: true }).click();
   await page.getByRole('button', { name: 'Log out of Twitch', exact: true }).click();
   await expect(page.getByText('NEWCODE', { exact: true })).toBeVisible();
-  await page.getByRole('link', { name: 'Connection', exact: true }).click();
+  await tabs.getByRole('link', { name: 'Connection', exact: true }).click();
   await expect(page.getByText('Dashboard connected', { exact: true })).toBeVisible();
-  await page.getByRole('link', { name: 'Twitch account', exact: true }).click();
+  await tabs.getByRole('link', { name: 'Twitch account', exact: true }).click();
   await expect(page.getByText('Connected', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Log out of Twitch', exact: true })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
