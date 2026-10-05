@@ -267,11 +267,26 @@ embed it and run without a build tool/runtime companion. Production builds never
   Reward thumbnails contain their artwork; game covers retain cover sizing. Phone checkbox
   labels, game search results and drag grips have at least 44px touch targets without enlarging
   glyphs or adding pointer hover backgrounds to grips.
-- Sidebar: enlarged GitHub glyph above Twitch account ID, overriding shared icon sizing,
-  with no divider above the footer.
+- Sidebar: enlarged GitHub glyph above the Twitch avatar, chat-colored name and equipped
+  global badges, overriding shared icon sizing, with no divider above the footer. Clicking
+  the identity opens a native, dismissible profile popover with banner, bio, account date,
+  follower count, roles, social links and all available global badges. Badges have no borders;
+  click/tap/keyboard reveals descriptions. Keep it reachable on phones through Settings,
+  bounded on short windows, and dismiss it on navigation, account changes or sidebar hiding.
+  Lighten dark chat colors only enough for readable contrast, preserving their hue.
+  Settings shows only the avatar/name identity beside logout, without badges or a separate ID row.
+  Profile metadata uses bounded, cancellable GraphQL reads owned by the authenticated network
+  generation, concurrently with mining, using the existing login with no new scopes. Refresh
+  once per generation (normally hourly), preserve same-account metadata during renewal, and
+  clear it on logout/account changes. Never persist it or accept late data for another account.
+  Query the full selectable global badge collection separately; permission/schema/network
+  failures leave it explicitly unavailable while retaining equipped badges. Do not include
+  channel subscription badges or infer badge ownership from the global artwork catalog.
+  Authenticated 401/403 and cancellation retain existing session handling. Validate identities,
+  bounded metadata, image URLs and colors; unknown profile fields remain absent.
   Connection status lives in Settings > Connection and is labeled Dashboard connected, separate
-  from Twitch. Account status and Twitch ID occupy separate rows, with the Twitch logout icon
-  immediately beside the status text. Device authorization keeps the
+  from Twitch. The Twitch logout icon stays immediately beside the account identity.
+  Logged-out authorization status stays visible. Device authorization keeps the
   copyable code, Twitch Activate and Done on one unboxed wrapping row with equal-height controls
   (36px desktop, 44px phone). Activate and Done use the same outlined button style. Successful
   copying shows a tick, tooltip and accessible status for three seconds; another successful copy
