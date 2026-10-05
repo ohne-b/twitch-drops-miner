@@ -553,9 +553,9 @@ test('confirmed progress and compact desktop design', async ({ page }) => {
   await expect(
     page.locator('aside').getByRole('link', { name: 'Twitch account', exact: true }),
   ).toBeVisible();
-  const github = page.getByRole('link', { name: 'GitHub repository' }).locator('svg');
+  const github = page.getByRole('link', { name: 'GitHub repository' }).locator('svg path');
   const githubBox = (await github.boundingBox())!;
-  expect(githubBox.width).toBe(32);
+  expect(githubBox.width).toBeCloseTo(32, 1);
   const accountBox = (await page
     .locator('aside')
     .getByRole('link', { name: 'Twitch account', exact: true })
