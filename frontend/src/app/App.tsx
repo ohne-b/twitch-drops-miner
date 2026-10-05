@@ -2,6 +2,7 @@ import { Icon } from '@mdi/react';
 import { useEffect, useRef, useState } from 'react';
 import {
   NavLink,
+  Link,
   Navigate,
   Route,
   Routes,
@@ -27,7 +28,7 @@ import Mining from '../features/mining/Mining';
 import Campaigns from '../features/campaigns/Campaigns';
 import Activity from '../features/activity/Activity';
 import Settings from '../features/settings/Settings';
-import Account from '../features/account/Account';
+import AccountIdentity from '../features/account/Account';
 import Login from '../features/settings/Login';
 import logo from '../assets/twitch-drops-miner-logo.svg?no-inline';
 function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<void> }) {
@@ -113,12 +114,18 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
             <Icon path={mdiGithub} className="mdi-icon size-8!" />
           </a>
           {data?.login.user_id != null && (
-            <Account
-              key={data.login.user_id}
-              userId={data.login.user_id}
-              profile={data.login.profile}
-              compact
-            />
+            <Link
+              to="/settings#account"
+              className="account-trigger mt-2 flex min-h-11 w-full items-center rounded text-start"
+              aria-label={
+                data.login.profile
+                  ? t('profile_open', { name: data.login.profile.display_name })
+                  : t('account')
+              }
+              title={t('account')}
+            >
+              <AccountIdentity profile={data.login.profile} compact />
+            </Link>
           )}
           {auth.enabled && (
             <Button

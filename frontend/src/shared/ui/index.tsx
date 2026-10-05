@@ -369,5 +369,3 @@ export const dateTime = (value: string) =>
     timeStyle: 'short',
     hourCycle: 'h23',
   }).format(new Date(value));
-export const dateOnly = (value: string) =>
-  new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value));

@@ -6,16 +6,9 @@ import type { AccountProfile } from '../src/shared/lib/types';
 const headers = { 'X-TDM-Request': '1' };
 const image = 'https://static-cdn.jtvnw.net/profile-fixture.png';
 const profile: AccountProfile = {
-  login: 'northwind',
   display_name: 'Northwind',
   avatar_url: image,
-  banner_url: image,
   color: '#008000',
-  description: 'Games, drops and good company.',
-  created_at: '2023-04-09T16:03:17Z',
-  followers: 13,
-  roles: [],
-  socials: [{ name: 'Website', url: 'https://example.org' }],
   badges: [
     {
       id: 'event',
@@ -52,85 +45,97 @@ for (const viewport of [
   { width: 390, height: 844 },
   { width: 320, height: 568 },
 ]) {
-  test(`account card shows global badges and stays reachable at ${viewport.width}x${viewport.height}`, async ({
+  test(`account settings show identity and borderless badges at ${viewport.width}x${viewport.height}`, async ({
     page,
   }) => {
     await page.setViewportSize(viewport);
-    await page.goto('/settings#account');
+    if (viewport.width >= 1024) {
+      await page.goto('/');
+      const link = page.locator('aside').getByRole('link', { name: 'Twitch account: Northwind' });
+      await expect(link).toBeVisible();
+      const avatar = link.locator('img').first();
+      const badge = link.getByRole('img', { name: 'Event badge', exact: true });
+      const name = link.getByText('Northwind', { exact: true });
+      const avatarBox = (await avatar.boundingBox())!;
+      const github = (await page
+        .getByRole('link', { name: 'GitHub repository' })
+        .locator('svg')
+        .boundingBox())!;
+      expect(avatarBox.width).toBe(32);
+      expect(avatarBox.height).toBe(32);
+      expect(avatarBox.width).toBe(github.width);
+      expect(avatarBox.x).toBe(github.x);
+      expect((await badge.boundingBox())!.x).toBeGreaterThanOrEqual(avatarBox.x + avatarBox.width);
+      expect((await name.boundingBox())!.x).toBeGreaterThan((await badge.boundingBox())!.x);
+      await link.focus();
+      await link.press('Enter');
+    } else {
+      await page.goto('/settings#account');
+    }
+    await expect(page).toHaveURL(/\/settings#account$/);
     const settings = page.locator('#account');
-    const identity = settings.getByRole('button', { name: 'View Northwind profile' });
-    await expect(identity).toBeVisible();
-    await expect(identity.locator('img')).toHaveCount(1);
-    await expect(settings.getByText('Twitch ID: 123456')).toHaveCount(0);
-    const trigger =
-      viewport.width >= 1024
-        ? page.locator('aside').getByRole('button', { name: 'View Northwind profile' })
-        : identity;
-    if (viewport.width >= 1024) await expect(trigger.locator('img')).toHaveCount(2);
-    await trigger.focus();
-    await trigger.press('Enter');
-    const card = page.getByRole('dialog', { name: 'Northwind', exact: true });
-    await expect(card).toBeVisible();
-    await expect(card).toContainText('Games, drops and good company.');
-    await expect(card).toContainText('Apr 9, 2023');
-    const badges = card.getByRole('region', { name: 'Global badges' });
+    const identity = settings.locator('.account-identity');
+    await expect(identity.getByText('Northwind', { exact: true })).toBeVisible();
+    await expect(identity.getByRole('img', { name: 'Event badge', exact: true })).toBeVisible();
+    await expect(page.locator('.account-card')).toHaveCount(0);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(settings).not.toContainText('Global badges');
+    await expect(settings.locator('time, dl, a, [popover]')).toHaveCount(0);
+    const badges = settings.getByRole('region', { name: 'Badges', exact: true });
     await expect(badges.getByRole('button')).toHaveCount(26);
-    await badges.getByRole('button', { name: 'Event badge (equipped)', exact: true }).click();
+    const equipped = badges.getByRole('button', { name: 'Event badge (equipped)', exact: true });
+    await equipped.focus();
+    await equipped.press('Enter');
     await expect(badges.getByRole('status')).toContainText('Earned during a Twitch event.');
-    for (const button of await badges.getByRole('button').all())
+    for (const button of await badges.getByRole('button').all()) {
       expect(await button.evaluate((node) => getComputedStyle(node).borderWidth)).toBe('0px');
-    const box = (await card.boundingBox())!;
-    expect(box.x).toBeGreaterThanOrEqual(0);
-    expect(box.y).toBeGreaterThanOrEqual(0);
-    expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
-    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
+      if (viewport.width < 768)
+        expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
+    await badges.getByRole('button').last().scrollIntoViewIfNeeded();
+    await expect(badges.getByRole('button').last()).toBeInViewport();
+    await expect(
+      page.getByRole('navigation', { name: 'Main navigation', exact: true }),
+    ).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
-    await card.screenshot({ path: `../artifacts/account-profile-${viewport.width}.png` });
-    await page.keyboard.press('Escape');
-    await expect(card).toBeHidden();
-    await expect(trigger).toBeFocused();
-    await trigger.click();
-    await page.mouse.click(viewport.width - 5, 5);
-    await expect(card).toBeHidden();
-    await trigger.click();
-    await card.getByRole('button', { name: 'Close', exact: true }).click();
-    await expect(card).toBeHidden();
+    await settings.screenshot({ path: `../artifacts/account-settings-${viewport.width}.png` });
   });
 }
 
-test('profile handles unavailable collections, broken art, account changes and logout', async ({
+test('account settings handle missing and empty badge collections, broken art, account changes and logout', async ({
   page,
   request,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.route('https://static-cdn.jtvnw.net/**', (route) => route.abort());
-  await request.post('/__test/event', {
-    headers,
-    data: {
-      event: 'login_status',
-      data: { ...fixture.login, profile: { ...profile, available_badges: null } },
-    },
-  });
+  const publish = async (value: unknown) =>
+    request.post('/__test/event', {
+      headers,
+      data: { event: 'login_status', data: value },
+    });
+  await publish({ ...fixture.login, profile: { ...profile, available_badges: null } });
   await page.goto('/settings#account');
-  const trigger = page.locator('aside').getByRole('button', { name: 'View Northwind profile' });
-  await trigger.click();
-  const card = page.getByRole('dialog', { name: 'Northwind', exact: true });
-  await expect(card).toContainText('Full badge collection unavailable.');
-  await expect(card.getByRole('region', { name: 'Global badges' }).getByRole('button')).toHaveCount(
-    1,
-  );
-  await expect(card.locator('img')).toHaveCount(0);
-  await request.post('/__test/event', {
-    headers,
-    data: { event: 'login_status', data: { status: 'Logged in', user_id: 99 } },
+  const settings = page.locator('#account');
+  const badges = settings.getByRole('region', { name: 'Badges', exact: true });
+  await expect(settings).toContainText('Full badge collection unavailable.');
+  await expect(badges.getByRole('button')).toHaveCount(1);
+  await expect(settings.locator('img')).toHaveCount(0);
+  await badges.getByRole('button').click();
+  await expect(badges.getByRole('status')).toContainText('Event badge');
+  await publish({ status: 'Logged in', user_id: 99 });
+  await expect(settings.getByText('Northwind')).toHaveCount(0);
+  await expect(badges.getByRole('status')).toHaveCount(0);
+  await expect(settings).toContainText('Profile details are currently unavailable.');
+  await publish({
+    status: 'Logged in',
+    user_id: 99,
+    profile: { ...profile, display_name: 'Other account', badges: [], available_badges: [] },
   });
-  await expect(card).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'View Northwind profile' })).toHaveCount(0);
-  await page.locator('aside').getByRole('button', { name: 'View Twitch account profile' }).click();
-  await expect(page.getByRole('dialog')).toContainText(
-    'Profile details are currently unavailable.',
-  );
-  await page.keyboard.press('Escape');
+  await expect(settings).toContainText('No badges available.');
+  await expect(settings).not.toContainText('Full badge collection unavailable.');
   await page.getByRole('button', { name: 'Log out of Twitch', exact: true }).click();
+  await expect(settings.locator('.account-identity')).toHaveCount(0);
+  await expect(badges).toHaveCount(0);
   await expect(page.locator('.account-trigger')).toHaveCount(0);
 });
