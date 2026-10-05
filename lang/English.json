@@ -186,7 +186,7 @@
             "sort_ending": "Ending Soonest",
             "sort_drops": "Most Drops",
             "sort_name": "A-Z",
-            "campaign_count": "{count} of {total} campaigns",
+            "campaign_count": "{total} campaigns",
             "campaign_empty_help": "Check the filters and Twitch account status, or refresh the inventory.",
             "link_account": "Link account",
             "details": "Details on Twitch",

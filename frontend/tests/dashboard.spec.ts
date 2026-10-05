@@ -1087,7 +1087,7 @@ test('campaign sort controls preserve filters and keep counts and resets in comp
   expect(writes).toEqual([]);
   await sort.selectOption('newest');
   await page.getByRole('searchbox', { name: 'Search campaigns and rewards' }).fill('Alpha');
-  await expect(page.getByText('1 of 3 campaigns', { exact: true })).toBeVisible();
+  await expect(page.getByText('3 campaigns', { exact: true })).toBeVisible();
   await page.reload();
   await expect(sort).toHaveValue('newest');
   await publishCampaigns();
@@ -1106,11 +1106,17 @@ test('campaign sort controls preserve filters and keep counts and resets in comp
   await expect(page.getByRole('searchbox', { name: 'Search campaigns and rewards' })).toHaveValue(
     '',
   );
-  const count = page.getByText('3 of 3 campaigns', { exact: true });
+  const count = page.getByText('3 campaigns', { exact: true });
   const tabs = (await page
     .getByRole('navigation', { name: 'Campaign views', exact: true })
     .boundingBox())!;
   const countBox = (await count.boundingBox())!;
+  await expect(count).toHaveCSS('font-size', '12px');
+  await expect(count).toHaveCSS('color', 'rgb(136, 136, 136)');
+  const refreshBox = (await page
+    .getByRole('button', { name: 'Refresh inventory', exact: true })
+    .boundingBox())!;
+  expect(countBox.x + countBox.width).toBeLessThan(refreshBox.x);
   expect(Math.abs(countBox.y + countBox.height / 2 - tabs.y - tabs.height / 2)).toBeLessThan(2);
   expect(countBox.x).toBeGreaterThan(tabs.x + tabs.width);
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -1534,7 +1540,7 @@ test('public catalog campaigns are visible without mining and expose source fres
     .getByRole('navigation', { name: 'Main navigation' })
     .getByRole('link', { name: 'Campaigns', exact: true })
     .click();
-  await expect(page.getByText('145 of 145 campaigns', { exact: true })).toBeVisible();
+  await expect(page.getByText('145 campaigns', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Mine Rust', exact: true })).toHaveCount(25);
   await expect(page.getByRole('alert')).toHaveCount(0);
   await page
@@ -2530,7 +2536,7 @@ test('History shares sort, search, game filters and layout while paging recorded
     }),
   );
   await page.goto('/campaigns?tab=history');
-  await expect(page.getByText('27 of 27 campaigns', { exact: true })).toBeVisible();
+  await expect(page.getByText('27 campaigns', { exact: true })).toBeVisible();
   const titles = page.locator('main .campaign-open > span > span.font-medium');
   await expect(titles).toHaveCount(25);
   await expect(titles.first()).toHaveText('Campaign 26');
@@ -2556,8 +2562,8 @@ test('History shares sort, search, game filters and layout while paging recorded
       .boundingBox())!;
     expect(bounds.y).toBeGreaterThanOrEqual(search.y + search.height);
     expect(bounds.y + bounds.height).toBeLessThanOrEqual((await titles.first().boundingBox())!.y);
-    expect(bounds.x + bounds.width).toBeLessThanOrEqual(filters.x);
-    expect(bounds.y).toBe(filters.y);
+    expect(bounds.y).toBeGreaterThanOrEqual(filters.y + filters.height);
+    expect(bounds.x + bounds.width / 2).toBeCloseTo(width / 2, 0);
     expect((await next.boundingBox())!.height).toBe(44);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
   }
@@ -2601,7 +2607,7 @@ test('History shares sort, search, game filters and layout while paging recorded
   await expect(pagination).toHaveText('100 / 100');
   const bounds = (await pagination.boundingBox())!;
   const filters = (await page.getByRole('button', { name: 'Filters', exact: true }).boundingBox())!;
-  expect(bounds.y + bounds.height).toBeLessThanOrEqual(filters.y);
+  expect(bounds.y).toBeGreaterThanOrEqual(filters.y + filters.height);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
   await expect(next).toBeDisabled();
   await previous.click();

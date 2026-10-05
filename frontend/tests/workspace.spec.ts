@@ -900,6 +900,7 @@ test('campaign panes fill the height below full-width controls and keep row hove
       .getByRole('navigation', { name: 'Campaign pages' })
       .boundingBox())!;
     expect(pagination.y).toBeGreaterThanOrEqual(toolbar.y);
+    expect(pagination.x + pagination.width / 2).toBeCloseTo(toolbar.x + toolbar.width / 2, 0);
     expect(pagination.y + pagination.height).toBeLessThanOrEqual(toolbar.y + toolbar.height);
     const listBounds = (await list.boundingBox())!;
     expect(listBounds.y + listBounds.height).toBe(viewport.height - 12);

@@ -327,15 +327,16 @@ minutes; review restored edits and use Retry to save them.
 ### Games, filters, and ignored rewards
 
 Campaigns opens with **Available** and **History** icon tabs styled like Settings,
-with the filtered count and refresh control in the same header. Open **Filters** for
+with the total campaign count beside refresh on the right and pagination centered in the
+header. The count uses the same subdued text as Last confirmed. Open **Filters** for
 **All games** and **Clear filters**. The sort control offers **Default** (active campaigns
 with confirmed progress first), **Newest** (latest campaign start), **Ending Soonest**,
 **Most Drops** (total drops), and **A-Z** (campaign name). Sorting stays in the page URL
 through searches, tab changes and reloads; it does not change mining priorities.
 Icon-only actions have circular hover backgrounds. Search-clear actions stay inset
 inside the field, and game-priority drag grips remain visible as plain six-dot handles.
-On phones, refresh stays beside the tabs, search gets its own full-width row, and the count
-sits beside the filter/sort/view controls. Checkboxes, search results and drag handles keep
+On phones, tabs and search have their own rows, the count stays beside refresh, and pagination
+is centered below the controls. Checkboxes, search results and drag handles keep
 44px touch targets. Channels, Up next and game priorities use inset separators and a smaller
 scrollbar gap than Campaigns. Up next shows identical reward windows once per campaign.
 Channel thumbnails use the current game's catalog artwork when stream metadata omits it;
