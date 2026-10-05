@@ -121,8 +121,41 @@ pub struct ChannelView {
 pub struct Login {
     pub status: String,
     pub user_id: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub profile: Option<AccountProfile>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub oauth_pending: Option<OAuthCode>,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+pub struct AccountProfile {
+    pub login: String,
+    pub display_name: String,
+    pub avatar_url: Option<String>,
+    pub banner_url: Option<String>,
+    pub color: Option<String>,
+    pub description: Option<String>,
+    pub created_at: Option<DateTime<Utc>>,
+    pub followers: Option<u64>,
+    pub roles: Vec<String>,
+    pub badges: Vec<AccountBadge>,
+    // None means Twitch did not provide the collection, not that it is empty.
+    pub available_badges: Option<Vec<AccountBadge>>,
+    pub socials: Vec<AccountLink>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct AccountBadge {
+    pub id: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub image_url: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct AccountLink {
+    pub name: String,
+    pub url: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

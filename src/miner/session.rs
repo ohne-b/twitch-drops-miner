@@ -173,8 +173,11 @@ pub(super) async fn remove_session(app: &Arc<App>) -> Result<(), TwitchError> {
         .await
         .map_err(|_| TwitchError::Storage)?
 }
-pub(super) async fn publish_login(app: &App, login: Login) {
+pub(super) async fn publish_login(app: &App, mut login: Login) {
     let mut state = app.snapshot.write().await;
+    if login.user_id.is_some() && login.user_id == state.login.user_id && login.profile.is_none() {
+        login.profile = state.login.profile.clone();
+    }
     if login.user_id.is_some() && state.login.user_id.is_none() {
         state.mining.state = crate::dto::MiningState::Discovering;
     }
@@ -245,6 +248,7 @@ pub(super) async fn authenticate(
                         status: message("login.status.waiting_auth", &[]),
                         user_id: None,
                         oauth_pending: Some(login.code.clone()),
+                        ..Login::default()
                     },
                 )
                 .await;
@@ -307,6 +311,7 @@ pub(super) async fn run_generation(
             status: message("login.status.logged_in", &[]),
             user_id: Some(session.user_id),
             oauth_pending: None,
+            ..Login::default()
         },
     )
     .await;
@@ -315,12 +320,26 @@ pub(super) async fn run_generation(
     ));
     let (events, receiver) = mpsc::channel(256);
     let mut pool = PubSub::start(client.clone(), events);
+    let profile = refresh_profile(app.clone(), client.clone());
     let mut mining = Mining::new(app, client, journal, intent, receiver);
     {
         let saved = resume.lock().await;
         mining.restore(&saved);
     }
-    let result = mining.run(&mut pool).await;
+    let result = {
+        let run = mining.run(&mut pool);
+        tokio::pin!(run);
+        // The future belongs to this generation and is dropped if mining exits.
+        // Loading the identity never holds up inventory or the watch loop.
+        tokio::select! {
+            biased;
+            result = &mut run => result,
+            result = profile => match result {
+                Ok(()) => run.await,
+                Err(error) => Err(error),
+            },
+        }
+    };
     *resume.lock().await = mining.resume();
     cancel.cancel();
     // Owned jobs include durable claim writes. Cancellation stops network work,
@@ -328,4 +347,17 @@ pub(super) async fn run_generation(
     while mining.jobs.join_next().await.is_some() {}
     pool.close().await;
     result
+}
+
+pub(super) async fn refresh_profile(
+    app: Arc<App>,
+    client: TwitchClient,
+) -> Result<(), TwitchError> {
+    if let Some(profile) = client.account_profile().await? {
+        let mut state = app.snapshot.write().await;
+        if !client.http.cancel.is_cancelled() && state.login.user_id == Some(client.user_id) {
+            state.login.profile = Some(profile);
+        }
+    }
+    Ok(())
 }

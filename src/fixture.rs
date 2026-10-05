@@ -300,6 +300,7 @@ async fn commands(app: Arc<App>, mut receiver: mpsc::Receiver<CommandRequest>) {
                         url: "https://www.twitch.tv/activate".into(),
                         code: "NEWCODE".into(),
                     }),
+                    ..Login::default()
                 };
                 app.snapshot.write().await.login = login.clone();
                 app.sockets.emit("login_status", &login).await;
