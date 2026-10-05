@@ -69,7 +69,7 @@ async fn profile_survives_network_renewal_but_not_logout_or_account_changes() {
     let server = MockServer::start().await;
     let (_dir, mining, _intent, mut pool) = miner(&server).await;
     let profile = crate::dto::AccountProfile {
-        login: "miner".into(),
+        display_name: "Miner".into(),
         ..Default::default()
     };
     session::publish_login(
