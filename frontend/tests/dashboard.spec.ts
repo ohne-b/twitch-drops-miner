@@ -610,6 +610,85 @@ test('mining confirmation stays beside selection mode inside Now mining', async 
   await expect(confirmed).toHaveCount(0);
   await expect(refresh).toBeVisible();
 });
+for (const width of [1440, 320]) {
+  test(`Now mining keeps artwork, wrapped details and manual controls aligned at ${width}px`, async ({
+    page,
+    request,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const card = page.getByRole('region', { name: 'Now mining', exact: true });
+    const reward = card.locator('#mining-drop-details');
+    const identity = reward.locator('../..');
+    const artwork = identity.locator(':scope > span');
+    const text = reward.locator('..');
+    for (const title of ['Explorer jacket', 'Explorer jacket and companion reward bundle']) {
+      expect(
+        (
+          await request.post('/__test/event', {
+            headers,
+            data: { event: 'drop_progress', data: { ...snapshot.current_drop, drop_name: title } },
+          })
+        ).ok(),
+      ).toBe(true);
+      await expect(reward).toHaveText(title);
+      const artBox = (await artwork.boundingBox())!;
+      const textBox = (await text.boundingBox())!;
+      expect([artBox.width, artBox.height]).toEqual([80, 80]);
+      expect(artBox.y + artBox.height / 2).toBeCloseTo(textBox.y + textBox.height / 2, 0);
+      expect(artBox.x + artBox.width).toBeLessThan(textBox.x);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        width,
+      );
+    }
+    await card.screenshot({ path: `../artifacts/now-mining-reward-${width}.png` });
+    expect(
+      (
+        await request.post('/__test/event', {
+          headers,
+          data: {
+            event: 'manual_mode_update',
+            data: { ...snapshot.manual_mode, active: true, expires_at: '2026-10-05T01:00:00Z' },
+          },
+        })
+      ).ok(),
+    ).toBe(true);
+    const back = card.getByRole('button', { name: 'Return to Auto Mode', exact: true });
+    const timer = back.locator('..').getByText(/^Auto mode at /);
+    await expect(timer).toBeVisible();
+    const buttonBox = (await back.boundingBox())!;
+    const timerBox = (await timer.boundingBox())!;
+    expect(buttonBox.y + buttonBox.height / 2).toBeCloseTo(timerBox.y + timerBox.height / 2, 0);
+    expect(buttonBox.x + buttonBox.width).toBeLessThan(timerBox.x);
+    if (width < 768) expect(buttonBox.height).toBeGreaterThanOrEqual(44);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    await card.screenshot({ path: `../artifacts/now-mining-manual-${width}.png` });
+    await back.click();
+    await expect(back).toHaveCount(0);
+    await expect(card.getByRole('img', { name: 'Automatic selection', exact: true })).toBeVisible();
+    expect(
+      (
+        await request.post('/__test/event', {
+          headers,
+          data: {
+            event: 'initial_state',
+            data: {
+              ...snapshot,
+              current_drop: null,
+              channels: [],
+              settings: { ...snapshot.settings, games_to_watch: [] },
+              mining: { ...snapshot.mining, state: 'no_selection' },
+            },
+          },
+        })
+      ).ok(),
+    ).toBe(true);
+    await expect(card.getByRole('link', { name: 'Choose games', exact: true })).toBeVisible();
+    await expect(card.getByRole('link', { name: 'Choose games', exact: true })).toBeInViewport();
+    await expect(card.getByRole('progressbar')).toHaveCount(0);
+    await card.screenshot({ path: `../artifacts/now-mining-empty-${width}.png` });
+  });
+}
+
 test('unconfirmed rewards show minute counts without inventing confirmation', async ({
   page,
   request,

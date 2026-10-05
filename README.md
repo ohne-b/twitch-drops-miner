@@ -211,6 +211,8 @@ browser's local format; Activity also shows seconds.
 
 The current reward's **Last confirmed** time sits beside the selection mode at the top right
 of Now mining, in smaller, muted text. It appears only after Twitch confirms progress.
+The card pairs an 80px reward thumbnail with its details and uses tighter spacing on phones.
+Manual mode keeps its return button and optional timer together.
 Rewards without confirmed progress show an empty progress bar and `0 / required minutes`
 in Mining and Campaigns.
 Their tooltip identifies the unconfirmed value; no confirmation time is invented.

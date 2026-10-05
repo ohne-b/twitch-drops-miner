@@ -239,13 +239,15 @@ export function Empty({
   title,
   detail,
   children,
+  className = 'py-10',
 }: {
   title: string;
   detail?: string;
   children?: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="py-10 text-center">
+    <div className={`${className} text-center`}>
       <p className="font-medium text-soft">{title}</p>
       {detail && (
         <p className="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-muted">{detail}</p>
