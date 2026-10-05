@@ -213,7 +213,12 @@ Commits made with a workflow token do not trigger push workflows; run **validati
 manually on main before publishing when its latest commit has no matching push validation.
 SemVer build metadata uses `_` in place of `+` in the Docker tag.
 GHCR is the primary publication registry, authenticated through the workflow's scoped
-GitHub token. The first release under the new image name needs public package visibility
+GitHub token. GitHub releases are created as `ohne-b` using the `prod` environment's
+`RELEASE_TOKEN`: a fine-grained token owned by the repository owner, limited to this repository
+with **Contents: Read and write**. The workflow verifies the token's owner before publishing
+any images and uses it only for the publisher check and GitHub release operations. Keep the
+registry credentials separate; never copy a local CLI token into Actions or post tokens in chat.
+The first release under the new image name needs public package visibility
 and anonymous-pull verification; existing version-0.1.0 images remain at their original
 GHCR address for compatibility. Do not overwrite or remove those published tags.
 A failed push or latest-tag promotion may leave a partial publication. Inspect the failed

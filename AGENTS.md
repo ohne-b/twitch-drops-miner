@@ -21,6 +21,10 @@ the alternate agent instruction files; do not recreate copies or links.
   or console changes. There are no other locales or language settings.
 - Keep user guidance in README and contributor policy in CONTRIBUTING. Do not create
   `docs/`, `plans/` or repository planning documents.
+- GitHub release publication uses the repository owner's scoped `prod` `RELEASE_TOKEN`;
+  verify its identity before publishing images. Registry publication retains the workflow's
+  built-in token. Keep tokens out of source, logs and chat; never reuse a local CLI credential
+  as an Actions secret.
 
 ## Architecture
 

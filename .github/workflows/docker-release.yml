@@ -21,7 +21,7 @@ jobs:
     environment: prod
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       packages: write
       actions: read
     steps:
@@ -29,6 +29,14 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
+      - name: Verify release publisher
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          RELEASE_OWNER: ${{ github.repository_owner }}
+        run: |
+          test -n "$GH_TOKEN" || { echo 'Set RELEASE_TOKEN in the prod environment before publishing.' >&2; exit 1; }
+          publisher=$(gh api user --jq .login)
+          test "$publisher" = "$RELEASE_OWNER" || { echo 'RELEASE_TOKEN must belong to the repository owner.' >&2; exit 1; }
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
@@ -62,7 +70,7 @@ jobs:
           node .github/scripts/publish-images.mjs "$RELEASE_VERSION" "$IMAGE_TAGS"
       - name: Publish release with manifest and reviewed notes
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           RELEASE_VERSION: ${{ steps.release.outputs.version }}
           IMAGE_TAGS: ${{ steps.release.outputs.tags }}
           PRERELEASE: ${{ steps.release.outputs.prerelease }}

@@ -130,3 +130,20 @@ test('edge publishing is manual, validated-main-only and cannot advance release 
   assert.match(validation, /retention-days: 7/);
   assert.doesNotMatch(validation, /needs: test|packages: write|push: true/);
 });
+
+
+test('release attribution uses the verified owner token while registry credentials stay separate', () => {
+  const workflow = readFileSync(new URL('../../workflows/docker-release.yml', import.meta.url), 'utf8');
+  const verify = workflow.split('- name: Verify release publisher')[1].split('- uses:')[0];
+  const images = workflow.split('- name: Publish the validated images')[1].split('- name:')[0];
+  const release = workflow.split('- name: Publish release with manifest and reviewed notes')[1];
+  assert.ok(verify.includes('GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}'));
+  assert.ok(verify.includes('test -n "$GH_TOKEN"'));
+  assert.ok(verify.includes('publisher=$(gh api user --jq .login)'));
+  assert.ok(verify.includes('test "$publisher" = "$RELEASE_OWNER"'));
+  assert.ok(workflow.indexOf('Verify release publisher') < workflow.indexOf('Publish the validated images'));
+  assert.ok(images.includes('GH_TOKEN: ${{ github.token }}'));
+  assert.ok(release.includes('GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}'));
+  assert.doesNotMatch(images, /secrets\./);
+  assert.doesNotMatch(workflow, /contents: write/);
+});
