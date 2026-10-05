@@ -267,7 +267,8 @@ embed it and run without a build tool/runtime companion. Production builds never
   Reward thumbnails contain their artwork; game covers retain cover sizing. Phone checkbox
   labels, game search results and drag grips have at least 44px touch targets without enlarging
   glyphs or adding pointer hover backgrounds to grips.
-- Sidebar: 32px GitHub glyph above an equally sized, aligned Twitch avatar, followed by
+- Sidebar: 32px visible GitHub artwork above an equally sized, aligned Twitch avatar
+  (compensate for the SVG's internal whitespace), with 4px between their controls, followed by
   equipped badges and the chat-colored name, with no divider above the footer. The identity
   links to Settings > Twitch account. Settings shows a 48px avatar, colored name, equipped
   badges and adjacent logout action, followed by the collection labeled Badges. Badge

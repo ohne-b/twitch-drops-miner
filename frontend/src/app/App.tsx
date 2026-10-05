@@ -111,12 +111,13 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
             aria-label="GitHub repository"
             title="GitHub"
           >
-            <Icon path={mdiGithub} className="mdi-icon size-8!" />
+            {/* The glyph fills 20 of its 24 viewBox units: render its artwork at 32px. */}
+            <Icon path={mdiGithub} className="mdi-icon size-[38.4px]!" />
           </a>
           {data?.login.user_id != null && (
             <Link
               to="/settings#account"
-              className="account-trigger mt-2 flex min-h-11 w-full items-center rounded text-start"
+              className="account-trigger mt-1 flex min-h-11 w-full items-center rounded text-start"
               aria-label={
                 data.login.profile
                   ? t('profile_open', { name: data.login.profile.display_name })
