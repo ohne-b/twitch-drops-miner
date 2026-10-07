@@ -1,6 +1,7 @@
 mod catalog;
 pub mod channels;
 mod diagnostics;
+mod games;
 pub mod inventory;
 pub mod oauth;
 pub mod operations;
@@ -69,6 +70,7 @@ pub(crate) struct Endpoints {
     pub web: Url,
     pub pubsub: Url,
     pub catalog: Url,
+    pub helix: Url,
 }
 impl Default for Endpoints {
     fn default() -> Self {
@@ -79,6 +81,7 @@ impl Default for Endpoints {
             web: Url::parse("https://www.twitch.tv/").unwrap(),
             pubsub: Url::parse("wss://pubsub-edge.twitch.tv/v1").unwrap(),
             catalog: Url::parse("https://twitch-drops-api.sunkwi.com/v2/drops").unwrap(),
+            helix: Url::parse("https://api.twitch.tv/helix/").unwrap(),
         }
     }
 }
@@ -94,6 +97,7 @@ impl Endpoints {
             gql: base.join("gql").unwrap(),
             tv: base.join("tv").unwrap(),
             catalog: base.join("catalog").unwrap(),
+            helix: base.join("helix/").unwrap(),
             web: base,
             pubsub,
         }
@@ -268,6 +272,12 @@ impl TwitchHttp {
             "twitch_graphql"
         } else if request.url() == &self.endpoints.catalog {
             "public_catalog"
+        } else if request
+            .url()
+            .as_str()
+            .starts_with(self.endpoints.helix.as_str())
+        {
+            "twitch_game_directory"
         } else if request.url().origin() == self.endpoints.oauth.origin() {
             "twitch_oauth"
         } else if request.method() == Method::POST {

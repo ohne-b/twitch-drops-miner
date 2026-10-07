@@ -132,6 +132,81 @@ async fn refresh_acknowledgement_does_not_mean_completion_and_requests_coalesce(
 }
 
 #[tokio::test]
+async fn game_directory_requires_dashboard_auth_csrf_and_bounded_queries() {
+    use crate::app::commands::GameQuery;
+    let test = TestApp::new("");
+    let cookie = test.enable().await;
+    let headers = [("x-tdm-request", "1")];
+    assert_eq!(
+        test.call(
+            Method::POST,
+            "/api/games",
+            json!({"search":"Rust"}),
+            "",
+            &headers
+        )
+        .await
+        .0,
+        StatusCode::UNAUTHORIZED
+    );
+    assert_eq!(
+        test.call(
+            Method::POST,
+            "/api/games",
+            json!({"search":"Rust"}),
+            &cookie,
+            &[]
+        )
+        .await
+        .0,
+        StatusCode::FORBIDDEN
+    );
+    for query in [
+        json!({"search":""}),
+        json!({"search":"x".repeat(101)}),
+        json!({"names":[]}),
+    ] {
+        assert_eq!(
+            test.call(Method::POST, "/api/games", query, &cookie, &headers)
+                .await
+                .0,
+            StatusCode::BAD_REQUEST
+        );
+    }
+    assert_eq!(
+        test.call(
+            Method::POST,
+            "/api/games",
+            json!({"search":"Rust"}),
+            &cookie,
+            &headers
+        )
+        .await
+        .0,
+        StatusCode::SERVICE_UNAVAILABLE
+    );
+    let (sender, mut requests) = tokio::sync::mpsc::channel(4);
+    *test.app.game_queries.write().await = Some(sender);
+    let response = async {
+        let request = requests.recv().await.unwrap();
+        assert!(matches!(request.query, GameQuery::Search(ref name) if name == "Rust"));
+        request.complete.send(Ok(vec![])).unwrap();
+    };
+    let (result, _) = tokio::join!(
+        test.call(
+            Method::POST,
+            "/api/games",
+            json!({"search":"Rust"}),
+            &cookie,
+            &headers
+        ),
+        response
+    );
+    assert_eq!(result.0, StatusCode::OK);
+    assert_eq!(result.2, b"[]");
+}
+
+#[tokio::test]
 async fn refresh_command_failure_is_retryable_and_disconnected_callers_do_not_cancel_accepted_work()
 {
     use crate::dto::RefreshState;

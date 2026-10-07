@@ -79,6 +79,31 @@ impl WebState {
 
 #[derive(Debug)]
 pub struct ApiError(pub StatusCode, pub &'static str);
+
+async fn games(
+    State(app): State<Arc<App>>,
+    Json(query): Json<crate::app::commands::GameQuery>,
+) -> Result<Json<Vec<crate::config::GameMetadata>>, ApiError> {
+    if !query.valid() {
+        return Err(ApiError::invalid());
+    }
+    let sender = app
+        .game_queries
+        .read()
+        .await
+        .clone()
+        .ok_or_else(ApiError::unavailable)?;
+    let (complete, result) = tokio::sync::oneshot::channel();
+    sender
+        .try_send(crate::app::commands::GameRequest { query, complete })
+        .map_err(|_| ApiError::unavailable())?;
+    let games = tokio::time::timeout(Duration::from_secs(12), result)
+        .await
+        .map_err(|_| ApiError::unavailable())?
+        .map_err(|_| ApiError::unavailable())?
+        .map_err(|_| ApiError::unavailable())?;
+    Ok(Json(games))
+}
 impl ApiError {
     fn invalid() -> Self {
         Self(StatusCode::BAD_REQUEST, "invalid_request")
@@ -138,6 +163,7 @@ pub fn router(app: Arc<App>) -> Router {
         .route("/api/campaigns", get(campaigns))
         .route("/api/console", get(console))
         .route("/api/settings", get(settings).post(update_settings))
+        .route("/api/games", post(games))
         .route("/api/settings/verify-proxy", post(verify_proxy))
         .route("/api/version", get(version))
         .route("/api/history", get(history))

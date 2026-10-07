@@ -321,7 +321,10 @@ pub(super) async fn run_generation(
     let (events, receiver) = mpsc::channel(256);
     let mut pool = PubSub::start(client.clone(), events);
     let profile = refresh_profile(app.clone(), client.clone());
-    let mut mining = Mining::new(app, client, journal, intent, receiver);
+    let (queries, requests) = mpsc::channel(4);
+    *app.game_queries.write().await = Some(queries);
+    let directory = game_directory(client.clone(), requests);
+    let mut mining = Mining::new(app.clone(), client, journal, intent, receiver);
     {
         let saved = resume.lock().await;
         mining.restore(&saved);
@@ -329,24 +332,56 @@ pub(super) async fn run_generation(
     let result = {
         let run = mining.run(&mut pool);
         tokio::pin!(run);
+        let with_profile = async {
+            tokio::select! {
+                biased;
+                result = &mut run => result,
+                result = profile => match result {
+                    Ok(()) => run.await,
+                    Err(error) => Err(error),
+                },
+            }
+        };
         // The future belongs to this generation and is dropped if mining exits.
         // Loading the identity never holds up inventory or the watch loop.
         tokio::select! {
             biased;
-            result = &mut run => result,
-            result = profile => match result {
-                Ok(()) => run.await,
-                Err(error) => Err(error),
-            },
+            result = with_profile => result,
+            result = directory => result,
         }
     };
     *resume.lock().await = mining.resume();
     cancel.cancel();
+    *app.game_queries.write().await = None;
     // Owned jobs include durable claim writes. Cancellation stops network work,
     // while any confirmed claim finishes its disk transaction before logout.
     while mining.jobs.join_next().await.is_some() {}
     pool.close().await;
     result
+}
+
+pub(super) async fn game_directory(
+    client: TwitchClient,
+    mut requests: mpsc::Receiver<crate::app::commands::GameRequest>,
+) -> Result<(), TwitchError> {
+    loop {
+        let mut request = tokio::select! { biased;
+            _ = client.http.cancel.cancelled() => return Err(TwitchError::Cancelled),
+            request = requests.recv() => request.ok_or(TwitchError::Cancelled)?,
+        };
+        let result = tokio::select! { biased;
+            _ = request.complete.closed() => continue,
+            result = client.games(&request.query) => result,
+        };
+        let fatal = match result {
+            Err(error @ (TwitchError::Unauthorized | TwitchError::Cancelled)) => Some(error),
+            _ => None,
+        };
+        let _ = request.complete.send(result);
+        if let Some(error) = fatal {
+            return Err(error);
+        }
+    }
 }
 
 pub(super) async fn refresh_profile(
