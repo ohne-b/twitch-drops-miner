@@ -54,6 +54,7 @@ pub struct Application {
     pub(crate) writes: TaskTracker,
     pub(crate) settings_slot: Arc<Semaphore>,
     pub notifications: broadcast::Sender<Notification>,
+    pub(crate) game_queries: RwLock<Option<mpsc::Sender<commands::GameRequest>>>,
     commands: mpsc::Sender<CommandRequest>,
 }
 
@@ -90,6 +91,7 @@ impl Application {
                 writes: TaskTracker::new(),
                 settings_slot: Arc::new(Semaphore::new(1)),
                 notifications: broadcast::channel(32).0,
+                game_queries: RwLock::new(None),
                 commands,
             }),
             receiver,

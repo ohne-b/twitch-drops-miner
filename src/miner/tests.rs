@@ -221,6 +221,63 @@ async fn paused_mining_keeps_inventory_and_earned_claims_running() {
 }
 
 #[tokio::test]
+async fn game_directory_cancels_abandoned_queries_and_ends_with_its_generation() {
+    use crate::app::commands::{GameQuery, GameRequest};
+    let server = MockServer::start().await;
+    Mock::given(path("/helix/search/categories"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(json!({"data":[]}))
+                .set_delay(Duration::from_secs(30)),
+        )
+        .mount(&server)
+        .await;
+    let client = TwitchClient::new(Arc::new(http(&server)), &session());
+    let (sender, requests) = mpsc::channel(4);
+    let run = tokio::spawn(session::game_directory(client.clone(), requests));
+    let (complete, result) = oneshot::channel();
+    sender
+        .send(GameRequest {
+            query: GameQuery::Search("first".into()),
+            complete,
+        })
+        .await
+        .unwrap();
+    tokio::time::timeout(Duration::from_secs(2), async {
+        while server.received_requests().await.unwrap().is_empty() {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    drop(result);
+    server.reset().await;
+    Mock::given(path("/helix/search/categories"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({"data":[]})))
+        .mount(&server)
+        .await;
+    let (complete, result) = oneshot::channel();
+    sender
+        .send(GameRequest {
+            query: GameQuery::Search("second".into()),
+            complete,
+        })
+        .await
+        .unwrap();
+    assert!(
+        tokio::time::timeout(Duration::from_secs(2), result)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap()
+            .is_empty()
+    );
+    client.http.cancel.cancel();
+    assert_eq!(run.await.unwrap(), Err(TwitchError::Cancelled));
+    assert!(sender.is_closed());
+}
+
+#[tokio::test]
 async fn profile_survives_network_renewal_but_not_logout_or_account_changes() {
     let server = MockServer::start().await;
     let (_dir, mining, _intent, mut pool) = miner(&server).await;
