@@ -74,7 +74,7 @@ async fn pause_stops_automatic_and_manual_watches_and_fences_late_results() {
             .expect(1)
             .mount(&server)
             .await;
-        let (_dir, mut miner, _intent, mut pool) = miner(&server).await;
+        let (_dir, mut miner, intent, mut pool) = miner(&server).await;
         let mut settings = select(&mut miner).await;
         miner.channels[0].beacon_url = Some(format!("{}/track", server.uri()).parse().unwrap());
         if manual {
@@ -176,6 +176,15 @@ async fn pause_stops_automatic_and_manual_watches_and_fences_late_results() {
         assert!(miner.busy.contains(&JobKind::Watch));
         finish_job(&mut miner, &pool).await;
         assert_eq!(miner.manual, selection);
+        settings.mining_paused = true;
+        miner.reselect(&settings).await;
+        intent.send_modify(|intent| intent.clear += 1);
+        miner.apply_intent(&pool).await;
+        miner.publish(&settings).await.unwrap();
+        assert!(
+            miner.app.snapshot.read().await.current_drop.is_none(),
+            "cache clear must discard the retained paused reward"
+        );
         pool.close().await;
     }
 }
