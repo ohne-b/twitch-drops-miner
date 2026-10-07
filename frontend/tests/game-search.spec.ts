@@ -52,12 +52,13 @@ test('search adds a game without campaigns and persists its official name and co
     .toEqual([]);
 });
 
-test('old saved names gain covers without a campaign and retain their priority', async ({
+test('old Unicode saved names gain covers without a campaign and retain their priority', async ({
   page,
   request,
 }) => {
   const state = structuredClone(fixture);
-  state.settings.games_to_watch = ['Rust', 'Stardew Valley'];
+  state.settings.games_to_watch = ['Rust', 'STRASSE'];
+  const metadata = { ...stardew, name: 'Straße' };
   expect(
     (
       await request.post('/__test/event', {
@@ -66,18 +67,18 @@ test('old saved names gain covers without a campaign and retain their priority',
       })
     ).ok(),
   ).toBeTruthy();
-  await page.route('**/api/games', (route) => route.fulfill({ json: [stardew] }));
+  await page.route('**/api/games', (route) => route.fulfill({ json: [metadata] }));
   await page.goto('/?edit=priorities');
-  await expect(page.locator('[data-game="Stardew Valley"] img')).toHaveAttribute(
+  await expect(page.locator('[data-game="STRASSE"] img')).toHaveAttribute(
     'src',
     /490744-80x112.jpg/,
   );
   await expect
     .poll(async () => (await (await request.get('/api/settings')).json()).game_metadata)
-    .toEqual([stardew]);
+    .toEqual([metadata]);
   expect((await (await request.get('/api/settings')).json()).games_to_watch).toEqual([
     'Rust',
-    'Stardew Valley',
+    'STRASSE',
   ]);
 });
 
@@ -122,4 +123,39 @@ test('changed queries ignore stale results and failed searches can retry or add 
   await page.route('**/api/games', (route) => route.fulfill({ json: [stardew] }));
   await page.getByRole('button', { name: 'Try again', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Stardew Valley', exact: true })).toBeVisible();
+});
+
+test('early campaign selections get covers and Enter accepts Twitch word matches', async ({
+  page,
+  request,
+}) => {
+  let releaseSearch: (() => void) | undefined;
+  const elder = { ...stardew, id: '65654', name: 'The Elder Scrolls Online' };
+  const warcraft = { ...stardew, id: '18122', name: 'World of Warcraft' };
+  await page.route('**/api/games', async (route) => {
+    const query = route.request().postDataJSON();
+    if (query.names)
+      return route.fulfill({ json: query.names.includes(elder.name) ? [elder] : [] });
+    if (query.search === 'elder') {
+      await new Promise<void>((resolve) => {
+        releaseSearch = resolve;
+      });
+      return route.fulfill({ json: [elder] });
+    }
+    return route.fulfill({ json: [warcraft] });
+  });
+  await page.goto('/?edit=priorities');
+  const search = page.getByRole('searchbox', { name: 'Search games' });
+  await search.fill('elder');
+  await expect.poll(() => !!releaseSearch).toBe(true);
+  await page.getByRole('button', { name: elder.name, exact: true }).click();
+  releaseSearch!();
+  await expect
+    .poll(async () => (await (await request.get('/api/settings')).json()).game_metadata)
+    .toEqual([elder]);
+  await search.fill('world warcraft');
+  await expect(page.getByRole('button', { name: warcraft.name, exact: true })).toBeVisible();
+  await search.press('Enter');
+  await expect(page.locator('[data-game="World of Warcraft"]')).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 });
