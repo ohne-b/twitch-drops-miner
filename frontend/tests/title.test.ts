@@ -26,3 +26,16 @@ it('uses confirmed progress and replaces stale titles for pause, idle, disconnec
   expect(title()).toBe('Drops Miner');
   expect(miningTitle(null, false, t)).toBe('Drops Miner');
 });
+
+it('keeps exact integer percentages without rounding incomplete progress up', () => {
+  const data = structuredClone(fixture) as Snapshot;
+  const t = translator({});
+  data.current_drop!.required_minutes = 100;
+  for (const minutes of [0, 29, 58, 99, 100]) {
+    data.current_drop!.confirmed_minutes = minutes;
+    expect(miningTitle(data, true, t)).toBe(`${minutes}% Rust - Drops Miner`);
+  }
+  data.current_drop!.confirmed_minutes = 59;
+  data.current_drop!.required_minutes = 60;
+  expect(miningTitle(data, true, t)).toBe('98% Rust - Drops Miner');
+});
