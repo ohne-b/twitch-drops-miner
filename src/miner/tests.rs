@@ -115,6 +115,32 @@ async fn pause_stops_automatic_and_manual_watches_and_fences_late_results() {
         miner.schedule(&settings).await;
         assert!(miner.jobs.is_empty(), "pause must block polls and beacons");
         assert_eq!(miner.manual, selection);
+        let original_stream = miner.channels[0].clone();
+        miner.channels[0].broadcast_id = None;
+        miner.reselect(&settings).await;
+        miner.publish(&settings).await.unwrap();
+        assert_eq!(
+            miner.app.snapshot.read().await.current_drop,
+            progress,
+            "a paused reward survives the stream going offline"
+        );
+        let original_reward = miner.campaigns[0].drops[0].clone();
+        miner.campaigns[0].drops[0].confirm(14, Utc::now());
+        miner.publish(&settings).await.unwrap();
+        assert_eq!(
+            miner
+                .app
+                .snapshot
+                .read()
+                .await
+                .current_drop
+                .as_ref()
+                .unwrap()
+                .confirmed_minutes,
+            14
+        );
+        miner.campaigns[0].drops[0] = original_reward;
+        miner.channels[0] = original_stream;
         settings.mining_paused = false;
         *miner.app.settings.write().await = settings.clone();
         miner.reselect(&settings).await;
