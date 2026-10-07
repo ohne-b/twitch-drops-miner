@@ -305,10 +305,22 @@ async fn commands(app: Arc<App>, mut receiver: mpsc::Receiver<CommandRequest>) {
                 app.snapshot.write().await.login = login.clone();
                 app.sockets.emit("login_status", &login).await;
             }
-            Command::ConfirmOAuth
-            | Command::SettingsChanged
-            | Command::Refresh { .. }
-            | Command::Shutdown => {}
+            Command::SettingsChanged => {
+                let mut state = app.snapshot.write().await;
+                let paused = state.settings.values.mining_paused;
+                let watching = state.mining.channel_id;
+                for channel in &mut state.channels {
+                    channel.watching = !paused && Some(channel.id) == watching;
+                }
+                state.mining.state = if paused {
+                    crate::dto::MiningState::Paused
+                } else if state.manual_mode.active {
+                    crate::dto::MiningState::ManualWatching
+                } else {
+                    crate::dto::MiningState::Watching
+                };
+            }
+            Command::ConfirmOAuth | Command::Refresh { .. } | Command::Shutdown => {}
         }
         if let Some(request) = request {
             let _ = request.complete.send(Ok(()));

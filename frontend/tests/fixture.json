@@ -113,6 +113,7 @@
     "[2026-09-26 00:20:00] | Progress confirmed: 42 / 60 minutes"
   ],
   "settings": {
+    "mining_paused": false,
     "revision": "fixture",
     "games_to_watch": ["Rust", "Sea of Thieves"],
     "auto_mine_badges": false,
