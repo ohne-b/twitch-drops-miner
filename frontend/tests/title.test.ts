@@ -17,6 +17,8 @@ it('uses confirmed progress and replaces stale titles for pause, idle, disconnec
   expect(title()).toBe('Paused - Drops Miner');
   expect(miningTitle(data, false, t)).toBe('Disconnected - Drops Miner');
   data.settings.mining_paused = false;
+  data.mining!.state = 'paused';
+  expect(title()).toBe('Paused - Drops Miner');
   data.mining!.state = 'waiting_channel';
   expect(title()).toBe('Idle - Drops Miner');
   data.mining!.state = 'manual_watching';

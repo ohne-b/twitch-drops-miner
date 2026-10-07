@@ -9,7 +9,8 @@ export function miningTitle(
   if (!data) return app;
   if (!connected) return `${t('tab_disconnected')} - ${app}`;
   if (!data.login.user_id) return app;
-  if (data.settings.mining_paused) return `${t('paused')} - ${app}`;
+  if (data.settings.mining_paused || data.mining?.state === 'paused')
+    return `${t('paused')} - ${app}`;
   if (!['watching', 'awaiting_progress', 'manual_watching'].includes(data.mining?.state ?? ''))
     return `${t('tab_idle')} - ${app}`;
   const drop = data.current_drop;
