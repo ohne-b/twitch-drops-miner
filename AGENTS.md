@@ -314,7 +314,8 @@ embed it and run without a build tool/runtime companion. Production builds never
   retain session-owner handling; optional lookup failures leave manual-name entry available.
   Save selected game IDs, names and validated Twitch cover URLs in compatible `game_metadata`
   settings; this metadata never changes mining eligibility. Remove metadata for deselected
-  games. Resolve older saved names on opening preferences, retaining order and manual names.
+  games. Resolve missing metadata on opening preferences and when selected names change,
+  retaining order and manual names. Match saved artwork with the shared Unicode game keys.
   Search results and selected games show covers without requiring an active campaign; late
   responses cannot replace newer queries or write metadata after logout/unmount.
   `/settings#mining` redirects there. Settings has account, dashboard access, connection and

@@ -26,6 +26,8 @@ export default function MiningPreferences() {
   const t = useT();
   const settings = data!.settings;
   const draft = autosave.draft ?? settings;
+  const gameKey = (name: string) => settings.game_keys?.[name] ?? name.toLowerCase();
+  const selectedNames = JSON.stringify(draft.games_to_watch);
   const change = autosave.change;
   const heading = useRef<HTMLHeadingElement>(null);
   const gameList = useRef<HTMLDivElement>(null);
@@ -43,8 +45,8 @@ export default function MiningPreferences() {
   const directory = useGameSearch(search, connected, data?.login.user_id);
   useEffect(() => {
     if (!connected || !data?.login.user_id) return;
-    const known = new Set((draft.game_metadata ?? []).map((game) => game.name.toLowerCase()));
-    const missing = draft.games_to_watch.filter((name) => !known.has(name.toLowerCase()));
+    const known = new Set((draft.game_metadata ?? []).map((game) => gameKey(game.name)));
+    const missing = draft.games_to_watch.filter((name) => !known.has(gameKey(name)));
     if (!missing.length) return;
     const controller = new AbortController();
     void lookupGames(missing, controller.signal)
@@ -53,8 +55,7 @@ export default function MiningPreferences() {
           change('game_metadata', (current) => [
             ...current,
             ...games.filter(
-              (game) =>
-                !current.some((saved) => saved.name.toLowerCase() === game.name.toLowerCase()),
+              (game) => !current.some((saved) => gameKey(saved.name) === gameKey(game.name)),
             ),
           ]);
         }
@@ -63,7 +64,7 @@ export default function MiningPreferences() {
         /* Existing covers and manual names remain usable; retry on the next visit. */
       });
     return () => controller.abort();
-  }, [connected, data?.login.user_id]);
+  }, [connected, data?.login.user_id, selectedNames]);
   const [confirmation, setConfirmation] = useState<{
     title: string;
     text: string;
@@ -72,12 +73,12 @@ export default function MiningPreferences() {
   const command = useAction();
   function addGame(name: string, metadata?: GameMetadata) {
     change('games_to_watch', (games) =>
-      games.some((game) => game.toLowerCase() === name.toLowerCase()) ? games : [...games, name],
+      games.some((game) => gameKey(game) === gameKey(name)) ? games : [...games, name],
     );
     if (metadata)
       change('game_metadata', (games) => [
         metadata,
-        ...games.filter((game) => game.name.toLowerCase() !== name.toLowerCase()),
+        ...games.filter((game) => gameKey(game.name) !== gameKey(name)),
       ]);
     setSearch('');
     setGameError('');
@@ -85,15 +86,12 @@ export default function MiningPreferences() {
   function resolveGame() {
     const name = search.trim();
     if (!name || directory.loading) return;
-    if (draft.games_to_watch.some((game) => game.toLowerCase() === name.toLowerCase())) {
+    if (draft.games_to_watch.some((game) => gameKey(game) === gameKey(name))) {
       setSearch('');
       return;
     }
-    const games = available.map((game) => game.name);
-    const exact = games.find((item) => item.toLocaleLowerCase() === name.toLocaleLowerCase());
-    const matches = games.filter((item) =>
-      item.toLocaleLowerCase().includes(name.toLocaleLowerCase()),
-    );
+    const matches = available.map((game) => game.name);
+    const exact = matches.find((item) => gameKey(item) === gameKey(name));
     const selected = exact ?? (matches.length === 1 ? matches[0] : undefined);
     if (selected) {
       if (!draft.games_to_watch.includes(selected))
@@ -127,11 +125,9 @@ export default function MiningPreferences() {
           metadata,
           image: metadata.box_art_url,
         })),
-      ].map((game) => [game.name.toLowerCase(), game]),
+      ].map((game) => [gameKey(game.name), game]),
     ).values(),
-  ].filter(
-    (game) => !draft.games_to_watch.some((name) => name.toLowerCase() === game.name.toLowerCase()),
-  );
+  ].filter((game) => !draft.games_to_watch.some((name) => gameKey(name) === gameKey(game.name)));
   return (
     <div className="flex flex-col gap-5 lg:min-h-0 lg:flex-1">
       <header className="flex shrink-0 items-center gap-3">
@@ -277,6 +273,7 @@ export default function MiningPreferences() {
                     games={draft.games_to_watch}
                     campaigns={data?.campaigns ?? []}
                     metadata={draft.game_metadata ?? []}
+                    gameKeys={settings.game_keys}
                     onChange={(games) => change('games_to_watch', games)}
                     scrollContainer={gameList}
                   />

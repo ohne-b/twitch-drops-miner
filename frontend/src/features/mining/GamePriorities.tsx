@@ -9,16 +9,19 @@ export function GamePriorities({
   games,
   campaigns,
   metadata,
+  gameKeys,
   onChange,
   scrollContainer,
 }: {
   games: string[];
   campaigns: Campaign[];
   metadata: GameMetadata[];
+  gameKeys?: Record<string, string>;
   onChange: (games: string[]) => void;
   scrollContainer: RefObject<HTMLElement | null>;
 }) {
   const t = useT();
+  const gameKey = (name: string) => gameKeys?.[name] ?? name.toLowerCase();
   const list = useRef<HTMLDivElement>(null);
   const drag = useRef<{
     game: string;
@@ -139,11 +142,9 @@ export function GamePriorities({
             </button>
             <Art
               url={
-                metadata.find((item) => item.name.toLowerCase() === game.toLowerCase())
-                  ?.box_art_url ||
-                campaigns.find(
-                  (campaign) => campaign.game_name.toLowerCase() === game.toLowerCase(),
-                )?.game_box_art_url
+                metadata.find((item) => gameKey(item.name) === gameKey(game))?.box_art_url ||
+                campaigns.find((campaign) => gameKey(campaign.game_name) === gameKey(game))
+                  ?.game_box_art_url
               }
               className="size-9"
             />
