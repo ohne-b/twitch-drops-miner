@@ -23,6 +23,7 @@ import type { AuthStatus } from '../shared/lib/types';
 import { request } from '../shared/lib/api';
 import { I18n, useT } from '../shared/lib/i18n';
 import { MinerProvider, useMiner } from './MinerProvider';
+import { miningTitle } from './title';
 import { Button, Empty, Notice, IconButton } from '../shared/ui/index';
 import Mining from '../features/mining/Mining';
 import Campaigns from '../features/campaigns/Campaigns';
@@ -34,6 +35,13 @@ import logo from '../assets/twitch-drops-miner-logo.svg?no-inline';
 function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<void> }) {
   const { data, connected, incompatible, autosave } = useMiner();
   const t = useT();
+  const title = miningTitle(data, connected, t);
+  useEffect(() => {
+    document.title = title;
+    return () => {
+      document.title = 'Drops Miner';
+    };
+  }, [title]);
   const location = useLocation();
   const navigationType = useNavigationType();
   const previousLocation = useRef(location);
