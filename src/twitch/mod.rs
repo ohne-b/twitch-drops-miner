@@ -357,6 +357,10 @@ impl TwitchHttp {
                     if !status.is_success() =>
                 {
                     let authenticated = request.url() == &self.endpoints.gql
+                        || request
+                            .url()
+                            .as_str()
+                            .starts_with(self.endpoints.helix.as_str())
                         || request.url().origin() == self.endpoints.oauth.origin()
                             && request.url().path().starts_with("/oauth2/");
                     return Err(
