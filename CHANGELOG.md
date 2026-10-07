@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.6.0](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.6.0) — 2026-10-07
+
+- add Pause and Resume to Now mining, keeping selected games and current progress; pause persists across restarts while inventory refreshes and earned claims continue ([#75](https://github.com/ohne-b/twitch-drops-miner/pull/75), [#77](https://github.com/ohne-b/twitch-drops-miner/pull/77))
+- search Twitch games without active campaigns, save their official names and covers, and fill in artwork for previously selected games ([#76](https://github.com/ohne-b/twitch-drops-miner/pull/76))
+- show confirmed mining progress and Paused, Idle or Disconnected status in the browser tab
+- simplify setup and troubleshooting in the README and update its dashboard screenshot
+
+Existing settings, credentials, history, service names and container mounts remain compatible.
+Pause is off by default. Manual-channel timers continue counting down while paused.
+
 ## [v1.5.0](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.5.0) — 2026-10-05
 
 - show your Twitch avatar, equipped badges and chat-colored name in the sidebar, with dark colors lightened for readability ([#71](https://github.com/ohne-b/twitch-drops-miner/pull/71))
