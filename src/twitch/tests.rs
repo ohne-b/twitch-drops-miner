@@ -695,12 +695,17 @@ async fn response_replay_does_not_retry_disabled_invalid_or_acknowledged_respons
 #[tokio::test]
 async fn interrupted_error_bodies_preserve_authenticated_and_public_statuses() {
     for status in [400, 401, 403] {
-        for endpoint in ["page", "gql", "oauth", "catalog"] {
+        for endpoint in ["page", "gql", "oauth", "catalog", "games"] {
             let (http, requests, server) =
                 body_server(vec![wire_response(status, b"{", 100)]).await;
             let result = if endpoint == "gql" {
                 TwitchClient::new(Arc::new(http), &session())
                     .gql(super::operations::Operation::Inventory.request(json!({})))
+                    .await
+                    .map(|_| ())
+            } else if endpoint == "games" {
+                TwitchClient::new(Arc::new(http), &session())
+                    .games(&crate::app::commands::GameQuery::Search("Rust".into()))
                     .await
                     .map(|_| ())
             } else if endpoint == "oauth" {
@@ -724,11 +729,12 @@ async fn interrupted_error_bodies_preserve_authenticated_and_public_statuses() {
             };
             let count = requests.lock().await.len();
             stop_body_server(server).await;
-            let expected = if matches!(endpoint, "gql" | "oauth") && matches!(status, 401 | 403) {
-                TwitchError::Unauthorized
-            } else {
-                TwitchError::Status(status)
-            };
+            let expected =
+                if matches!(endpoint, "gql" | "oauth" | "games") && matches!(status, 401 | 403) {
+                    TwitchError::Unauthorized
+                } else {
+                    TwitchError::Status(status)
+                };
             assert_eq!(result, Err(expected));
             assert_eq!(count, 1);
         }
