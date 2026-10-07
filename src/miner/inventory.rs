@@ -141,29 +141,48 @@ impl Mining {
             })
             .collect();
         let wanted = wanted_items(&self.campaigns, settings, now);
-        let active = self
-            .channels
-            .iter()
-            .find(|c| Some(c.identity.id) == self.watching)
-            .and_then(|channel| {
-                let reported = self
-                    .last_progress
-                    .as_ref()
-                    .and_then(|(id, _)| self.reported_drop(id, channel.identity.id, settings));
-                if self.manual.is_some() {
-                    return reported;
-                }
-                reported.or_else(|| {
-                    self.campaigns
+        let paused_progress = if settings.mining_paused {
+            self.app.snapshot.read().await.current_drop.clone()
+        } else {
+            None
+        };
+        let retained = paused_progress.as_ref().and_then(|progress| {
+            self.campaigns
+                .iter()
+                .find(|c| c.id == progress.campaign_id)
+                .and_then(|c| {
+                    c.drops
                         .iter()
-                        .filter(|c| c.can_watch(channel, settings, now))
-                        .filter_map(|c| c.first_drop(settings, now).map(|d| (c, d)))
-                        .min_by_key(|(c, d)| {
-                            (c.mining_priority(settings, now), d.remaining_minutes())
-                        })
+                        .find(|d| d.id == progress.drop_id)
+                        .map(|d| (c, d))
                 })
-            });
-        let progress = active.map(|(c, d)| c.progress(d));
+        });
+        let active = if paused_progress.is_some() {
+            retained
+        } else {
+            self.channels
+                .iter()
+                .find(|c| Some(c.identity.id) == self.watching)
+                .and_then(|channel| {
+                    let reported = self
+                        .last_progress
+                        .as_ref()
+                        .and_then(|(id, _)| self.reported_drop(id, channel.identity.id, settings));
+                    if self.manual.is_some() {
+                        return reported;
+                    }
+                    reported.or_else(|| {
+                        self.campaigns
+                            .iter()
+                            .filter(|c| c.can_watch(channel, settings, now))
+                            .filter_map(|c| c.first_drop(settings, now).map(|d| (c, d)))
+                            .min_by_key(|(c, d)| {
+                                (c.mining_priority(settings, now), d.remaining_minutes())
+                            })
+                    })
+                })
+        };
+        let progress = active.map(|(c, d)| c.progress(d)).or(paused_progress);
         use crate::dto::{MiningState, MiningStatus};
         let mining = MiningStatus {
             state: if settings.mining_paused {
