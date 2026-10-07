@@ -51,7 +51,9 @@ export default function Mining() {
   if (!data) return <Empty title={t('loading')} />;
   if (edit) return <MiningPreferences />;
   const progress = data.current_drop;
-  const paused = data.settings.mining_paused;
+  const resuming = !data.settings.mining_paused && data.mining?.state === 'paused';
+  const paused = data.settings.mining_paused || resuming;
+  const pauseBusy = autosave.pending || autosave.busy || resuming;
   const campaign = data.campaigns.find((item) => item.id === progress?.campaign_id);
   const reward = campaign?.drops.find((drop) => drop.id === progress?.drop_id);
   const watching = data.channels.find((channel) => channel.watching);
@@ -97,8 +99,8 @@ export default function Mining() {
             <IconButton
               path={paused ? mdiPlay : mdiPause}
               label={t(paused ? 'resume_mining' : 'pause_mining')}
-              disabled={!connected || !data.login.user_id || autosave.pending || autosave.busy}
-              aria-busy={autosave.pending || autosave.busy}
+              disabled={!connected || !data.login.user_id || pauseBusy}
+              aria-busy={pauseBusy}
               onClick={() => autosave.change('mining_paused', !paused)}
             />
           </div>

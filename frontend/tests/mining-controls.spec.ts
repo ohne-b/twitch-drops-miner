@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import fixture from './fixture.json' with { type: 'json' };
 
 const headers = { 'X-TDM-Request': '1' };
 test.beforeEach(async ({ request }) => {
@@ -49,4 +50,43 @@ test('failed pause saves keep the running state visible and can be retried', asy
   await page.unroute('**/api/settings');
   await page.getByRole('button', { name: 'Try again', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Paused', exact: true })).toBeVisible();
+});
+
+test('resume waits for the worker state without flashing a paused subtitle or idle title', async ({
+  page,
+  request,
+}) => {
+  const state = structuredClone(fixture);
+  // The settings write can arrive before the worker publishes the resumed snapshot.
+  state.settings.mining_paused = false;
+  state.mining.state = 'paused';
+  state.channels.forEach((channel) => (channel.watching = false));
+  const publish = async () =>
+    expect(
+      (
+        await request.post('/__test/event', {
+          headers,
+          data: { event: 'initial_state', data: state },
+        })
+      ).ok(),
+    ).toBeTruthy();
+  await publish();
+  await page.goto('/');
+  const card = page.locator('section[aria-labelledby="mining-heading"]');
+  await expect(card.getByRole('heading', { name: 'Paused', exact: true })).toBeVisible();
+  await expect(card.getByText('Paused', { exact: true })).toHaveCount(1);
+  const resume = card.getByRole('button', { name: 'Resume mining', exact: true });
+  await expect(resume).toBeDisabled();
+  await expect(resume).toHaveAttribute('aria-busy', 'true');
+  await expect(card.getByText('42 / 60 min', { exact: true })).toBeVisible();
+  await expect(page).toHaveTitle('Paused - Drops Miner');
+
+  state.mining.state = 'watching';
+  state.channels[0]!.watching = true;
+  await publish();
+  await expect(card.getByRole('heading', { name: 'Now mining', exact: true })).toBeVisible();
+  await expect(card.getByRole('button', { name: 'Pause mining', exact: true })).toBeEnabled();
+  await expect(card.getByText('Paused', { exact: true })).toHaveCount(0);
+  await expect(card.getByText('42 / 60 min', { exact: true })).toBeVisible();
+  await expect(page).toHaveTitle('70% Rust - Drops Miner');
 });

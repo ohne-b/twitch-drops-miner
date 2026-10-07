@@ -330,6 +330,8 @@ embed it and run without a build tool/runtime companion. Production builds never
   Inventory refreshes and earned claims continue. Preserve selected games and the current
   reward; manual timers still expire. The Now mining header becomes Paused with a resume
   action beside the selection mode. Settings save failures must not pretend mining stopped.
+  A saved resume request keeps the card and title paused, with the control busy, until the
+  worker publishes its resumed state. Never combine resumed settings with a paused subtitle.
   Browser titles show confirmed percentage and game, or Paused/Idle/Disconnected, separated
   from Drops Miner by a hyphen. Never use estimates or invent unknown progress.
 - Mining: watching information only in Now mining, no status subtitle or Recent activity. Channels

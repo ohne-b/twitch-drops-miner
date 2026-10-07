@@ -106,8 +106,9 @@ Click your sidebar profile to open account settings; tap a badge for its descrip
 If Twitch does not provide the full badge collection, equipped badges still appear.
 
 Use **Pause mining** in **Now mining** to stop watching without removing your games.
-Pause stays on after a restart. Inventory refreshes and earned claims continue; manual
-channel timers keep counting down. Select **Resume mining** to start watching again.
+Pause stays on after a restart and keeps the current reward and progress visible. Inventory
+refreshes and earned claims continue; manual channel timers keep counting down.
+Select **Resume mining** to start watching again.
 The browser tab shows confirmed progress, or **Paused**, **Idle** or **Disconnected**.
 
 Times use the **24-hour clock** in your browser's timezone. **Refresh inventory** is
