@@ -17,7 +17,7 @@ export function miningTitle(
     const minutes = drop.confirmed_minutes;
     const percent =
       drop.confirmed_at && Number.isFinite(minutes) && drop.required_minutes > 0
-        ? `${Math.floor(Math.min(1, Math.max(0, minutes! / drop.required_minutes)) * 100)}% `
+        ? `${Math.floor(Math.min(100, Math.max(0, (minutes! * 100) / drop.required_minutes)))}% `
         : '';
     return `${percent}${drop.game_name} - ${app}`;
   }
