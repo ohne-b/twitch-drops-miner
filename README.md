@@ -131,6 +131,11 @@ breaks ties. These modes don't check whether there's enough time to finish a rew
 Changes save automatically. If saving fails, your edits stay in place so you can **Retry**.
 The info buttons explain the mining rules.
 
+Search includes Twitch games without current campaigns. Select a result to save its name
+and cover; mining starts when an eligible campaign becomes available. If search is
+unavailable, **Add Game** still accepts a name. Existing saved names get covers when Twitch
+recognizes them.
+
 <details>
 <summary>Reward filters and ignored names</summary>
 
