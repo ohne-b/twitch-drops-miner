@@ -485,7 +485,7 @@ test('shared logo loads in the dashboard, login and favicon at responsive sizes'
   page,
 }) => {
   const brand = page.getByRole('link', { name: 'Drops Miner', exact: true });
-  await expect(page).toHaveTitle('Drops Miner');
+  await expect(page).toHaveTitle('70% Rust - Drops Miner');
   await expect(page.getByRole('link', { name: 'GitHub repository' })).toHaveAttribute(
     'href',
     'https://github.com/ohne-b/twitch-drops-miner',
