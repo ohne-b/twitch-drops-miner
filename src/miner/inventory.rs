@@ -66,6 +66,10 @@ impl Mining {
     }
 
     pub(super) async fn idle_status(&self, settings: &Settings) {
+        if settings.mining_paused {
+            self.app.status(message("status.paused", &[])).await;
+            return;
+        }
         let key = if settings.games_to_watch.is_empty()
             && !settings.auto_mine_badges
             && !settings.auto_mine_emotes
@@ -129,7 +133,12 @@ impl Mining {
                     .is_some_and(|manual| manual.channel == channel.identity.id)
                     || mineable.iter().any(|c| c.matches_channel(channel))
             })
-            .map(|c| c.view(self.watching, &self.campaigns))
+            .map(|c| {
+                c.view(
+                    self.watching.filter(|_| !settings.mining_paused),
+                    &self.campaigns,
+                )
+            })
             .collect();
         let wanted = wanted_items(&self.campaigns, settings, now);
         let active = self
@@ -157,7 +166,9 @@ impl Mining {
         let progress = active.map(|(c, d)| c.progress(d));
         use crate::dto::{MiningState, MiningStatus};
         let mining = MiningStatus {
-            state: if self.manual.is_some() {
+            state: if settings.mining_paused {
+                MiningState::Paused
+            } else if self.manual.is_some() {
                 if self.watching.is_some() {
                     MiningState::ManualWatching
                 } else {
@@ -191,7 +202,7 @@ impl Mining {
             } else {
                 MiningState::NoRewards
             },
-            channel_id: self.watching,
+            channel_id: self.watching.filter(|_| !settings.mining_paused),
             campaign_id: active.map(|(campaign, _)| campaign.id.clone()),
             drop_id: active.map(|(_, drop)| drop.id.clone()),
             priority: active

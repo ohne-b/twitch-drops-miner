@@ -65,6 +65,127 @@ async fn finish_job(mining: &mut Mining, pool: &PubSub) {
 }
 
 #[tokio::test]
+async fn pause_stops_automatic_and_manual_watches_and_fences_late_results() {
+    for manual in [false, true] {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/track"))
+            .respond_with(ResponseTemplate::new(204))
+            .expect(1)
+            .mount(&server)
+            .await;
+        let (_dir, mut miner, _intent, mut pool) = miner(&server).await;
+        let mut settings = select(&mut miner).await;
+        miner.channels[0].beacon_url = Some(format!("{}/track", server.uri()).parse().unwrap());
+        if manual {
+            miner.manual = Some(ManualSelection::new(10, Some(Duration::from_secs(300))));
+        }
+        let selection = miner.manual;
+        let id = miner.campaigns[0].drops[0].id.clone();
+        miner.confirm(&id, 13, &settings);
+        miner.publish(&settings).await.unwrap();
+        let progress = miner.app.snapshot.read().await.current_drop.clone();
+        assert!(progress.is_some());
+        let requested_at = Instant::now();
+        let channel = miner.channels[0].clone();
+        miner.spawn(JobKind::Watch, std::future::pending());
+        settings.mining_paused = true;
+        *miner.app.settings.write().await = settings.clone();
+        miner.reselect(&settings).await;
+        assert!(
+            miner
+                .jobs
+                .join_next()
+                .await
+                .unwrap()
+                .err()
+                .unwrap()
+                .is_cancelled()
+        );
+        miner.busy.remove(&JobKind::Watch);
+        miner.watch_abort = None;
+        miner.publish(&settings).await.unwrap();
+        {
+            let state = miner.app.snapshot.read().await;
+            assert_eq!(state.mining.state, crate::dto::MiningState::Paused);
+            assert_eq!(state.current_drop, progress);
+            assert!(state.channels.iter().all(|c| !c.watching));
+        }
+        miner.poll_at = Some(Instant::now());
+        miner.schedule(&settings).await;
+        assert!(miner.jobs.is_empty(), "pause must block polls and beacons");
+        assert_eq!(miner.manual, selection);
+        settings.mining_paused = false;
+        *miner.app.settings.write().await = settings.clone();
+        miner.reselect(&settings).await;
+        miner
+            .complete(
+                Job::Watch {
+                    channel: Box::new(channel),
+                    result: Ok(true),
+                    requested_at,
+                    at: Instant::now(),
+                },
+                &pool,
+            )
+            .await
+            .unwrap();
+        miner
+            .complete(
+                Job::Poll {
+                    channel: 10,
+                    result: Ok(Some((id, 29))),
+                    requested_at,
+                },
+                &pool,
+            )
+            .await
+            .unwrap();
+        assert!(
+            miner.poll_at.is_none(),
+            "old watch cannot restore a polling deadline"
+        );
+        assert_eq!(miner.campaigns[0].drops[0].confirmed_minutes, 13);
+        miner.schedule(&settings).await;
+        assert!(miner.busy.contains(&JobKind::Watch));
+        finish_job(&mut miner, &pool).await;
+        assert_eq!(miner.manual, selection);
+        pool.close().await;
+    }
+}
+
+#[tokio::test]
+async fn paused_mining_keeps_inventory_and_earned_claims_running() {
+    let server = MockServer::start().await;
+    gql_mock(&server, |q| match q["operationName"].as_str().unwrap() {
+        "Inventory" => json!({"data":{"currentUser":{"inventory":{"dropCampaignsInProgress":[],"gameEventDrops":[]}}}}),
+        "DropsPage_ClaimDropRewards" => json!({"data":{"claimDropRewards":{"status":"ELIGIBLE_FOR_ALL"}}}),
+        _ => panic!("unexpected mining operation while paused"),
+    }).await;
+    let (dir, mut miner, _intent, mut pool) = miner(&server).await;
+    let settings = Settings {
+        mining_paused: true,
+        ..Settings::default()
+    };
+    *miner.app.settings.write().await = settings.clone();
+    miner.reselect(&settings).await;
+    miner.campaigns[0].drops[0].claim_id = Some("earned-instance".into());
+    miner.schedule(&settings).await;
+    assert!(miner.busy.contains(&JobKind::Claim));
+    finish_job(&mut miner, &pool).await;
+    assert_eq!(History::load(dir.path()).total(), 1);
+    miner.refresh = true;
+    miner.schedule(&settings).await;
+    assert!(miner.busy.contains(&JobKind::Inventory));
+    finish_job(&mut miner, &pool).await;
+    assert_eq!(
+        miner.app.snapshot.read().await.mining.state,
+        crate::dto::MiningState::Paused
+    );
+    pool.close().await;
+}
+
+#[tokio::test]
 async fn profile_survives_network_renewal_but_not_logout_or_account_changes() {
     let server = MockServer::start().await;
     let (_dir, mining, _intent, mut pool) = miner(&server).await;

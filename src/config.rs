@@ -63,6 +63,7 @@ pub enum MiningPriorityMode {
 #[serde(default)]
 pub struct Settings {
     pub games_to_watch: Vec<String>,
+    pub mining_paused: bool,
     pub mining_priority_mode: MiningPriorityMode,
     pub auto_mine_badges: bool,
     pub auto_mine_emotes: bool,
@@ -80,6 +81,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             games_to_watch: vec![],
+            mining_paused: false,
             mining_priority_mode: MiningPriorityMode::Manual,
             auto_mine_badges: false,
             auto_mine_emotes: false,
@@ -212,6 +214,24 @@ pub fn validate_proxy(proxy: &str) -> Result<(), InvalidSettings> {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn pause_defaults_off_and_survives_settings_updates_and_reload() {
+        let original = Settings::from_saved(json!({"games_to_watch":["Rust"]})).unwrap();
+        assert!(!original.mining_paused);
+        let paused = original.patched(&json!({"mining_paused":true})).unwrap();
+        let updated = paused.patched(&json!({"connection_quality":4})).unwrap();
+        let restored = Settings::from_saved(serde_json::to_value(updated).unwrap()).unwrap();
+        assert!(restored.mining_paused);
+        assert_eq!(restored.games_to_watch, original.games_to_watch);
+        assert!(
+            !restored
+                .patched(&json!({"mining_paused":false}))
+                .unwrap()
+                .mining_paused
+        );
+        assert!(original.patched(&json!({"mining_paused":"true"})).is_err());
+    }
 
     #[test]
     fn connection_quality_defaults_to_three_and_preserves_saved_values() {

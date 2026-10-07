@@ -1,6 +1,8 @@
 {
     "status": {
         "watching": "Watching: {channel}",
+        "paused": "Mining paused",
+        "resumed": "Mining resumed",
         "claimed_drop": "Claimed drop: {drop}",
         "no_channel": "No available channels to watch. Waiting for an ONLINE channel...",
         "no_campaign": "No active campaigns to mine drops for. Waiting for an active campaign...",
@@ -275,6 +277,11 @@
             "mining_preferences": "Mining preferences",
             "back_to_mining": "Back to Mining",
             "now_mining": "Now mining",
+            "paused": "Paused",
+            "pause_mining": "Pause mining",
+            "resume_mining": "Resume mining",
+            "paused_help": "Your game priorities are saved.",
+            "mining_state_paused": "Paused",
             "choose_games": "Choose games",
             "saved_position": "Saved #{count}",
             "progress_unknown": "No confirmed progress yet",

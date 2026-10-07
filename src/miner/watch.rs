@@ -227,6 +227,27 @@ impl Mining {
 
     pub(super) async fn reselect(&mut self, settings: &Settings) {
         let now = Utc::now();
+        if self.paused != settings.mining_paused {
+            self.paused = settings.mining_paused;
+            self.cancel_watch();
+            // Fence completed requests from before this pause/resume transition.
+            self.watch_started = Instant::now();
+            if let Some(channel) = self.watching {
+                self.beacon_events.insert(channel, self.watch_started);
+            }
+            self.poll_at = None;
+            self.claim_wait = None;
+            self.watch_failures = 0;
+            self.next_watch = Instant::now();
+            self.publish = true;
+            let key = if self.paused {
+                "status.paused"
+            } else {
+                "status.resumed"
+            };
+            self.app.status(message(key, &[])).await;
+            self.app.activity(key, &[]).await;
+        }
         if self
             .manual
             .is_some_and(|manual| manual.expires_at.is_some_and(|at| Instant::now() >= at))
@@ -252,7 +273,9 @@ impl Mining {
             self.last_progress = None;
             self.claim_wait = None;
             self.publish = true;
-            if let Some(channel) = self.channels.iter().find(|c| Some(c.identity.id) == next) {
+            if !settings.mining_paused
+                && let Some(channel) = self.channels.iter().find(|c| Some(c.identity.id) == next)
+            {
                 let status = message("status.watching", &[("channel", &channel.identity.name)]);
                 self.app.status(status.clone()).await;
                 let mut event = crate::app::activity::ActivityEvent::new(
