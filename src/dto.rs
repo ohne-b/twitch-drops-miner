@@ -341,6 +341,7 @@ pub enum MiningState {
     #[default]
     Unknown,
     AccountRequired,
+    Paused,
     NoSelection,
     Discovering,
     Watching,

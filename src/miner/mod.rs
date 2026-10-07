@@ -153,6 +153,7 @@ struct Mining {
     channels_loaded: bool,
     status: InventoryStatus,
     watching: Option<u64>,
+    paused: bool,
     watch_started: Instant,
     manual: Option<ManualSelection>,
     lookup: Option<(String, u64)>,
@@ -254,6 +255,7 @@ impl Mining {
             channels_loaded: false,
             status: InventoryStatus::default(),
             watching: None,
+            paused: false,
             watch_started: now,
             manual: None,
             lookup: None,
@@ -479,7 +481,9 @@ impl Mining {
                 });
                 return;
             }
-            if let Some(channel) = self.watching {
+            if !settings.mining_paused
+                && let Some(channel) = self.watching
+            {
                 if self
                     .claim_wait
                     .as_ref()
@@ -865,7 +869,8 @@ impl Mining {
                     return Err(result.err().unwrap());
                 }
                 let current = self.channels.iter_mut().find(|c| {
-                    self.watching == Some(c.identity.id)
+                    !settings.mining_paused
+                        && self.watching == Some(c.identity.id)
                         && c.identity.id == channel.identity.id
                         && c.broadcast_id == channel.broadcast_id
                         && self
@@ -906,7 +911,8 @@ impl Mining {
                 result,
                 requested_at,
             } => {
-                if self.watching == Some(channel)
+                if !settings.mining_paused
+                    && self.watching == Some(channel)
                     && requested_at >= self.watch_started
                     && requested_at >= self.last_inventory
                     && self
