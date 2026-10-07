@@ -360,6 +360,7 @@ impl Mining {
         let intent = self.intent.borrow_and_update().clone();
         if intent.clear != self.seen.clear {
             self.cancel_watch();
+            self.app.snapshot.write().await.current_drop = None;
             self.epoch = self.epoch.wrapping_add(1);
             self.campaigns.clear();
             self.rejected_account_ids.clear();
