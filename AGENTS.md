@@ -308,6 +308,15 @@ embed it and run without a build tool/runtime companion. Production builds never
   well; search results and selected games must never overlap or become unreachable.
   Game search results appear below the search controls and above the selected games;
   bound their height so long result lists remain reachable in short windows.
+  Search Twitch's Helix category directory through the current Smart TV session with no
+  added scopes. Use debounced, cancellable queries and a bounded generation-owned queue;
+  keep search separate from campaign discovery and watch scheduling. Authentication failures
+  retain session-owner handling; optional lookup failures leave manual-name entry available.
+  Save selected game IDs, names and validated Twitch cover URLs in compatible `game_metadata`
+  settings; this metadata never changes mining eligibility. Remove metadata for deselected
+  games. Resolve older saved names on opening preferences, retaining order and manual names.
+  Search results and selected games show covers without requiring an active campaign; late
+  responses cannot replace newer queries or write metadata after logout/unmount.
   `/settings#mining` redirects there. Settings has account, dashboard access, connection and
   maintenance sections without trailing separator lines.
   Settings sections start at the same offset below their tabs, without repeated section headings.
