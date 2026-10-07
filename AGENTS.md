@@ -314,6 +314,13 @@ embed it and run without a build tool/runtime companion. Production builds never
   Keep the page title and tab labels, plus the account status/logout row. Hide inactive form
   wrappers and retain drafts when switching tabs. Tab hashes support back/forward without
   anchor-scrolling the title or navigation out of view.
+- Pause is a saved `mining_paused` setting, default false. It gates automatic and manual
+  watch events and progress polling, cancels an in-flight watch and fences late results.
+  Inventory refreshes and earned claims continue. Preserve selected games and the current
+  reward; manual timers still expire. The Now mining header becomes Paused with a resume
+  action beside the selection mode. Settings save failures must not pretend mining stopped.
+  Browser titles show confirmed percentage and game, or Paused/Idle/Disconnected, separated
+  from Drops Miner by a hyphen. Never use estimates or invent unknown progress.
 - Mining: watching information only in Now mining, no status subtitle or Recent activity. Channels
   and Up next have equal desktop dimensions and internal scrolling; stack on narrow screens and
   preserve access on short windows. Show confirmed values without redundant labels
