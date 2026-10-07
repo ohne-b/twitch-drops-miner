@@ -160,6 +160,7 @@ export default function MiningPreferences() {
                 <div className="flex shrink-0 flex-wrap justify-end gap-2">
                   <fieldset
                     disabled={!connected}
+                    aria-busy={directory.loading}
                     className="min-w-0 flex-1 max-md:basis-full"
                     onKeyDown={(event) => {
                       if (event.key === 'Enter') {
@@ -215,9 +216,7 @@ export default function MiningPreferences() {
                     text={t(`priority_${draft.mining_priority_mode}_help`)}
                   />
                 </div>
-                {(gameError ||
-                  (search &&
-                    (available.length > 0 || directory.loading || directory.complete))) && (
+                {(gameError || (search && (available.length > 0 || directory.complete))) && (
                   <div
                     key={search}
                     role="region"
@@ -226,11 +225,6 @@ export default function MiningPreferences() {
                     className="scroll-list max-h-40 min-h-11 overflow-y-auto rounded border border-divider focus-visible:bg-field lg:overscroll-y-contain"
                   >
                     {gameError && <Notice error>{gameError}</Notice>}
-                    {directory.loading && (
-                      <p role="status" className="muted px-3 py-2">
-                        {t('game_search_loading')}
-                      </p>
-                    )}
                     {directory.complete && !directory.error && !available.length && (
                       <p role="status" className="muted px-3 py-2">
                         {t('game_search_empty')}

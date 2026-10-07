@@ -281,7 +281,6 @@
             "pause_mining": "Pause mining",
             "resume_mining": "Resume mining",
             "paused_help": "Your game priorities are saved.",
-            "game_search_loading": "Searching Twitch…",
             "game_search_empty": "No games found.",
             "game_search_failed": "Twitch search is unavailable. You can still add a name.",
             "mining_state_paused": "Paused",

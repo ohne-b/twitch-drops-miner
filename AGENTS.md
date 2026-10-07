@@ -310,7 +310,8 @@ embed it and run without a build tool/runtime companion. Production builds never
   bound their height so long result lists remain reachable in short windows.
   Search Twitch's Helix category directory through the current Smart TV session with no
   added scopes. Use debounced, cancellable queries and a bounded generation-owned queue;
-  keep search separate from campaign discovery and watch scheduling. Authentication failures
+  keep search separate from campaign discovery and watch scheduling. Pending searches stay
+  quiet without a loading row or empty results box. Authentication failures
   retain session-owner handling; optional lookup failures leave manual-name entry available.
   Save selected game IDs, names and validated Twitch cover URLs in compatible `game_metadata`
   settings; this metadata never changes mining eligibility. Remove metadata for deselected
