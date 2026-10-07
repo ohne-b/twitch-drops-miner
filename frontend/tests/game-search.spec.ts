@@ -103,6 +103,9 @@ test('changed queries ignore stale results and failed searches can retry or add 
   const search = page.getByRole('searchbox', { name: 'Search games' });
   await search.fill('slow');
   await expect.poll(() => !!finishSlow).toBe(true);
+  await expect(page.getByRole('region', { name: 'Search games', exact: true })).toHaveCount(0);
+  await expect(page.getByText('Searching Twitch…', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Add Game', exact: true })).toBeDisabled();
   await search.fill('stardew');
   await expect(page.getByRole('button', { name: 'Stardew Valley', exact: true })).toBeVisible();
   finishSlow!();
@@ -148,6 +151,7 @@ test('early campaign selections get covers and Enter accepts Twitch word matches
   const search = page.getByRole('searchbox', { name: 'Search games' });
   await search.fill('elder');
   await expect.poll(() => !!releaseSearch).toBe(true);
+  await expect(page.getByText('Searching Twitch…', { exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: elder.name, exact: true }).click();
   releaseSearch!();
   await expect
