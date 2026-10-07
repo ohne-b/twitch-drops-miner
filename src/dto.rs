@@ -20,6 +20,7 @@ impl SettingsView {
             .games_to_watch
             .iter()
             .chain(&self.games_available)
+            .chain(self.values.game_metadata.iter().map(|game| &game.name))
             .map(|name| (name.clone(), crate::config::fold(name)))
             .collect();
     }

@@ -158,14 +158,6 @@ impl Settings {
             normalize_names(&self.inventory_filters.game_name_search);
         self.proxy = self.proxy.trim().to_owned();
         self.inventory_filters_version = 2;
-        if self.game_metadata.len() > 1000 || self.game_metadata.iter().any(|game| !game.valid()) {
-            return Err(InvalidSettings);
-        }
-        let mut seen = HashSet::new();
-        self.game_metadata.retain(|game| {
-            let key = fold(&game.name);
-            self.games_to_watch.iter().any(|name| fold(name) == key) && seen.insert(key)
-        });
         if !(1..=6).contains(&self.connection_quality)
             || !(1..=1440).contains(&self.minimum_refresh_interval_minutes)
             || self.games_to_watch.len() > 1000
@@ -176,9 +168,17 @@ impl Settings {
                 .chain(&self.drop_name_blacklist)
                 .any(|name| name.len() > 1024)
             || self.proxy.len() > 4096
+            || self.game_metadata.len() > 1000
+            || self.game_metadata.iter().any(|game| !game.valid())
         {
             return Err(InvalidSettings);
         }
+        let selected: HashSet<_> = self.games_to_watch.iter().map(|name| fold(name)).collect();
+        let mut seen = HashSet::new();
+        self.game_metadata.retain(|game| {
+            let key = fold(&game.name);
+            selected.contains(&key) && seen.insert(key)
+        });
         validate_proxy(&self.proxy)?;
         self.mining_benefits.retain(|key, _| {
             matches!(
@@ -262,6 +262,14 @@ mod tests {
         let restored = Settings::from_saved(serde_json::to_value(&saved).unwrap()).unwrap();
         assert_eq!(restored.game_metadata.len(), 1);
         assert_eq!(restored.game_metadata[0].name, "Fortnite");
+        let unicode = original.patched(&json!({"games_to_watch":["STRASSE"], "game_metadata":[{"id":"1", "name":"Straße", "box_art_url":""}]})).unwrap();
+        let mut view = crate::dto::SettingsView {
+            values: unicode,
+            ..Default::default()
+        };
+        view.refresh_game_keys();
+        assert_eq!(view.game_keys["Straße"], view.game_keys["STRASSE"]);
+        assert!(original.patched(&json!({"games_to_watch": (0..1001).map(|n| format!("Game {n}")).collect::<Vec<_>>(), "game_metadata":[metadata.clone()]})).is_err());
         assert!(
             restored
                 .patched(&json!({"games_to_watch":[]}))
