@@ -18,6 +18,35 @@ pub fn normalize_names(values: &[String]) -> Vec<String> {
         .collect()
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct GameMetadata {
+    pub id: String,
+    pub name: String,
+    pub box_art_url: String,
+}
+
+impl GameMetadata {
+    pub(crate) fn valid(&self) -> bool {
+        !self.id.is_empty()
+            && self.id.len() <= 20
+            && self.id.bytes().all(|b| b.is_ascii_digit())
+            && self.id.parse::<u64>().is_ok_and(|id| id > 0)
+            && !self.name.trim().is_empty()
+            && self.name.len() <= 1024
+            && !self.name.chars().any(char::is_control)
+            && self.box_art_url.len() <= 2048
+            && (self.box_art_url.is_empty()
+                || url::Url::parse(&self.box_art_url).is_ok_and(|url| {
+                    url.scheme() == "https"
+                        && url.host_str() == Some("static-cdn.jtvnw.net")
+                        && url.username().is_empty()
+                        && url.password().is_none()
+                        && url.port().is_none()
+                        && url.path().starts_with("/ttv-boxart/")
+                }))
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
 pub struct Filters {
@@ -63,6 +92,7 @@ pub enum MiningPriorityMode {
 #[serde(default)]
 pub struct Settings {
     pub games_to_watch: Vec<String>,
+    pub game_metadata: Vec<GameMetadata>,
     pub mining_paused: bool,
     pub mining_priority_mode: MiningPriorityMode,
     pub auto_mine_badges: bool,
@@ -81,6 +111,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             games_to_watch: vec![],
+            game_metadata: vec![],
             mining_paused: false,
             mining_priority_mode: MiningPriorityMode::Manual,
             auto_mine_badges: false,
@@ -127,6 +158,14 @@ impl Settings {
             normalize_names(&self.inventory_filters.game_name_search);
         self.proxy = self.proxy.trim().to_owned();
         self.inventory_filters_version = 2;
+        if self.game_metadata.len() > 1000 || self.game_metadata.iter().any(|game| !game.valid()) {
+            return Err(InvalidSettings);
+        }
+        let mut seen = HashSet::new();
+        self.game_metadata.retain(|game| {
+            let key = fold(&game.name);
+            self.games_to_watch.iter().any(|name| fold(name) == key) && seen.insert(key)
+        });
         if !(1..=6).contains(&self.connection_quality)
             || !(1..=1440).contains(&self.minimum_refresh_interval_minutes)
             || self.games_to_watch.len() > 1000
@@ -213,6 +252,42 @@ pub fn validate_proxy(proxy: &str) -> Result<(), InvalidSettings> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn game_metadata_is_optional_bounded_and_kept_only_for_selected_names() {
+        let metadata = json!({"id":"33214", "name":"Fortnite", "box_art_url":"https://static-cdn.jtvnw.net/ttv-boxart/33214-{width}x{height}.jpg"});
+        let original = Settings::from_saved(json!({"games_to_watch":["Rust"]})).unwrap();
+        assert!(original.game_metadata.is_empty());
+        let saved = original.patched(&json!({"games_to_watch":["fortnite"], "game_metadata":[metadata.clone(), metadata.clone()]})).unwrap();
+        let restored = Settings::from_saved(serde_json::to_value(&saved).unwrap()).unwrap();
+        assert_eq!(restored.game_metadata.len(), 1);
+        assert_eq!(restored.game_metadata[0].name, "Fortnite");
+        assert!(
+            restored
+                .patched(&json!({"games_to_watch":[]}))
+                .unwrap()
+                .game_metadata
+                .is_empty()
+        );
+        for (field, value) in [
+            ("id", "0"),
+            ("id", "invalid"),
+            ("name", "bad\nname"),
+            ("box_art_url", "https://other.example/ttv-boxart/game.jpg"),
+            (
+                "box_art_url",
+                "https://user:secret@static-cdn.jtvnw.net/ttv-boxart/game.jpg",
+            ),
+        ] {
+            let mut invalid = metadata.clone();
+            invalid[field] = value.into();
+            assert!(
+                original
+                    .patched(&json!({"game_metadata":[invalid]}))
+                    .is_err()
+            );
+        }
+    }
     use serde_json::json;
 
     #[test]
