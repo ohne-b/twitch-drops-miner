@@ -3,6 +3,12 @@ export interface Benefit {
   type: string;
   image_url: string;
 }
+
+export interface GameMetadata {
+  id: string;
+  name: string;
+  box_art_url: string;
+}
 export interface Drop {
   eligibility?: Eligibility;
   prerequisites?: string[];
@@ -80,6 +86,7 @@ export interface Filters {
   show_benefit_other: boolean;
 }
 export interface Settings {
+  game_metadata: GameMetadata[];
   revision?: string;
   games_to_watch: string[];
   mining_paused: boolean;
