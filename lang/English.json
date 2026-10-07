@@ -88,7 +88,7 @@
             "connection_quality": "Connection Quality:",
             "minimum_refresh": "Minimum Refresh Interval (minutes):",
             "multiple_games_found": "Multiple games found for your search. Please be more specific.",
-            "manual_game_warning": "\"{game}\" is not in the available campaign list. Add it to Games to Watch anyway?",
+            "manual_game_warning": "Add \"{game}\" manually? Use the exact Twitch category name.",
             "confirm_btn": "Confirm",
             "remove_game": "Remove {game}"
         },
@@ -281,6 +281,9 @@
             "pause_mining": "Pause mining",
             "resume_mining": "Resume mining",
             "paused_help": "Your game priorities are saved.",
+            "game_search_loading": "Searching Twitch…",
+            "game_search_empty": "No games found.",
+            "game_search_failed": "Twitch search is unavailable. You can still add a name.",
             "mining_state_paused": "Paused",
             "tab_idle": "Idle",
             "tab_disconnected": "Disconnected",
