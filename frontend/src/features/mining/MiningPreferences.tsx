@@ -1,13 +1,15 @@
 import { Icon } from '@mdi/react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { mdiArrowLeft, mdiPlus, mdiPriorityHigh } from '@mdi/js';
-import type { Settings as SettingsData } from '../../shared/lib/types';
+import { mdiArrowLeft, mdiPlus, mdiPriorityHigh, mdiReload } from '@mdi/js';
+import type { Settings as SettingsData, GameMetadata } from '../../shared/lib/types';
 import { useMiner } from '../../app/MinerProvider';
 import { useT } from '../../shared/lib/i18n';
 import { GamePriorities } from './GamePriorities';
+import { lookupGames, useGameSearch } from './useGameSearch';
 import {
   ActionResult,
+  Art,
   Button,
   Check,
   Dialog,
@@ -38,30 +40,64 @@ export default function MiningPreferences() {
   }, [draft.drop_name_blacklist, editingIgnored]);
   const [search, setSearch] = useState('');
   const [gameError, setGameError] = useState('');
+  const directory = useGameSearch(search, connected, data?.login.user_id);
+  useEffect(() => {
+    if (!connected || !data?.login.user_id) return;
+    const known = new Set((draft.game_metadata ?? []).map((game) => game.name.toLowerCase()));
+    const missing = draft.games_to_watch.filter((name) => !known.has(name.toLowerCase()));
+    if (!missing.length) return;
+    const controller = new AbortController();
+    void lookupGames(missing, controller.signal)
+      .then((games) => {
+        if (!controller.signal.aborted && games.length) {
+          change('game_metadata', (current) => [
+            ...current,
+            ...games.filter(
+              (game) =>
+                !current.some((saved) => saved.name.toLowerCase() === game.name.toLowerCase()),
+            ),
+          ]);
+        }
+      })
+      .catch(() => {
+        /* Existing covers and manual names remain usable; retry on the next visit. */
+      });
+    return () => controller.abort();
+  }, [connected, data?.login.user_id]);
   const [confirmation, setConfirmation] = useState<{
     title: string;
     text: string;
     action: () => Promise<unknown>;
   } | null>(null);
   const command = useAction();
-  function addGame(name: string) {
+  function addGame(name: string, metadata?: GameMetadata) {
     change('games_to_watch', (games) =>
       games.some((game) => game.toLowerCase() === name.toLowerCase()) ? games : [...games, name],
     );
+    if (metadata)
+      change('game_metadata', (games) => [
+        metadata,
+        ...games.filter((game) => game.name.toLowerCase() !== name.toLowerCase()),
+      ]);
     setSearch('');
     setGameError('');
   }
   function resolveGame() {
     const name = search.trim();
-    if (!name) return;
-    const games = settings.games_available ?? [];
+    if (!name || directory.loading) return;
+    if (draft.games_to_watch.some((game) => game.toLowerCase() === name.toLowerCase())) {
+      setSearch('');
+      return;
+    }
+    const games = available.map((game) => game.name);
     const exact = games.find((item) => item.toLocaleLowerCase() === name.toLocaleLowerCase());
     const matches = games.filter((item) =>
       item.toLocaleLowerCase().includes(name.toLocaleLowerCase()),
     );
     const selected = exact ?? (matches.length === 1 ? matches[0] : undefined);
     if (selected) {
-      if (!draft.games_to_watch.includes(selected)) addGame(selected);
+      if (!draft.games_to_watch.includes(selected))
+        addGame(selected, available.find((game) => game.name === selected)?.metadata);
       return;
     }
     if (matches.length > 1) {
@@ -76,10 +112,25 @@ export default function MiningPreferences() {
       },
     });
   }
-  const available = (settings.games_available ?? []).filter(
-    (game) =>
-      !draft.games_to_watch.includes(game) &&
-      game.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
+  const available = [
+    ...new Map(
+      [
+        ...(settings.games_available ?? [])
+          .filter((game) => game.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
+          .map((name) => ({
+            name,
+            metadata: undefined as GameMetadata | undefined,
+            image: data?.campaigns.find((c) => c.game_name === name)?.game_box_art_url,
+          })),
+        ...directory.items.map((metadata) => ({
+          name: metadata.name,
+          metadata,
+          image: metadata.box_art_url,
+        })),
+      ].map((game) => [game.name.toLowerCase(), game]),
+    ).values(),
+  ].filter(
+    (game) => !draft.games_to_watch.some((name) => name.toLowerCase() === game.name.toLowerCase()),
   );
   return (
     <div className="flex flex-col gap-5 lg:min-h-0 lg:flex-1">
@@ -135,7 +186,7 @@ export default function MiningPreferences() {
                     path={mdiPlus}
                     label={t('gui.settings.add_game')}
                     onClick={resolveGame}
-                    disabled={!connected || !search.trim()}
+                    disabled={!connected || !search.trim() || directory.loading}
                   />
                   <div
                     className="icon-button has-[:disabled]:opacity-50"
@@ -168,7 +219,9 @@ export default function MiningPreferences() {
                     text={t(`priority_${draft.mining_priority_mode}_help`)}
                   />
                 </div>
-                {(gameError || (search && available.length > 0)) && (
+                {(gameError ||
+                  (search &&
+                    (available.length > 0 || directory.loading || directory.complete))) && (
                   <div
                     key={search}
                     role="region"
@@ -177,15 +230,35 @@ export default function MiningPreferences() {
                     className="scroll-list max-h-40 min-h-11 overflow-y-auto rounded border border-divider focus-visible:bg-field lg:overscroll-y-contain"
                   >
                     {gameError && <Notice error>{gameError}</Notice>}
+                    {directory.loading && (
+                      <p role="status" className="muted px-3 py-2">
+                        {t('game_search_loading')}
+                      </p>
+                    )}
+                    {directory.complete && !directory.error && !available.length && (
+                      <p role="status" className="muted px-3 py-2">
+                        {t('game_search_empty')}
+                      </p>
+                    )}
+                    {directory.error && (
+                      <div
+                        role="status"
+                        className="flex items-center gap-2 px-3 py-2 text-[13px] text-muted"
+                      >
+                        <span>{t('game_search_failed')}</span>
+                        <IconButton path={mdiReload} label={t('retry')} onClick={directory.retry} />
+                      </div>
+                    )}
                     <fieldset disabled={!connected}>
                       {available.map((game) => (
                         <button
                           type="button"
-                          key={game}
-                          className="block w-full px-3 py-2 text-start text-[13px] hover:bg-hover max-md:min-h-11"
-                          onClick={() => addGame(game)}
+                          key={game.name}
+                          className="flex min-h-11 w-full items-center gap-3 px-3 py-2 text-start text-[13px] hover:bg-hover"
+                          onClick={() => addGame(game.name, game.metadata)}
                         >
-                          {game}
+                          <Art url={game.image} className="size-8" />
+                          <span>{game.name}</span>
                         </button>
                       ))}
                     </fieldset>
@@ -203,6 +276,7 @@ export default function MiningPreferences() {
                   <GamePriorities
                     games={draft.games_to_watch}
                     campaigns={data?.campaigns ?? []}
+                    metadata={draft.game_metadata ?? []}
                     onChange={(games) => change('games_to_watch', games)}
                     scrollContainer={gameList}
                   />

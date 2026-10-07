@@ -2,17 +2,19 @@ import { useEffect, useRef, useState, type PointerEvent, type RefObject } from '
 import { mdiClose } from '@mdi/js';
 import { moveGame } from '../../shared/lib/api';
 import { useT } from '../../shared/lib/i18n';
-import type { Campaign } from '../../shared/lib/types';
+import type { Campaign, GameMetadata } from '../../shared/lib/types';
 import { Art, IconButton, Empty } from '../../shared/ui/index';
 
 export function GamePriorities({
   games,
   campaigns,
+  metadata,
   onChange,
   scrollContainer,
 }: {
   games: string[];
   campaigns: Campaign[];
+  metadata: GameMetadata[];
   onChange: (games: string[]) => void;
   scrollContainer: RefObject<HTMLElement | null>;
 }) {
@@ -137,6 +139,8 @@ export function GamePriorities({
             </button>
             <Art
               url={
+                metadata.find((item) => item.name.toLowerCase() === game.toLowerCase())
+                  ?.box_art_url ||
                 campaigns.find(
                   (campaign) => campaign.game_name.toLowerCase() === game.toLowerCase(),
                 )?.game_box_art_url
