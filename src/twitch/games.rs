@@ -3,10 +3,11 @@ use std::time::Duration;
 use http::{HeaderValue, Method, StatusCode, header};
 use serde::Deserialize;
 
-use super::{RetryPolicy, TwitchClient, TwitchError, success};
+use super::{RetryPolicy, TwitchClient, TwitchError, diagnostics, success};
 use crate::{app::commands::GameQuery, config::GameMetadata};
 
 impl TwitchClient {
+    #[tracing::instrument(skip_all, fields(operation = "GameDirectory"))]
     pub async fn games(&self, query: &GameQuery) -> Result<Vec<GameMetadata>, TwitchError> {
         if !query.valid() {
             return Err(TwitchError::InvalidResponse);
@@ -38,9 +39,12 @@ impl TwitchClient {
             success(response.status())?;
             #[derive(Deserialize)]
             struct Games { data: Vec<GameMetadata> }
-            let games: Games = serde_json::from_slice(response.body()).map_err(|_| TwitchError::InvalidResponse)?;
+            let value = diagnostics::json(response.body(), response.status().as_u16())?;
+            let games: Games = serde_json::from_value(value).map_err(|_| {
+                diagnostics::invalid("GameDirectory", "expected data array with string id/name/box_art_url fields", None)
+            })?;
             if games.data.len() > 100 || games.data.iter().any(|game| !game.valid()) {
-                return Err(TwitchError::InvalidResponse);
+                return Err(diagnostics::invalid("GameDirectory", "invalid or oversized game metadata", None));
             }
             let mut seen = std::collections::HashSet::new();
             Ok(games.data.into_iter().filter(|game| seen.insert(game.id.clone())).collect())
