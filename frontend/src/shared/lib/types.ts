@@ -82,6 +82,7 @@ export interface Filters {
 export interface Settings {
   revision?: string;
   games_to_watch: string[];
+  mining_paused: boolean;
   mining_priority_mode: 'manual' | 'short_events' | 'ending_soonest';
   auto_mine_badges: boolean;
   auto_mine_emotes: boolean;
@@ -178,6 +179,7 @@ export interface Snapshot {
     state:
       | 'unknown'
       | 'account_required'
+      | 'paused'
       | 'no_selection'
       | 'discovering'
       | 'watching'

@@ -3,7 +3,14 @@ import { CampaignLink } from '../campaigns/CampaignLink';
 import { Icon } from '@mdi/react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { mdiPencil, mdiRefreshAuto, mdiPlayCircleOutline, mdiPlus } from '@mdi/js';
+import {
+  mdiPencil,
+  mdiRefreshAuto,
+  mdiPlayCircleOutline,
+  mdiPlus,
+  mdiPause,
+  mdiPlay,
+} from '@mdi/js';
 import { InventoryRefreshButton } from '../../shared/ui/InventoryRefreshButton';
 import { useMiner } from '../../app/MinerProvider';
 import { useT } from '../../shared/lib/i18n';
@@ -21,7 +28,7 @@ import {
   Input,
 } from '../../shared/ui/index';
 export default function Mining() {
-  const { data, connected } = useMiner();
+  const { data, connected, autosave } = useMiner();
   const t = useT();
   const [params, setParams] = useSearchParams();
   const edit = params.get('edit') === 'priorities';
@@ -44,6 +51,7 @@ export default function Mining() {
   if (!data) return <Empty title={t('loading')} />;
   if (edit) return <MiningPreferences />;
   const progress = data.current_drop;
+  const paused = data.settings.mining_paused;
   const campaign = data.campaigns.find((item) => item.id === progress?.campaign_id);
   const reward = campaign?.drops.find((drop) => drop.id === progress?.drop_id);
   const watching = data.channels.find((channel) => channel.watching);
@@ -66,7 +74,7 @@ export default function Mining() {
       <section className="panel shrink-0 p-4 md:px-5 md:py-6" aria-labelledby="mining-heading">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 md:mb-5">
           <h2 id="mining-heading" className="section-title">
-            {t('now_mining')}
+            {t(paused ? 'paused' : 'now_mining')}
           </h2>
           <div className="ms-auto flex items-center gap-3">
             {progress?.confirmed_at && (
@@ -86,6 +94,13 @@ export default function Mining() {
                 <Icon className="mdi-icon" path={mdiRefreshAuto} />
               </span>
             )}
+            <IconButton
+              path={paused ? mdiPlay : mdiPause}
+              label={t(paused ? 'resume_mining' : 'pause_mining')}
+              disabled={!connected || !data.login.user_id || autosave.pending || autosave.busy}
+              aria-busy={autosave.pending || autosave.busy}
+              onClick={() => autosave.change('mining_paused', !paused)}
+            />
           </div>
         </div>
         {progress ? (
@@ -107,21 +122,23 @@ export default function Mining() {
                 <p className="muted mt-1">
                   {progress.game_name} / {progress.campaign_name}
                 </p>
-                {watching && (
+                {watching && !paused && (
                   <p className="muted mt-1">{t('watching', { channel: watching.name })}</p>
                 )}
               </div>
             </div>
             <div className="mt-4 md:mt-5">
-              {data.mining?.state !== 'watching' && data.mining?.state !== 'awaiting_progress' && (
-                <p className="muted mb-3">
-                  {t(
-                    data.mining && data.mining.state !== 'unknown'
-                      ? `mining_state_${data.mining.state}`
-                      : `eligibility_${reward?.eligibility ?? 'unknown'}`,
-                  )}
-                </p>
-              )}
+              {!paused &&
+                data.mining?.state !== 'watching' &&
+                data.mining?.state !== 'awaiting_progress' && (
+                  <p className="muted mb-3">
+                    {t(
+                      data.mining && data.mining.state !== 'unknown'
+                        ? `mining_state_${data.mining.state}`
+                        : `eligibility_${reward?.eligibility ?? 'unknown'}`,
+                    )}
+                  </p>
+                )}
               <ProgressBar
                 current={progress.confirmed_at ? (progress.confirmed_minutes ?? 0) : 0}
                 total={progress.required_minutes}
@@ -142,6 +159,8 @@ export default function Mining() {
               </div>
             </div>
           </>
+        ) : paused ? (
+          <Empty className="py-5" title={t('paused_help')} />
         ) : data.manual_mode.active ? (
           <p className="font-medium">
             {watching
