@@ -76,6 +76,7 @@ embed it and run without a build tool/runtime companion. Production builds never
 - Native IPC is limited to the bundled main window, typed commands and bounded requests.
   Cancel reads, preserve accepted writes, coalesce snapshot patches and fence stale replies.
   Restrict navigation; validated external HTTP(S) links open in the system browser.
+  Native CSP permits bundled fonts from local assets and data URLs, including Vite's inlined subsets.
 - Use official Tauri tray, single-instance, window-state, autostart, notification and updater
   plugins. Reopening restores the existing window. Tray pause changes the shared saved setting.
   Default close-to-tray off on Linux, where tray hosts vary. Failed tray creation must leave

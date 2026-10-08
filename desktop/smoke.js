@@ -11,6 +11,8 @@
   };
   try {
     await wait(() => document.querySelector('[aria-label="Pause mining"]'), 'snapshot not rendered');
+    const fonts = await document.fonts.load('15px "Manrope Variable"', '\u0462');
+    if (!fonts.length) throw new Error('bundled Cyrillic-extended font missing');
     await wait(() => titleMatches('70% Rust'), 'confirmed native title missing');
     document.querySelector('[aria-label="Pause mining"]').click();
     await wait(() => titleMatches('Paused'), 'paused native title missing');
