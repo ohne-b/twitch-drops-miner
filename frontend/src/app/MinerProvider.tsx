@@ -1,3 +1,4 @@
+import { isDesktop } from '../shared/lib/platform';
 import { createContext, useContext, useEffect, useReducer, useRef, type ReactNode } from 'react';
 import type { Snapshot } from '../shared/lib/types';
 import { connectBrowser, type Subscription } from './transport';
@@ -34,11 +35,19 @@ export function MinerProvider({ children }: { children: ReactNode }) {
     if (state.resync) transport.current?.resync();
   }, [state.resync]);
   useEffect(() => {
-    const subscription = connectBrowser(dispatch);
-    transport.current = subscription;
+    let disposed = false;
+    const start = async () => {
+      const connect = isDesktop()
+        ? (await import('../shared/lib/desktop')).connectDesktop
+        : connectBrowser;
+      if (disposed) return;
+      transport.current = connect(dispatch);
+    };
+    void start();
     return () => {
+      disposed = true;
+      transport.current?.close();
       transport.current = null;
-      subscription.close();
     };
   }, []);
   return (
