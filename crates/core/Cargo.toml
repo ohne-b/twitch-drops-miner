@@ -1,0 +1,47 @@
+[package]
+name = "twitch-drops-miner-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+dashboard-fixture = []
+
+[dependencies]
+tracing-subscriber.workspace = true
+tracing-appender.workspace = true
+cookie.workspace = true
+anyhow.workspace = true
+base64.workspace = true
+chrono.workspace = true
+futures-util.workspace = true
+getrandom.workspace = true
+hex.workspace = true
+http.workspace = true
+percent-encoding.workspace = true
+regex.workspace = true
+reqwest.workspace = true
+reqwest-websocket.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+tempfile.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+tracing.workspace = true
+twitch_oauth2.workspace = true
+tungstenite.workspace = true
+unicode-casefold.workspace = true
+url.workspace = true
+
+[dev-dependencies]
+axum.workspace = true
+http-body-util = "0.1"
+tokio = { workspace = true, features = ["test-util"] }
+wiremock = "0.6"
+
+[lints.rust]
+unsafe_code = "forbid"

@@ -9,8 +9,9 @@ license files with production images.
 PolyForm Noncommercial permits modifications and redistribution under its terms.
 Preserve the required notices. Third-party licenses remain unchanged.
 
-This is a personal, self-hosted hobby project. Multiple accounts, channel-points mining,
-a desktop GUI and services hosted for other users are outside the current scope.
+This is a personal, self-hosted hobby project. Multiple accounts, channel-points mining
+and services hosted for other users are outside the current scope. The desktop application
+shares the mining core and dashboard with the self-hosted server.
 Discuss substantial features or refactoring with the maintainer first; an explicit task
 authorization covers its necessary implementation and cleanup.
 
@@ -42,11 +43,11 @@ must use mocked transports and temporary storage. Never reuse a live miner for t
 
 | Location | Purpose |
 | --- | --- |
-| `src/domain.rs`, `src/policy.rs`, `src/miner/` | Eligibility and owned session, watch, inventory and claim lifecycle |
-| `src/app/` | Application commands, settings, structured activity and revisioned publications |
-| `src/twitch/` | OAuth, HTTP/GQL, inventory, channels and PubSub |
-| `src/store.rs`, `src/store/records.rs`, `src/config.rs`, `src/auth.rs`, `src/origin.rs` | Compatible durable records, settings and security |
-| `src/web/`, `src/dto.rs` | Axum/Socket.IO dashboard boundary |
+| `crates/core/src/domain.rs`, `crates/core/src/policy.rs`, `crates/core/src/miner/` | Eligibility and owned session, watch, inventory and claim lifecycle |
+| `crates/core/src/app/` | Application commands, settings, structured activity and revisioned publications |
+| `crates/core/src/twitch/` | OAuth, HTTP/GQL, inventory, channels and PubSub |
+| `crates/core/src/store.rs`, `crates/core/src/store/records.rs`, `crates/core/src/config.rs`, `src/auth.rs`, `src/origin.rs` | Compatible durable records, settings and security |
+| `src/web/`, `crates/core/src/dto.rs` | Axum/Socket.IO dashboard boundary |
 | `src/fixture.rs`, `src/bin/dashboard-fixture.rs` | Offline browser fixture |
 | `frontend/src/app/`, `frontend/src/features/`, `frontend/src/shared/`, `lang/English.json` | Dashboard shell/provider, product features, shared controls and English messages |
 | `.github/` | Validation and release automation |
@@ -70,7 +71,8 @@ unrelated upgrades. Cargo owns version/lock consistency; Vite owns asset hashes.
 3. Fetch and integrate current main before final validation/review, and again before merge
    if it advances. Resolve conflicts deliberately and rerun affected checks.
 4. Obtain independent adversarial review. Keep an incomplete PR in draft.
-5. Submit through a PR; ordinary changes never go directly to main. Follow through on
+5. Use conventional merge-commit subjects with the PR number when merging is authorized;
+   do not use GitHub's default merge message. Submit through a PR; ordinary changes never go directly to main. Follow through on
    findings and CI. Release publication requires separate explicit authorization.
 
 For a writable origin pointing to this repository:
@@ -184,7 +186,8 @@ checks/policy to appear complete.
 
 ## Release and automation
 
-Version ownership is `Cargo.toml` and `Cargo.lock`. **Prepare release**, manually run on
+Version ownership is `[workspace.package]` in `Cargo.toml` and `Cargo.lock`. All product
+packages inherit that version. **Prepare release**, manually run on
 main, uses `PUBLISHER_TOKEN` to create a draft version PR whose checks run normally. The
 token needs repository contents/PR access; configure it as a secret, never in source.
 If it is not configured, a maintainer can prepare the same draft PR locally: start a

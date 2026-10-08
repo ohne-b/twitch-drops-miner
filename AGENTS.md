@@ -6,6 +6,9 @@ the alternate agent instruction files; do not recreate copies or links.
 
 ## Workflow
 
+- Use focused conventional commits. When merging is authorized, use a merge commit with
+  a conventional subject and PR number (for example `feat(desktop): add native application (#123)`),
+  not the default merge message.
 - Use descriptive `feat/` or `fix/` branches, conventional commits and PRs against
   `ohne-b/twitch-drops-miner:main`. Keep branches, commits and documentation free of assistant branding.
 - Preserve existing user changes, data, credentials, logs and backups. Ask before significant
@@ -32,13 +35,17 @@ The product is Twitch Drops Miner (dashboard: Drops Miner), repository and
 Cargo package/binary are twitch-drops-miner. Preserve the existing Compose service/container name,
 data/log directories, TDM log prefix, auth cookie and CSRF header for upgrade compatibility.
 
-One Rust Cargo package owns the backend. Use concrete structs with methods and composition
+A Cargo workspace separates the shared core in `crates/core/` from the root server package
+and the Tauri wrapper in `desktop/`. The core owns mining, application commands and durable
+storage; it has no production HTTP-server or graphical dependencies. Both wrappers use its
+owned runtime and credential-safe logging. Use concrete structs with methods and composition
 for domain/services (the repository's OOP requirement), typed enums and DRY shared policies.
 Do not add forwarding hierarchies or speculative traits with one implementation.
 
 | Module | Responsibility |
 | --- | --- |
-| `main.rs` | CLI/env, credential-safe logging, owned shutdown, healthcheck |
+| `src/main.rs` | Server CLI/env, HTTP lifecycle and healthcheck |
+| `crates/core/src/runtime.rs`, `logging.rs` | Shared owned miner shutdown and credential-safe logging |
 | `config.rs`, `dto.rs` | Typed settings, compatible migration, API snapshots |
 | `domain.rs`, `policy.rs` | Campaign/drop/channel eligibility and dependency-aware ignores |
 | `store.rs` | Exclusive data directory, atomic settings/history/archive/claim journal |
@@ -50,6 +57,10 @@ Do not add forwarding hierarchies or speculative traits with one implementation.
 | `web/` | Axum HTTP, Socketioxide, protected snapshots and embedded frontend |
 | `fixture.rs`, `bin/dashboard-fixture.rs` | Feature-gated offline browser fixture |
 | `frontend/`, `lang/English.json` | React/TypeScript/Tailwind and one message catalog |
+
+The domain/application/storage/Twitch modules below live in `crates/core/src/`; web and
+dashboard authentication remain in the root server package. Workspace package metadata owns
+the shared version. Default Cargo members validate the server and core without desktop system libraries.
 
 Build frontend assets before backend/static tests. `web/` is ignored output. Release binaries
 embed it and run without a build tool/runtime companion. Production builds never enable

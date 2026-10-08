@@ -2,7 +2,7 @@ use std::ops::{Deref, DerefMut};
 
 use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard, watch};
 
-use crate::{auth::random_hex, dto::Snapshot};
+use crate::{dto::Snapshot, random_hex};
 
 pub const PROTOCOL: u32 = 2;
 

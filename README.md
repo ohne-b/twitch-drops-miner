@@ -421,3 +421,6 @@ which builds on [DevilXD/TwitchDropsMiner](https://github.com/DevilXD/TwitchDrop
 and their contributors. The full upstream MIT license is preserved in [NOTICE.md](NOTICE.md).
 Bundled font and icon notices are in
 [frontend/public/assets/licenses](frontend/public/assets/licenses).
+
+The Rust workspace keeps mining and storage in `crates/core/`. The server and desktop
+application share that core and the React dashboard.

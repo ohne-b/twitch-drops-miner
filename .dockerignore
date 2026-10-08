@@ -6,6 +6,8 @@
 !NOTICE.md
 !src/
 !src/**
+!crates/
+!crates/**
 !lang/
 !lang/English.json
 !frontend/

@@ -1,12 +1,13 @@
 pub mod activity;
+pub mod api;
 pub mod commands;
 pub mod projection;
 pub mod state;
 
 use crate::{
-    auth::random_hex,
     config::Settings,
     dto::{RefreshState, SettingsView, Snapshot},
+    random_hex,
     store::{CampaignArchive, DataDirectory, History},
 };
 use anyhow::Result;
@@ -22,8 +23,9 @@ use std::{
 use tokio::sync::{Mutex, RwLock, Semaphore, broadcast, mpsc, oneshot};
 use tokio_util::{sync::CancellationToken, task::TaskTracker};
 
-pub(crate) static ENGLISH: LazyLock<Value> = LazyLock::new(|| {
-    serde_json::from_str(include_str!("../../lang/English.json")).expect("valid English catalog")
+pub static ENGLISH: LazyLock<Value> = LazyLock::new(|| {
+    serde_json::from_str(include_str!("../../../../lang/English.json"))
+        .expect("valid English catalog")
 });
 
 pub fn message(path: &str, replacements: &[(&str, &str)]) -> String {

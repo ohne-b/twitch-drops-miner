@@ -77,9 +77,9 @@ export function bumpVersion(version, directory = process.cwd()) {
   const lock = resolve(directory, 'Cargo.lock');
   const original = readFileSync(manifest, 'utf8');
   const previousLock = readFileSync(lock);
-  // Cargo owns TOML parsing and lockfile generation. Only edit the root package field.
-  const pattern = /(^\[package\]\r?\n[\s\S]*?^version\s*=\s*")[^"]+("\s*$)/m;
-  if (!pattern.test(original)) throw new Error('Root package version is missing.');
+  // Cargo owns TOML parsing and lockfile generation. Only edit the shared workspace version.
+  const pattern = /(^\[workspace\.package\]\r?\n[\s\S]*?^version\s*=\s*")[^"]+("\s*$)/m;
+  if (!pattern.test(original)) throw new Error('Workspace package version is missing.');
   try {
     writeFileSync(manifest, original.replace(pattern, (_, before, after) => `${before}${version}${after}`));
     readVersion(directory, false);

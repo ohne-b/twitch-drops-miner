@@ -297,7 +297,7 @@ async fn subscribe(
     pending: &mut HashMap<String, Instant>,
 ) -> Result<(), TwitchError> {
     for topics in topics.chunks(10) {
-        let nonce = crate::auth::random_hex::<16>().map_err(|_| TwitchError::Configuration)?;
+        let nonce = crate::random_hex::<16>().map_err(|_| TwitchError::Configuration)?;
         send(
             socket,
             json!({"type":verb,"nonce":nonce,"data":{"topics":topics,"auth_token":token}}),

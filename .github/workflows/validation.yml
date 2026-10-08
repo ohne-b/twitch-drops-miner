@@ -130,7 +130,7 @@ jobs:
         id: image
         run: |
           command -v skopeo || { sudo apt-get update; sudo apt-get install -y --no-install-recommends skopeo; }
-          echo "version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["package"]["version"])')" >> "$GITHUB_OUTPUT"
+          echo "version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["workspace"]["package"]["version"])')" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
           platforms: arm64
