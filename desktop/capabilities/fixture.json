@@ -5,6 +5,7 @@
   "permissions": [
     "allow-smoke-result",
     "core:event:allow-emit",
-    "core:window:allow-title"
+    "core:window:allow-title",
+    "core:window:allow-set-size"
   ]
 }

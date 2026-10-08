@@ -115,7 +115,7 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
             </NavLink>
           ))}
         </nav>
-        <div className="mt-auto">
+        <div className="min-w-0 lg:mt-auto">
           {isDesktop() && <DesktopUpdates />}
           <div className="hidden p-4 lg:block">
             <a

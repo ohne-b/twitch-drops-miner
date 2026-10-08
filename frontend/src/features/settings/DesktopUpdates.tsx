@@ -101,10 +101,13 @@ export default function DesktopUpdates() {
   return (
     <>
       {status?.version && (
-        <div className="px-4 pt-2 lg:pt-4" aria-live="polite">
+        <div
+          className="desktop-update-link flex justify-end px-4 py-2 lg:justify-start lg:pt-4 lg:pb-0"
+          aria-live="polite"
+        >
           <button
             type="button"
-            className="min-h-9 max-w-full rounded px-1 text-start text-xs break-words text-muted hover:text-text max-lg:min-h-11"
+            className="min-h-9 max-w-full truncate rounded px-1 text-start text-xs text-muted hover:text-text max-lg:min-h-11"
             aria-haspopup="dialog"
             title={t('gui.desktop.update_available', { version: status.version })}
             onClick={() => setOpen(true)}

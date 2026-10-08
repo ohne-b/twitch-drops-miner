@@ -49,6 +49,22 @@
       await wait(() => document.querySelector('dialog[open]')?.textContent.includes(text), 'update link lost the current phase');
       close();
     }
+    await invoke('plugin:window|set_size', {
+      label: 'main', value: { Logical: { width: 360, height: 480 } },
+    });
+    await wait(() => window.innerWidth < 400, 'compact window size not applied');
+    document.querySelector('a[href="/activity"]').click();
+    await wait(() => document.getElementById('activity-list'), 'activity not rendered');
+    const list = document.getElementById('activity-list').getBoundingClientRect();
+    const nav = document.querySelector('.primary-nav').getBoundingClientRect();
+    if (list.bottom > nav.top) throw new Error('update link pushes activity behind navigation');
+    const header = document.querySelector('.brand-row').getBoundingClientRect();
+    await publish('available', '99.0.0-preview.with.a.long.version.label');
+    await wait(() => indicator()?.textContent.includes('preview.with'), 'long update label missing');
+    const link = indicator().getBoundingClientRect();
+    if (link.left < header.right || link.right > window.innerWidth || link.bottom > header.bottom) {
+      throw new Error('compact update link does not fit beside the app name');
+    }
     await publish('current', null);
     await wait(() => !indicator(), 'obsolete update indicator remains visible');
     await invoke('smoke_result', { error: null });

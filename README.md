@@ -51,7 +51,7 @@ verified separately.
 
 When an update is available, **Update v…** appears at the bottom left, above the GitHub
 and account controls. Select it to open the download/install dialog. In narrow windows,
-the link appears below the app header.
+the link sits beside the app name in the header.
 
 ### Docker
 
