@@ -31,9 +31,11 @@ Download the installer for your computer from [Releases](https://github.com/ohne
 
 | System | Download |
 | --- | --- |
-| Windows 10/11 (64-bit) | `windows-x64-setup.exe` |
-| macOS 12 or newer (Intel and Apple silicon) | `macos-universal.dmg` |
-| Linux (64-bit, Ubuntu 22.04 or newer) | `linux-x64.AppImage` or `linux-x64.deb` |
+| Windows 10/11 (64-bit) | `twitch-drops-miner-VERSION-windows-x64-setup.exe` |
+| macOS 12 or newer (Intel and Apple silicon) | `twitch-drops-miner-VERSION-macos.dmg` |
+| Linux (64-bit, Ubuntu 22.04 or newer) | `twitch-drops-miner-VERSION-linux-x64.AppImage` or `.deb` |
+
+`VERSION` is the release number. The macOS `.app.tar.gz` is for in-app updates; use the DMG to install.
 
 Open **Drops Miner**, then follow [First login](#first-login). No Docker, terminal or port
 configuration is needed. Keep the computer awake while mining.

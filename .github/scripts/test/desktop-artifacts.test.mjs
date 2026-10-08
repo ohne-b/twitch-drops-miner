@@ -8,7 +8,13 @@ import { releaseManifest } from '../release.mjs';
 
 test('the complete desktop set keeps one universal Mac installer and platform-specific updates', () => {
   const all = targets.flatMap(target => assets('1.7.0', target));
-  assert.equal(all.length, 5);
+  assert.deepEqual(all.map(asset => asset.name), [
+    'twitch-drops-miner-1.7.0-windows-x64-setup.exe',
+    'twitch-drops-miner-1.7.0-macos.dmg',
+    'twitch-drops-miner-1.7.0-macos-universal.app.tar.gz',
+    'twitch-drops-miner-1.7.0-linux-x64.AppImage',
+    'twitch-drops-miner-1.7.0-linux-x64.deb',
+  ]);
   assert.equal(all.filter(asset => asset.extension === '.dmg').length, 1);
   assert.ok(all.every(asset => !asset.name.endsWith('.msi')));
   const platforms = Object.fromEntries(all.flatMap(asset => asset.platforms.map(key => [key, {
