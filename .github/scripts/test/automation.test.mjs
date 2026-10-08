@@ -52,7 +52,7 @@ test('primary release images use GHCR and encode SemVer build metadata in Docker
   });
   assert.equal(tags.trim(), 'ghcr.io/ohne-b/twitch-drops-miner:0.1.0');
 });
-test('every release has matching metadata and concise reviewed notes, never an installer manifest', () => {
+test('every release has matching metadata and concise reviewed notes, compatible metadata for server update notices', () => {
   assert.deepEqual(releaseManifest('0.1.0'), {
     schemaVersion: 1,
     version: '0.1.0',
@@ -88,7 +88,7 @@ test('English catalog covers production message keys and contains plain text', (
   const root = new URL('../../../', import.meta.url);
   const dictionary = JSON.parse(readFileSync(new URL('lang/English.json', root), 'utf8'));
   const lookup = key => key.split('.').reduce((value, part) => value?.[part], dictionary);
-  for (const folder of ['src/', 'crates/core/src/', 'frontend/src/']) {
+  for (const folder of ['src/', 'crates/core/src/', 'desktop/src/', 'frontend/src/']) {
     const base = new URL(folder, root);
     for (const name of readdirSync(base, { recursive: true }).filter(name => /\.(rs|tsx?)$/.test(name))) {
       const source = readFileSync(new URL(name.replaceAll('\\', '/'), base), 'utf8');

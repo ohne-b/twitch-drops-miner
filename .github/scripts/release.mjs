@@ -25,12 +25,26 @@ export function releaseImages(version) {
   return [`ghcr.io/ohne-b/twitch-drops-miner:${tag}`];
 }
 
-export function releaseManifest(version) {
+export function releaseManifest(version, platforms, pubDate) {
   validateVersion(version);
+  if (platforms) {
+    const keys = ['windows-x86_64-nsis', 'darwin-x86_64-app', 'darwin-aarch64-app', 'linux-x86_64-appimage', 'linux-x86_64-deb'];
+    if (Object.keys(platforms).sort().join() !== keys.sort().join() || !pubDate || !Number.isFinite(Date.parse(pubDate))) {
+      throw new Error('The updater manifest needs every desktop platform and a publication date.');
+    }
+    for (const { url, signature } of Object.values(platforms)) {
+      const prefix = `${repository}/releases/download/v${version}/`;
+      if (typeof url !== 'string' || !url.startsWith(prefix) || !/^[\w.+-]+$/.test(url.slice(prefix.length)) ||
+          typeof signature !== 'string' || signature.length < 64 || signature.length > 4096 || !/^[A-Za-z0-9+/=]+$/.test(signature)) {
+        throw new Error('Invalid desktop update URL or signature.');
+      }
+    }
+  }
   return {
     schemaVersion: 1,
     version,
     notes: `[Check release notes on GitHub](${repository}/releases/tag/v${version})`,
+    ...(platforms ? { pub_date: pubDate, platforms } : {}),
   };
 }
 
@@ -68,6 +82,7 @@ export function readVersion(directory = process.cwd(), locked = true) {
   }));
   const pkg = metadata.packages.find(p => p.name === 'twitch-drops-miner' && metadata.workspace_members.includes(p.id));
   if (!pkg) throw new Error('The twitch-drops-miner package is missing.');
+  if (metadata.packages.some(p => metadata.workspace_members.includes(p.id) && p.version !== pkg.version)) throw new Error('Workspace versions must match.');
   return validateVersion(pkg.version);
 }
 
