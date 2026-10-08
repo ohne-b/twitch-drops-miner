@@ -5,6 +5,7 @@ mod games;
 pub mod inventory;
 pub mod oauth;
 pub mod operations;
+pub(crate) mod playback;
 mod profile;
 pub mod pubsub;
 #[cfg(test)]
@@ -71,6 +72,7 @@ pub(crate) struct Endpoints {
     pub pubsub: Url,
     pub catalog: Url,
     pub helix: Url,
+    pub usher: Url,
 }
 impl Default for Endpoints {
     fn default() -> Self {
@@ -82,6 +84,7 @@ impl Default for Endpoints {
             pubsub: Url::parse("wss://pubsub-edge.twitch.tv/v1").unwrap(),
             catalog: Url::parse("https://twitch-drops-api.sunkwi.com/v2/drops").unwrap(),
             helix: Url::parse("https://api.twitch.tv/helix/").unwrap(),
+            usher: Url::parse("https://usher.ttvnw.net/").unwrap(),
         }
     }
 }
@@ -98,6 +101,7 @@ impl Endpoints {
             tv: base.join("tv").unwrap(),
             catalog: base.join("catalog").unwrap(),
             helix: base.join("helix/").unwrap(),
+            usher: base.clone(),
             web: base,
             pubsub,
         }
