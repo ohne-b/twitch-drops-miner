@@ -19,9 +19,10 @@ the alternate agent instruction files; do not recreate copies or links.
 - Integrate current main before final validation/review and again before merge if it advances.
   Keep incomplete PRs in draft. Record tested/reviewed revisions and actual results; never
   describe unrun checks, live progress or review as successful.
-- Add backend unit/regression tests; cover frontend changes where practical. Always update
-  README and this harness when behavior/architecture changes. Update English messages for UI
-  or console changes. There are no other locales or language settings.
+- Add backend unit/regression tests; cover frontend changes where practical. Update this
+  harness when behavior/architecture changes. Update README only when setup, essential usage,
+  updates or troubleshooting change; a new feature alone does not require more README text.
+  Update English messages for UI or console changes. There are no other locales or language settings.
 - Keep user guidance in README and contributor policy in CONTRIBUTING. Do not create
   `docs/`, `plans/` or repository planning documents.
 - GitHub release publication uses the repository owner's scoped `prod` `RELEASE_TOKEN`;
@@ -593,8 +594,12 @@ Failed mirrors leave GHCR intact and can be retried through the manual mirror ac
 Advance latest only after the stable release and its manifest are public. Preserve
 published old-name images and document promotion recovery and first-package visibility.
 Keep Buildx action pins identical between validation and publishing. README uses
-a centered title/tagline/license opener and GitHub Flavored Markdown alerts. Keep upstream
-attribution in License and credits; do not add a contributor/PR table or automation that
+a centered title/tagline/license opener and GitHub Flavored Markdown alerts. Keep README
+concise: no exhaustive control/status lists, layout descriptions, internal implementation
+details or repeated explanations of visible UI labels. Remove stale or redundant text instead
+of appending a paragraph for every change. Put release changes in CHANGELOG and technical
+contracts in this harness; preserve essential setup, recovery and privacy guidance.
+Keep upstream attribution in License and credits; do not add a contributor/PR table or automation that
 rewrites README after merges. No ordinary code merge may publish a release or bypass
 independent review/checks.
 

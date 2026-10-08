@@ -57,10 +57,15 @@ logic out of route handlers. Preserve async cancellation, bounded work, validati
 credential redaction and atomic disk-before-memory updates. Consult [AGENTS.md](AGENTS.md)
 for detailed domain, security and UI contracts.
 
-Edit frontend sources, never generated `web/`. Update README and AGENTS for relevant
-behavior/architecture changes, and English messages when UI/console text changes. Render
-translations as React text with validated links. Commit dependency lockfiles and avoid
-unrelated upgrades. Cargo owns version/lock consistency; Vite owns asset hashes.
+Edit frontend sources, never generated `web/`. Update AGENTS for behavior/architecture changes
+and English messages when UI/console text changes. Render translations as React text with
+validated links. Commit dependency lockfiles and avoid unrelated upgrades. Cargo owns
+version/lock consistency; Vite owns asset hashes.
+
+Keep README focused on setup, essential
+usage, updates and troubleshooting. Do not add a paragraph for every feature, list every
+control/status, describe layouts or repeat visible UI labels. Put release changes in CHANGELOG
+and technical contracts in AGENTS; preserve essential setup, recovery and privacy guidance.
 
 ### Desktop development
 
