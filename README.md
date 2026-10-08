@@ -12,8 +12,6 @@
 
 Choose your games in the app or web dashboard, and the miner watches eligible channels and
 claims your drops. It runs on your own hardware with one Twitch account per installation.
-Mining reads small stream playlists and checks new segments' response headers; it does
-not download video or audio. Only Twitch-reported progress counts as confirmed watch time.
 
 ![Drops Miner dashboard with a Twitch profile and badge, Fortnite reward progress, channels and queued campaigns](.github/assets/dashboard-mining.png)
 
@@ -34,37 +32,6 @@ Download the installer for your computer from [Releases](https://github.com/ohne
 | Windows 10/11 (64-bit) | `twitch-drops-miner-VERSION-windows-x64-setup.exe` |
 | macOS 12 or newer (Intel and Apple silicon) | `twitch-drops-miner-VERSION-macos.dmg` |
 | Linux (64-bit, Ubuntu 22.04 or newer) | `twitch-drops-miner-VERSION-linux-x64.AppImage` or `.deb` |
-
-`VERSION` is the release number. The macOS `.app.tar.gz` is for in-app updates; use the DMG to install.
-
-Open **Drops Miner**, then follow [First login](#first-login). No Docker, terminal or port
-configuration is needed. Keep the computer awake while mining.
-
-The tray menu starts with a non-clickable status row, followed by **Open**, **Pause/Resume
-mining**, **Check for updates** and **Quit**. The status matches the browser title: confirmed
-percentage and game, game alone before confirmation, **Watching [channel]**, **Paused**,
-**Idle**, **Disconnected**, or **Drops Miner** before account data is available.
-On Windows and macOS, its tooltip shows the same confirmed progress and game as the window
-title, or the current paused/idle status.
-**Settings > Desktop** controls starting at sign-in, starting minimized, notifications and
-whether closing the window keeps mining. On Linux, keeping the app in the tray is opt-in;
-some desktop environments need a tray extension. Launching the app again reopens its window.
-
-**Keep computer awake while mining** is off by default. Enable it in **Settings > Desktop**
-to prevent automatic sleep during active mining. The screen can turn off, and pausing,
-going idle or quitting releases the request. Manual sleep still works. On Linux this uses
-systemd's idle inhibitor; desktop power managers may not honor it.
-
-Zoom with **Ctrl +/−**, **Ctrl+0** to reset, or **Ctrl+mouse wheel**. On macOS, use
-**Command** for the keyboard shortcuts.
-
-Installers currently have no Microsoft/Apple signing certificate, so the OS may ask for
-approval. The Mac app uses an ad-hoc signature. In-app update packages are signed and
-verified separately.
-
-When an update is available, **Update v…** appears at the bottom left, above the GitHub
-and account controls. Select it to open the download/install dialog. In narrow windows,
-the link sits beside the app name in the header.
 
 ### Docker
 
@@ -129,10 +96,6 @@ or the [changelog](CHANGELOG.md).
 Your Twitch session survives restarts. Enter your Twitch password only on Twitch's
 own authorization page.
 
-Automatic mining needs a selected game or an enabled **Also mine from other games**
-option. Both badge and emote options are off by default. **Stop mining** removes a game
-from your list; already-earned rewards can still be claimed.
-
 > [!WARNING]
 > Avoid watching Twitch manually on the same account while mining. Simultaneous viewing
 > can interfere with drop progress.
@@ -147,94 +110,10 @@ from your list; already-earned rewards can still be claimed.
 | **Activity** | Find session events, warnings and errors; filter or follow new events. |
 | **Settings** | View your profile and badges; manage dashboard access, connection and maintenance. |
 
-Click your sidebar profile to open account settings; tap a badge for its description.
-If Twitch does not provide the full badge collection, equipped badges still appear.
-
-Use **Pause mining** in **Now mining** to stop watching without removing your games.
-Pause stays on after a restart and keeps the current reward and progress visible. Inventory
-refreshes and earned claims continue; manual channel timers keep counting down.
-Select **Resume mining** to start watching again.
-The browser tab shows confirmed progress, or **Paused**, **Idle** or **Disconnected**.
-
-Times use the **24-hour clock** in your browser's timezone. **Refresh inventory** is
-available in Mining and Campaigns. Campaign search, filters and sorting only change
-what you see, not what gets mined.
-
-### Mining preferences
-
-Open **Mining > Up next > Edit**. Drag games into order, or use the arrow keys on a
-focused drag handle. The priority control beside **Add Game** offers:
-
-| Priority | Behavior |
-| --- | --- |
-| **Default (manual order)** | Follow your saved game order. |
-| **Short events first** | Prioritize active reward windows lasting at most 24 hours, earliest deadline first. |
-| **Ending soonest** | Prioritize active rewards with the nearest deadlines, including longer campaigns. |
-
-Selected games come first, ahead of optional rewards from other games. Your saved order
-breaks ties. These modes don't check whether there's enough time to finish a reward.
-
-Changes save automatically. If saving fails, your edits stay in place so you can **Retry**.
-The info buttons explain the mining rules.
-
-Search Twitch games as you type, including those without current campaigns. Select a result
-to save its name and cover; mining starts when an eligible campaign becomes available. If search is
-unavailable, **Add Game** still accepts a name. Existing saved names get covers when Twitch
-recognizes them.
-
-<details>
-<summary>Reward filters and ignored names</summary>
-
-- **Also mine from other games:** include badge or emote rewards outside your game list,
-  along with any drops needed to unlock them.
-- **Allowed reward types:** limit mining across selected games and optional other-game rewards.
-- **Ignore rewards by name:** one phrase per line, matched anywhere in a name. Capitalization
-  doesn't matter. Matching rewards and anything they unlock are skipped. A shared prerequisite
-  can still be mined if another allowed reward needs it.
-- Ignoring or skipping is never a claim. Twitch may still advance an ignored reward alongside
-  another reward. Subscription-only rewards cannot be earned by watching and are omitted.
-
-</details>
-
-<details>
-<summary>Watch a specific channel</summary>
-
-Select **+** in **Mining > Channels**, enter a Twitch name or channel URL, then select
-**Mine**. This temporarily overrides automatic selection without changing saved games.
-A live channel can be watched without a known campaign, but Twitch decides whether it earns drops.
-
-- Set **Auto mode after** to 1–1440 minutes, or leave it blank and use **Return to Auto Mode**.
-- The timer starts when the channel is selected and survives dashboard reconnects.
-- Offline channels wait for their return; the timer keeps running.
-- Logout, cache clearing or restarting the miner ends manual mode.
-
-</details>
-
-<details>
-<summary>Progress, history and campaign coverage</summary>
-
-- **Last confirmed** appears only after Twitch confirms progress. Before confirmation, rewards
-  show `0 / required minutes` with an unconfirmed tooltip. If live progress conflicts with fresh
-  account inventory, the miner uses inventory's value and keeps checking. Estimates don't count
-  as completion or a claim.
-- **History** records Twitch-confirmed claims. **First observed** means the exact claim time is
-  unknown. Importing a claim needs its campaign and reward details, so older rewards may be
-  missing. Finishing watch time alone does not unlock prerequisites or add an entry to History.
-- Campaign metadata comes from the [SunkwiBOT public catalog](https://github.com/SunkwiBOT/twitch-drops-api).
-  Progress, account linking and claims come from Twitch. Twitch credentials and identifiers
-  are never sent to the catalog service.
-- Catalog coverage can lag or be incomplete. Failed refreshes retain known active/upcoming
-  campaigns, but restarting needs the feed to rediscover campaigns outside your Twitch inventory.
-  Relogging or clearing cache cannot repair missing feed entries.
-
-</details>
-
 ## Updating
 
 **Desktop:** use **Check for updates** in the tray menu or **Settings > Maintenance**.
-Download the update, then select **Install and restart**. Mining continues during the
-download and stops safely before installation. You can also install a newer release manually.
-The Linux package may ask for your system password when updating a DEB.
+Download the update, then select **Install and restart**.
 
 **Docker:** Maintenance links to new releases. Install the image from the terminal:
 
@@ -294,13 +173,9 @@ The historical image remains at `ghcr.io/ohne-b/twitch-miner:0.1.0` for rollback
 
 ## Data and access
 
-Desktop data stays separate from Docker. Use **Settings > Desktop > Open data folder**
-or **Open log folder** to find it. Settings and credentials are in the `data` subfolder;
-`desktop.json` contains only app preferences. Quit from the tray before backing up this folder.
-On Windows, app data is stored in `%LOCALAPPDATA%\app.twitch-drops-miner.local`.
-Version 2.0.1 starts fresh in this folder; the old 2.0.0 folder is left untouched.
-There is no desktop HTTP listener or dashboard password. Your operating system account
-protects these files. The app does not import an existing Docker installation automatically.
+Desktop data stays separate from Docker. Find it through **Settings > Desktop > Open data folder**
+or **Open log folder**. On Windows, app data is in `%LOCALAPPDATA%\app.twitch-drops-miner.local`.
+Quit the app before backing it up.
 
 Docker uses these mounted folders:
 
@@ -371,19 +246,13 @@ Read recent errors:
 docker compose logs --since=30m --tail=200 twitch-drops-miner
 ```
 
-Server diagnostics are in `logs/TDM.*.log`, not the Activity page. File logs retain up to
-five daily files; Docker log retention follows your Compose settings.
+Server diagnostics are in `logs/TDM.*.log`, not the Activity page.
 
 <details>
 <summary>Connection timeouts</summary>
 
 **Connection Quality** defaults to **3**: 15 seconds to connect and 30 seconds per request.
 Existing saved choices are kept. Higher values allow more time but also delay timeout errors.
-Minute-watched messages stay **59 seconds** apart. Stream playlists are checked about every
-**10 seconds**, with shorter request limits so a stalled segment cannot block mining.
-
-Changing the setting reconnects Twitch too, so an improvement may come from either change.
-Keep 3 if mining is reliable. Transient watch failures already retry automatically.
 
 </details>
 
@@ -401,9 +270,8 @@ For the server binary, use `--diagnostics` or `TDM_DIAGNOSTICS=true`.
 It is off by default, even with `-v` or `-vv`; startup logs confirm when enabled.
 
 1. Reproduce the problem. Diagnostics cannot recover earlier failures.
-2. Review logs before sharing. They include timing, network errors and bounded, redacted
-   JSON previews, but may still contain account/campaign metadata. Never upload credentials
-   or your data directory. Non-JSON bodies and WebSocket frames are not captured.
+2. Review logs before sharing; they may contain account information. Never upload credentials
+   or your data directory.
 3. Remove the option or set it to `"false"`, then recreate the container or restart the binary.
 
 </details>
@@ -479,5 +347,6 @@ retain their own licenses.
 Based on [rangermix/TwitchDropsMiner](https://github.com/rangermix/TwitchDropsMiner),
 which builds on [DevilXD/TwitchDropsMiner](https://github.com/DevilXD/TwitchDropsMiner),
 and their contributors. The full upstream MIT license is preserved in [NOTICE.md](NOTICE.md).
+Campaign data comes from the [SunkwiBOT public catalog](https://github.com/SunkwiBOT/twitch-drops-api).
 Bundled font and icon notices are in
 [frontend/public/assets/licenses](frontend/public/assets/licenses).
