@@ -90,6 +90,8 @@ embed it and run without a build tool/runtime companion. Production builds never
 - Validation builds the release bundles once. Publication only verifies/signs/promotes those
   exact artifacts from current-main validation. The updater private key stays in `prod`;
   pull requests never receive signing secrets. OS signing is separate from updater signing.
+  macOS bundles use Tauri's ad-hoc identity before the DMG and update archive are created;
+  verify the extracted archive's bundle signature and both architectures in CI.
 - `desktop-fixture` is temporary/offline test code, excluded from all production builds and
   installers. Native smoke checks exercise the real webview and IPC without Twitch access.
 

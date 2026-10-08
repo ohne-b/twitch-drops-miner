@@ -42,7 +42,8 @@ whether closing the window keeps mining. On Linux, keeping the app in the tray i
 some desktop environments need a tray extension. Launching the app again reopens its window.
 
 Installers currently have no Microsoft/Apple signing certificate, so the OS may ask for
-approval. In-app update packages are signed and verified separately.
+approval. The Mac app uses an ad-hoc signature. In-app update packages are signed and
+verified separately.
 
 ### Docker
 

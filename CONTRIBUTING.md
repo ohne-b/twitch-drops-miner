@@ -75,9 +75,18 @@ node ../frontend/node_modules/@tauri-apps/cli/tauri.js dev
 ```
 
 For production packages, build the frontend first and run Tauri from `desktop/` with
-`--no-sign --bundles nsis` on Windows, `--no-sign --target universal-apple-darwin --bundles app,dmg`
-on macOS, or `--no-sign --bundles appimage,deb` on Linux. Universal macOS builds need both
-Rust targets installed. Code-signing and notarization are not currently configured.
+`--no-sign --bundles nsis` on Windows or `--no-sign --bundles appimage,deb` on Linux.
+Universal macOS builds need both Rust targets installed. Use the configured ad-hoc identity
+and keep updater signing separate:
+
+```bash
+node ../frontend/node_modules/@tauri-apps/cli/tauri.js build --target universal-apple-darwin --bundles app,dmg --config '{"bundle":{"createUpdaterArtifacts":false}}' -- --locked
+bundle='../target/universal-apple-darwin/release/bundle/macos'
+COPYFILE_DISABLE=1 tar -czf "$bundle/Drops Miner.app.tar.gz" -C "$bundle" 'Drops Miner.app'
+```
+
+CI verifies the signature and both architectures in the extracted update archive.
+Microsoft/Apple signing certificates and notarization are not currently configured.
 
 The native smoke fixture uses temporary data and no Twitch client. From `desktop/`, run
 `node ../frontend/node_modules/@tauri-apps/cli/tauri.js build --debug --no-bundle --no-sign --features desktop-fixture --config tauri.fixture.conf.json`,

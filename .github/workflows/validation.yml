@@ -287,15 +287,25 @@ jobs:
         working-directory: desktop
         env:
           NO_STRIP: 'true'
-        run: node ../frontend/node_modules/@tauri-apps/cli/tauri.js build --no-sign --target '${{ matrix.target }}' --bundles '${{ matrix.bundles }}' -- --locked
+        run: |
+          if [ '${{ runner.os }}' = macOS ]; then
+            # Ad-hoc sign the app before packaging; updater signing belongs to publication.
+            node ../frontend/node_modules/@tauri-apps/cli/tauri.js build --target '${{ matrix.target }}' --bundles '${{ matrix.bundles }}' --config '{"bundle":{"createUpdaterArtifacts":false}}' -- --locked
+            bundle='../target/${{ matrix.target }}/release/bundle/macos'
+            COPYFILE_DISABLE=1 tar -czf "$bundle/Drops Miner.app.tar.gz" -C "$bundle" 'Drops Miner.app'
+          else
+            node ../frontend/node_modules/@tauri-apps/cli/tauri.js build --no-sign --target '${{ matrix.target }}' --bundles '${{ matrix.bundles }}' -- --locked
+          fi
       - name: Collect versioned desktop artifacts
         run: |
           binary='target/${{ matrix.target }}/release/twitch-drops-miner-desktop'
           if [ '${{ runner.os }}' = macOS ]; then
-            app='target/${{ matrix.target }}/release/bundle/macos/Drops Miner.app'
+            unpacked=$(mktemp -d)
+            tar -xzf 'target/${{ matrix.target }}/release/bundle/macos/Drops Miner.app.tar.gz' -C "$unpacked"
+            app="$unpacked/Drops Miner.app"
             binary="$app/Contents/MacOS/twitch-drops-miner-desktop"
             lipo "$binary" -verify_arch x86_64 arm64
-            codesign --verify --strict --architecture arm64 "$binary"
+            codesign --verify --deep --strict "$app"
             test -r "$app/Contents/Resources/LICENSE.md"
             test -r "$app/Contents/Resources/NOTICE.md"
           fi
