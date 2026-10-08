@@ -86,6 +86,10 @@ embed it and run without a build tool/runtime companion. Production builds never
 - Updates download and verify before stopping mining. Require signed versions, no downgrades,
   one operation at a time and cancellable bounded downloads. A failed install stays visible
   with restart/manual recovery. Only an explicit install action may replace the application.
+  Show a quiet, clickable Update v… link above the sidebar's GitHub/account controls when
+  an update version is known; place it below the header in compact windows. Reuse the existing
+  update status and dialog, retain access during downloads/failures and across navigation,
+  and keep checking/current states quiet. Clicking the link never installs automatically.
 - Ship Windows x64 NSIS, universal macOS DMG plus the updater app archive, and Linux x64
   AppImage/DEB. No MSI or portable Windows distribution. Keep one backward-compatible
   `latest.json` for server and desktop. Platform-specific updater entries choose the right

@@ -115,41 +115,44 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
             </NavLink>
           ))}
         </nav>
-        <div className="mt-auto hidden p-4 lg:block">
-          <a
-            className="icon-button size-11"
-            href="https://github.com/ohne-b/twitch-drops-miner"
-            target="_blank"
-            rel="noreferrer"
-            aria-label="GitHub repository"
-            title="GitHub"
-          >
-            {/* The glyph fills 20 of its 24 viewBox units: render its artwork at 32px. */}
-            <Icon path={mdiGithub} className="mdi-icon size-[38.4px]!" />
-          </a>
-          {data?.login.user_id != null && (
-            <Link
-              to="/settings#account"
-              className="account-trigger mt-1 flex min-h-11 w-full items-center rounded text-start"
-              aria-label={
-                data.login.profile
-                  ? t('profile_open', { name: data.login.profile.display_name })
-                  : t('account')
-              }
-              title={t('account')}
+        <div className="mt-auto">
+          {isDesktop() && <DesktopUpdates />}
+          <div className="hidden p-4 lg:block">
+            <a
+              className="icon-button size-11"
+              href="https://github.com/ohne-b/twitch-drops-miner"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="GitHub repository"
+              title="GitHub"
             >
-              <AccountIdentity profile={data.login.profile} compact />
-            </Link>
-          )}
-          {auth.enabled && (
-            <Button
-              className="mt-3 w-full"
-              onClick={() => void onLogout().catch(() => setLogoutError(true))}
-            >
-              <Icon className="mdi-icon" path={mdiLogout} />
-              {t('gui.auth.logout')}
-            </Button>
-          )}
+              {/* The glyph fills 20 of its 24 viewBox units: render its artwork at 32px. */}
+              <Icon path={mdiGithub} className="mdi-icon size-[38.4px]!" />
+            </a>
+            {data?.login.user_id != null && (
+              <Link
+                to="/settings#account"
+                className="account-trigger mt-1 flex min-h-11 w-full items-center rounded text-start"
+                aria-label={
+                  data.login.profile
+                    ? t('profile_open', { name: data.login.profile.display_name })
+                    : t('account')
+                }
+                title={t('account')}
+              >
+                <AccountIdentity profile={data.login.profile} compact />
+              </Link>
+            )}
+            {auth.enabled && (
+              <Button
+                className="mt-3 w-full"
+                onClick={() => void onLogout().catch(() => setLogoutError(true))}
+              >
+                <Icon className="mdi-icon" path={mdiLogout} />
+                {t('gui.auth.logout')}
+              </Button>
+            )}
+          </div>
         </div>
       </aside>
       <main id="main" tabIndex={-1} className="workspace min-w-0">
@@ -177,12 +180,7 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
               </Notice>
             </div>
           )}
-          {isDesktop() && (
-            <>
-              <DesktopStatus />
-              <DesktopUpdates />
-            </>
-          )}
+          {isDesktop() && <DesktopStatus />}
           {logoutError && <Notice error>{t('gui.auth.request_failed')}</Notice>}
           {auth.enabled && (
             <div className="mb-4 text-end lg:hidden">

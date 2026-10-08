@@ -99,70 +99,90 @@ export default function DesktopUpdates() {
     status?.phase === 'downloading' ||
     status?.phase === 'installing';
   return (
-    <Dialog
-      open={open}
-      title={t('gui.desktop.updates')}
-      onClose={() => {
-        if (status?.phase !== 'installing') setOpen(false);
-      }}
-    >
-      <div className="space-y-4">
-        <p className="muted">Drops Miner {status?.current_version}</p>
-        {status && (
-          <p role="status">
-            {t(`gui.desktop.update_${status.phase}`, { version: status.version ?? '' })}
-          </p>
-        )}
-        {status?.phase === 'downloading' &&
-          (status.total ? (
-            <ProgressBar
-              current={status.downloaded}
-              total={status.total}
-              label={t('gui.desktop.download')}
-            />
-          ) : (
-            <p className="muted">{Math.floor(status.downloaded / (1024 * 1024))} MB</p>
-          ))}
-        {status?.version && (
-          <a
-            className="text-link inline-block"
-            href={`https://github.com/ohne-b/twitch-drops-miner/releases/tag/v${encodeURIComponent(status.version)}`}
-            target="_blank"
-            rel="noreferrer"
+    <>
+      {status?.version && (
+        <div className="px-4 pt-2 lg:pt-4" aria-live="polite">
+          <button
+            type="button"
+            className="min-h-9 max-w-full rounded px-1 text-start text-xs break-words text-muted hover:text-text max-lg:min-h-11"
+            aria-haspopup="dialog"
+            title={t('gui.desktop.update_available', { version: status.version })}
+            onClick={() => setOpen(true)}
           >
-            {t('release_notes')}
-          </a>
-        )}
-        {(error || status?.error) && (
-          <Notice error>{t(`gui.desktop.${status?.error ?? 'error'}`)}</Notice>
-        )}
-        <div className="flex flex-wrap justify-end gap-2">
-          {status?.restart_required ? (
-            <Button primary onClick={() => void invoke('restart_app').catch(() => setError(true))}>
-              {t('gui.desktop.restart')}
-            </Button>
-          ) : status?.phase === 'ready' ? (
-            <Button primary onClick={() => void action('install')}>
-              {t('gui.desktop.install')}
-            </Button>
-          ) : status?.phase === 'available' ||
-            (status?.phase === 'failed' && status.error === 'download_failed') ? (
-            <Button primary onClick={() => void action('download')}>
-              {t('gui.desktop.download')}
-            </Button>
-          ) : (
-            !busy && (
-              <Button onClick={() => void action('check')}>{t('gui.desktop.check_updates')}</Button>
-            )
-          )}
-          {(status?.phase === 'downloading' || status?.phase === 'checking') && (
-            <Button onClick={() => void action('cancel')}>{t('cancel')}</Button>
-          )}
-          {status?.phase !== 'installing' && (
-            <Button onClick={() => setOpen(false)}>{t('close')}</Button>
-          )}
+            {t('gui.desktop.update_link', { version: status.version })}
+          </button>
         </div>
-      </div>
-    </Dialog>
+      )}
+      <Dialog
+        open={open}
+        title={t('gui.desktop.updates')}
+        onClose={() => {
+          if (status?.phase !== 'installing') setOpen(false);
+        }}
+      >
+        <div className="space-y-4">
+          <p className="muted">Drops Miner {status?.current_version}</p>
+          {status && (
+            <p role="status">
+              {t(`gui.desktop.update_${status.phase}`, { version: status.version ?? '' })}
+            </p>
+          )}
+          {status?.phase === 'downloading' &&
+            (status.total ? (
+              <ProgressBar
+                current={status.downloaded}
+                total={status.total}
+                label={t('gui.desktop.download')}
+              />
+            ) : (
+              <p className="muted">{Math.floor(status.downloaded / (1024 * 1024))} MB</p>
+            ))}
+          {status?.version && (
+            <a
+              className="text-link inline-block"
+              href={`https://github.com/ohne-b/twitch-drops-miner/releases/tag/v${encodeURIComponent(status.version)}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t('release_notes')}
+            </a>
+          )}
+          {(error || status?.error) && (
+            <Notice error>{t(`gui.desktop.${status?.error ?? 'error'}`)}</Notice>
+          )}
+          <div className="flex flex-wrap justify-end gap-2">
+            {status?.restart_required ? (
+              <Button
+                primary
+                onClick={() => void invoke('restart_app').catch(() => setError(true))}
+              >
+                {t('gui.desktop.restart')}
+              </Button>
+            ) : status?.phase === 'ready' ? (
+              <Button primary onClick={() => void action('install')}>
+                {t('gui.desktop.install')}
+              </Button>
+            ) : status?.phase === 'available' ||
+              (status?.phase === 'failed' && status.error === 'download_failed') ? (
+              <Button primary onClick={() => void action('download')}>
+                {t('gui.desktop.download')}
+              </Button>
+            ) : (
+              !busy && (
+                <Button onClick={() => void action('check')}>
+                  {t('gui.desktop.check_updates')}
+                </Button>
+              )
+            )}
+            {(status?.phase === 'downloading' || status?.phase === 'checking') && (
+              <Button onClick={() => void action('cancel')}>{t('cancel')}</Button>
+            )}
+            {status?.phase !== 'installing' && (
+              <Button onClick={() => setOpen(false)}>{t('close')}</Button>
+            )}
+          </div>
+        </div>
+      </Dialog>
+    </>
   );
 }

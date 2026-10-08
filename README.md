@@ -49,6 +49,10 @@ Installers currently have no Microsoft/Apple signing certificate, so the OS may 
 approval. The Mac app uses an ad-hoc signature. In-app update packages are signed and
 verified separately.
 
+When an update is available, **Update v…** appears at the bottom left, above the GitHub
+and account controls. Select it to open the download/install dialog. In narrow windows,
+the link appears below the app header.
+
 ### Docker
 
 With Docker Compose installed, save this as `compose.yaml` in a new folder:

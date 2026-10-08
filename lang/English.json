@@ -389,6 +389,7 @@
             "update_checking": "Checking for updates...",
             "update_current": "You are up to date.",
             "update_available": "Version {version} is available.",
+            "update_link": "Update v{version}",
             "update_downloading": "Downloading {version}...",
             "update_ready": "The update is verified and ready to install.",
             "update_installing": "Stopping mining and installing the update...",
