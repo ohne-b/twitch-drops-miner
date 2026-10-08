@@ -290,7 +290,16 @@ jobs:
         run: node ../frontend/node_modules/@tauri-apps/cli/tauri.js build --no-sign --target '${{ matrix.target }}' --bundles '${{ matrix.bundles }}' -- --locked
       - name: Collect versioned desktop artifacts
         run: |
-          node .github/scripts/native-smoke.mjs 'target/${{ matrix.target }}/release/twitch-drops-miner-desktop'
+          binary='target/${{ matrix.target }}/release/twitch-drops-miner-desktop'
+          if [ '${{ runner.os }}' = macOS ]; then
+            app='target/${{ matrix.target }}/release/bundle/macos/Drops Miner.app'
+            binary="$app/Contents/MacOS/twitch-drops-miner-desktop"
+            lipo -verify_arch x86_64 arm64 "$binary"
+            codesign --verify --strict --arch arm64 "$binary"
+            test -r "$app/Contents/Resources/LICENSE.md"
+            test -r "$app/Contents/Resources/NOTICE.md"
+          fi
+          node .github/scripts/native-smoke.mjs "$binary"
           node .github/scripts/desktop-artifacts.mjs pack '${{ matrix.platform }}' 'target/${{ matrix.target }}/release/bundle' 'dist/desktop'
       - uses: actions/upload-artifact@v4
         with:
