@@ -2,7 +2,9 @@ use std::{sync::atomic::Ordering, time::Duration};
 
 use serde::{Deserialize, Serialize};
 use tauri::{Emitter, Manager, State, WebviewWindow};
-use tauri_plugin_updater::{Update, UpdaterExt};
+use tauri_plugin_updater::Update;
+#[cfg(not(feature = "desktop-fixture"))]
+use tauri_plugin_updater::UpdaterExt;
 use tokio::sync::Mutex;
 use tokio_util::{sync::CancellationToken, task::TaskTracker};
 use twitch_drops_miner_core::app::AppError;
@@ -178,6 +180,9 @@ pub async fn start(app: &tauri::AppHandle, action: Action) -> Result<Status, ipc
 }
 
 async fn check(app: tauri::AppHandle, cancel: CancellationToken) {
+    #[cfg(feature = "desktop-fixture")]
+    let operation = async { Ok::<Option<Update>, tauri_plugin_updater::Error>(None) };
+    #[cfg(not(feature = "desktop-fixture"))]
     let operation = async {
         let updater = app
             .updater_builder()

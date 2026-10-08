@@ -1,3 +1,5 @@
+#[cfg(feature = "desktop-fixture")]
+mod fixture;
 mod ipc;
 mod shell;
 mod updates;
@@ -101,6 +103,10 @@ fn open_app_folder(
 }
 
 impl Desktop {
+    fn spawn(&self, task: impl std::future::Future<Output = ()> + Send + 'static) {
+        self.tasks
+            .spawn_on(task, tauri::async_runtime::handle().inner());
+    }
     async fn drain(&self) {
         self.cancel.cancel();
         self.tasks.close();
@@ -179,8 +185,19 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
+            #[cfg(not(feature = "desktop-fixture"))]
             let directory = app.path().app_local_data_dir()?;
+            #[cfg(feature = "desktop-fixture")]
+            let directory = {
+                let temp = tempfile::tempdir()?;
+                let path = temp.path().to_owned();
+                app.manage(temp);
+                path
+            };
+            #[cfg(not(feature = "desktop-fixture"))]
             let logs = app.path().app_log_dir()?;
+            #[cfg(feature = "desktop-fixture")]
+            let logs = directory.join("logs");
             let preferences_path = directory.join("desktop.json");
             let preferences =
                 twitch_drops_miner_core::store::read_json::<shell::Preferences>(&preferences_path);
@@ -194,6 +211,7 @@ pub fn run() {
             let preferences = preferences.ok().flatten().unwrap_or_default();
             let start_minimized = preferences.start_minimized;
             let close_to_tray = preferences.close_to_tray;
+            #[cfg(not(feature = "desktop-fixture"))]
             let (runtime, startup_error) = match opened {
                 Ok((application, commands)) => (
                     Some(tauri::async_runtime::block_on(async {
@@ -202,6 +220,16 @@ pub fn run() {
                     None,
                 ),
                 Err(_) => (None, Some("desktop_start_failed".into())),
+            };
+            #[cfg(feature = "desktop-fixture")]
+            let (runtime, startup_error) = {
+                drop(opened);
+                (
+                    Some(tauri::async_runtime::block_on(fixture::start(
+                        directory.join("data"),
+                    ))?),
+                    None,
+                )
             };
             app.manage(Desktop {
                 runtime: Mutex::new(runtime),
@@ -237,6 +265,14 @@ pub fn run() {
                         open_external(&popup_handle, &url);
                         tauri::webview::NewWindowResponse::Deny
                     })
+                    .on_page_load(|window, event| {
+                        #[cfg(feature = "desktop-fixture")]
+                        if event.event() == tauri::webview::PageLoadEvent::Finished {
+                            let _ = window.eval(include_str!("../smoke.js"));
+                        }
+                        #[cfg(not(feature = "desktop-fixture"))]
+                        let _ = (window, event);
+                    })
                     .build()?;
             if shell::install(app.handle()).is_err() {
                 tracing::warn!("Tray icon unavailable; keeping the window accessible");
@@ -260,7 +296,9 @@ pub fn run() {
             updates::desktop_update,
             ipc::state_open,
             ipc::state_next,
-            ipc::state_close
+            ipc::state_close,
+            #[cfg(feature = "desktop-fixture")]
+            fixture::smoke_result
         ])
         .build(tauri::generate_context!())
         .expect("could not initialize Drops Miner")

@@ -20,6 +20,7 @@ pub fn initialize(
     verbose: u8,
     diagnostics: bool,
 ) -> Result<tracing_appender::non_blocking::WorkerGuard> {
+    std::fs::create_dir_all(directory).context("could not create log directory")?;
     let file = tracing_appender::rolling::Builder::new()
         .rotation(tracing_appender::rolling::Rotation::DAILY)
         .filename_prefix("TDM")

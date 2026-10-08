@@ -146,7 +146,7 @@ pub fn install(app: &tauri::AppHandle) -> tauri::Result<()> {
             "pause" => {
                 let app = app.clone();
                 let control = pause_action.clone();
-                app.clone().state::<Desktop>().tasks.spawn(async move {
+                app.clone().state::<Desktop>().spawn(async move {
                     let state = app.state::<Desktop>();
                     let Ok(_guard) = state.pause_action.try_lock() else {
                         return;
@@ -174,7 +174,7 @@ pub fn install(app: &tauri::AppHandle) -> tauri::Result<()> {
         .tray_available
         .store(true, Ordering::SeqCst);
     let app = app.clone();
-    app.clone().state::<Desktop>().tasks.spawn(async move {
+    app.clone().state::<Desktop>().spawn(async move {
         let state = app.state::<Desktop>();
         let Ok(core) = state.application().await else { let _ = pause.set_enabled(false); return; };
         let mut changes = core.snapshot.subscribe();

@@ -7,6 +7,9 @@ license.workspace = true
 publish = false
 default-run = "twitch-drops-miner-desktop"
 
+[features]
+desktop-fixture = ["twitch-drops-miner-core/dashboard-fixture", "dep:tempfile"]
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
@@ -26,6 +29,7 @@ tauri-plugin-window-state = "2"
 tauri-plugin-opener = "2"
 tauri-plugin-notification = "2"
 tauri-plugin-updater = "2"
+tempfile = { workspace = true, optional = true }
 
 [dev-dependencies]
 tempfile.workspace = true

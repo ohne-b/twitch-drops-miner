@@ -16,6 +16,14 @@ pub struct Runtime {
 }
 
 impl Runtime {
+    #[cfg(feature = "dashboard-fixture")]
+    pub fn fixture(app: Arc<Application>, worker: JoinHandle<Result<(), TwitchError>>) -> Self {
+        Self {
+            app,
+            worker: Some(worker),
+        }
+    }
+
     pub fn start(app: Arc<Application>, commands: mpsc::Receiver<CommandRequest>) -> Self {
         let owned = app.clone();
         let worker = tokio::spawn(async move {

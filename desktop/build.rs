@@ -11,6 +11,7 @@ fn main() {
             "state_open",
             "state_next",
             "state_close",
+            "smoke_result",
         ]),
     ))
     .expect("desktop build configuration");
