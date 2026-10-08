@@ -9,16 +9,16 @@ import { run, validationSource } from './validated-artifacts.mjs';
 export const targets = ['windows-x64', 'macos-universal', 'linux-x64'];
 export function assets(version, target) {
   validateVersion(version);
-  const prefix = `Drops-Miner_${version.replace('+', '_')}_${target}`;
+  const prefix = `twitch-drops-miner-${version.replace('+', '_')}`;
   const formats = {
-    'windows-x64': [['nsis', '.exe', '-setup.exe', ['windows-x86_64-nsis']]],
+    'windows-x64': [['nsis', '.exe', '-windows-x64-setup.exe', ['windows-x86_64-nsis']]],
     'macos-universal': [
-      ['dmg', '.dmg', '.dmg', []],
-      ['macos', '.app.tar.gz', '.app.tar.gz', ['darwin-x86_64-app', 'darwin-aarch64-app']],
+      ['dmg', '.dmg', '-macos.dmg', []],
+      ['macos', '.app.tar.gz', '-macos-universal.app.tar.gz', ['darwin-x86_64-app', 'darwin-aarch64-app']],
     ],
     'linux-x64': [
-      ['appimage', '.AppImage', '.AppImage', ['linux-x86_64-appimage']],
-      ['deb', '.deb', '.deb', ['linux-x86_64-deb']],
+      ['appimage', '.AppImage', '-linux-x64.AppImage', ['linux-x86_64-appimage']],
+      ['deb', '.deb', '-linux-x64.deb', ['linux-x86_64-deb']],
     ],
   };
   if (!formats[target]) throw new Error('Unsupported desktop target.');

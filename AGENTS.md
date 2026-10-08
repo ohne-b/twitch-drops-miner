@@ -111,6 +111,9 @@ embed it and run without a build tool/runtime companion. Production builds never
   AppImage/DEB. No MSI or portable Windows distribution. Keep one backward-compatible
   `latest.json` for server and desktop. Platform-specific updater entries choose the right
   package; both Mac architectures share the same universal update archive.
+  Release filenames use `twitch-drops-miner-VERSION-PLATFORM`: `windows-x64-setup.exe`,
+  `macos.dmg`, `macos-universal.app.tar.gz`, `linux-x64.AppImage` and `linux-x64.deb`.
+  Keep `latest.json` and `SHA256SUMS` unversioned; generate manifest URLs from the same names.
 - Validation builds the release bundles once. Publication only verifies/signs/promotes those
   exact artifacts from current-main validation. The updater private key stays in `prod`;
   pull requests never receive signing secrets. OS signing is separate from updater signing.
