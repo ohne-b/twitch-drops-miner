@@ -54,7 +54,21 @@ export default function DesktopUpdates() {
     let disposed = false;
     const show = () => {
       setOpen(true);
-      void action();
+      setError(false);
+      void invoke<UpdateStatus>('desktop_update')
+        .then(async (current) => {
+          if (disposed) return;
+          accept(current);
+          if (
+            current.phase === 'idle' ||
+            current.phase === 'current' ||
+            (current.phase === 'failed' && current.error === 'check_failed')
+          )
+            await action('check');
+        })
+        .catch(() => {
+          if (!disposed) setError(true);
+        });
     };
     const statusListener = listen<UpdateStatus>('desktop-update', ({ payload }) => {
       if (!disposed) accept(payload);

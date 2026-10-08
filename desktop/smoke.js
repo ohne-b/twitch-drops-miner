@@ -2,7 +2,7 @@
   const invoke = window.__TAURI_INTERNALS__.invoke;
   const wait = async (check, label) => {
     const end = Date.now() + 20000;
-    while (!check()) {
+    while (!(await check())) {
       if (Date.now() > end) throw new Error(label);
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
@@ -19,9 +19,12 @@
     if (document.querySelector('a[href="/settings#access"]')) throw new Error('server auth exposed');
     document.querySelector('a[href="/settings#desktop"]').click();
     await wait(() => document.body.textContent.includes('Start when I sign in'), 'preferences not rendered');
+    await wait(async () => (await invoke('desktop_update')).phase === 'current', 'startup update check did not finish');
+    const checked = await invoke('desktop_update');
     window.dispatchEvent(new Event('desktop-update-open'));
     await wait(() => document.querySelector('dialog[open]'), 'updater dialog not opened');
     await wait(() => document.querySelector('dialog[open]').textContent.includes('You are up to date'), 'offline updater status not rendered');
+    await wait(async () => (await invoke('desktop_update')).revision > checked.revision, 'opening updates did not check again');
     await invoke('smoke_result', { error: null });
   } catch (error) {
     await invoke('smoke_result', { error: String(error) });

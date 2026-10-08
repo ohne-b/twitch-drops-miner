@@ -97,6 +97,7 @@ impl Pending {
     ) {
         self.bytes = None;
         match result {
+            _ if cancelled && !oversized => self.status.phase = Phase::Available,
             Some(Ok(bytes)) if !oversized && !cancelled => {
                 self.status.phase = Phase::Ready;
                 self.status.downloaded = bytes.len() as u64;
@@ -340,6 +341,9 @@ mod tests {
             assert!(pending.validate(&Action::Check).is_ok());
         }
         pending.downloaded(None, false, true);
+        assert_eq!(pending.status.phase, Phase::Available);
+        assert!(pending.bytes.is_none());
+        pending.downloaded(Some(Ok(vec![1])), false, true);
         assert_eq!(pending.status.phase, Phase::Available);
         assert!(pending.bytes.is_none());
         pending.downloaded(Some(Ok(vec![1])), true, true);
