@@ -1,3 +1,5 @@
+import { isDesktop } from '../shared/lib/platform';
+import { DesktopStartupError, DesktopStatus } from '../features/settings/Desktop';
 import { Icon } from '@mdi/react';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -38,6 +40,10 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
   const title = miningTitle(data, connected, t);
   useEffect(() => {
     document.title = title;
+    if (isDesktop())
+      void import('@tauri-apps/api/window')
+        .then(({ getCurrentWindow }) => getCurrentWindow().setTitle(title))
+        .catch(() => {});
     return () => {
       document.title = 'Drops Miner';
     };
@@ -165,6 +171,7 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
               </Notice>
             </div>
           )}
+          {isDesktop() && <DesktopStatus />}
           {logoutError && <Notice error>{t('gui.auth.request_failed')}</Notice>}
           {auth.enabled && (
             <div className="mb-4 text-end lg:hidden">
@@ -234,7 +241,8 @@ export default function App() {
       window.removeEventListener('auth-updated', updated);
     };
   }, []);
-  if (!auth && error) return <Login onLogin={refresh} statusError />;
+  if (!auth && error)
+    return isDesktop() ? <DesktopStartupError /> : <Login onLogin={refresh} statusError />;
   if (!auth) return <Empty title={t('loading')} />;
   if (!auth.authenticated)
     return (

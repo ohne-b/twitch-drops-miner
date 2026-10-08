@@ -363,6 +363,25 @@
             "twitch_error": "Twitch operation failed: {error}. Retrying...",
             "worker_failed": "The mining task stopped unexpectedly. Shutting down safely.",
             "drop_claimed": "Drop claimed"
+        },
+        "desktop": {
+            "tab": "Desktop",
+            "show": "Open Drops Miner",
+            "pause": "Pause mining",
+            "resume": "Resume mining",
+            "quit": "Quit",
+            "restart": "Restart app",
+            "check_updates": "Check for updates",
+            "close_to_tray": "Keep mining when the window is closed",
+            "start_minimized": "Start in the tray",
+            "autostart": "Start when I sign in",
+            "notifications": "Notify me when a reward is claimed",
+            "tray_unavailable": "The system tray is unavailable. Closing the window will quit the app.",
+            "error": "Could not complete that action. Try again.",
+            "start_failed": "Drops Miner could not start",
+            "start_help": "The app could not open its data or logs. Check folder permissions and close any other miner using this data, then restart.",
+            "open_data": "Open data folder",
+            "open_logs": "Open log folder"
         }
     }
 }
