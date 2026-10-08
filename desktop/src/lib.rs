@@ -306,6 +306,8 @@ pub fn run() {
             ipc::state_next,
             ipc::state_close,
             #[cfg(feature = "desktop-fixture")]
+            fixture::smoke_tray_status,
+            #[cfg(feature = "desktop-fixture")]
             fixture::smoke_result
         ])
         .build(tauri::generate_context!())

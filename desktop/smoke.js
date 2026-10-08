@@ -1,7 +1,11 @@
 (async () => {
   const invoke = window.__TAURI_INTERNALS__.invoke;
-  const titleMatches = async (prefix) => document.title.startsWith(prefix)
-    && await invoke('plugin:window|title', { label: 'main' }) === document.title;
+  const titleMatches = async (prefix) => {
+    const status = await invoke('smoke_tray_status');
+    return document.title.startsWith(prefix)
+      && await invoke('plugin:window|title', { label: 'main' }) === document.title
+      && (!status || (status[0] === document.title.replace(/ - Drops Miner$/, '') && status[1] === false));
+  };
   const wait = async (check, label) => {
     const end = Date.now() + 20000;
     while (!(await check())) {
@@ -11,6 +15,9 @@
   };
   try {
     await wait(() => document.querySelector('[aria-label="Pause mining"]'), 'snapshot not rendered');
+    if ((await invoke('desktop_settings')).tray_available && !await invoke('smoke_tray_status')) {
+      throw new Error('tray status row missing');
+    }
     const fonts = await document.fonts.load('15px "Manrope Variable"', '\u0462');
     if (!fonts.length) throw new Error('bundled Cyrillic-extended font missing');
     await wait(() => titleMatches('70% Rust'), 'confirmed native title missing');

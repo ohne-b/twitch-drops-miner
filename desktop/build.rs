@@ -13,6 +13,7 @@ fn main() {
             "state_next",
             "state_close",
             "smoke_result",
+            "smoke_tray_status",
         ]),
     ))
     .expect("desktop build configuration");

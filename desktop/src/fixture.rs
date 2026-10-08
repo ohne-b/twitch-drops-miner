@@ -2,7 +2,7 @@
 use std::path::PathBuf;
 use tauri::Manager;
 use twitch_drops_miner_core::{
-    app::{Application, Command},
+    app::{AppError, Application, Command},
     dto::{MiningState, Snapshot},
     runtime::Runtime,
 };
@@ -36,6 +36,21 @@ pub async fn start(directory: PathBuf) -> anyhow::Result<Runtime> {
         Ok(())
     });
     Ok(Runtime::fixture(app, worker))
+}
+
+#[tauri::command]
+pub fn smoke_tray_status(
+    window: tauri::WebviewWindow,
+    app: tauri::AppHandle,
+) -> Result<Option<(String, bool)>, crate::ipc::Error> {
+    crate::ipc::local(&window)?;
+    let Some(status) = app.try_state::<tauri::menu::MenuItem<tauri::Wry>>() else {
+        return Ok(None);
+    };
+    Ok(Some((
+        status.text().map_err(|_| AppError::Unavailable)?,
+        status.is_enabled().map_err(|_| AppError::Unavailable)?,
+    )))
 }
 
 #[tauri::command]

@@ -4,6 +4,7 @@
   "windows": ["main"],
   "permissions": [
     "allow-smoke-result",
+    "allow-smoke-tray-status",
     "core:event:allow-emit",
     "core:window:allow-title",
     "core:window:allow-set-size"
