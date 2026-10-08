@@ -130,6 +130,8 @@ pub struct Login {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct AccountProfile {
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub login: String,
     pub display_name: String,
     pub avatar_url: Option<String>,
     pub color: Option<String>,

@@ -78,7 +78,8 @@ impl AccountProfile {
             return None;
         }
         Some(Self {
-            display_name: text(&user["displayName"], 100).unwrap_or(login),
+            display_name: text(&user["displayName"], 100).unwrap_or_else(|| login.clone()),
+            login,
             avatar_url: artwork(&user["profileImageURL"]),
             color: text(&user["chatColor"], 7).filter(|color| {
                 color.len() == 7
@@ -158,6 +159,7 @@ mod tests {
         }).await;
         let client = TwitchClient::new(Arc::new(http(&server)), &session());
         let profile = client.account_profile().await.unwrap().unwrap();
+        assert_eq!(profile.login, "miner");
         assert_eq!(profile.display_name, "Miner");
         assert_eq!(profile.color.as_deref(), Some("#008000"));
         assert_eq!(profile.available_badges, Some(profile.badges));
@@ -214,6 +216,18 @@ mod tests {
     #[test]
     fn profile_validates_identity_artwork_color_and_collection_completeness() {
         let mut value = user();
+        value["displayName"] = json!("表示名");
+        let profile = AccountProfile::parse(&value, 42).unwrap();
+        assert_eq!(profile.login, "miner");
+        assert_eq!(profile.display_name, "表示名");
+        let mut legacy = serde_json::to_value(&profile).unwrap();
+        legacy.as_object_mut().unwrap().remove("login");
+        assert!(
+            serde_json::from_value::<AccountProfile>(legacy)
+                .unwrap()
+                .login
+                .is_empty()
+        );
         assert!(AccountProfile::parse(&value, 99).is_none());
         value["login"] = json!("../bad");
         assert!(AccountProfile::parse(&value, 42).is_none());
