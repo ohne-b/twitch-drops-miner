@@ -26,7 +26,7 @@ pub struct Preferences {
 impl Default for Preferences {
     fn default() -> Self {
         Self {
-            close_to_tray: true,
+            close_to_tray: !cfg!(target_os = "linux"),
             start_minimized: false,
             notifications: true,
         }
@@ -216,7 +216,7 @@ mod tests {
             .unwrap()
             .unwrap();
         assert!(!loaded.notifications);
-        assert!(loaded.close_to_tray);
+        assert_eq!(loaded.close_to_tray, Preferences::default().close_to_tray);
         std::fs::write(&file, "bad").unwrap();
         assert!(twitch_drops_miner_core::store::read_json::<Preferences>(&file).is_err());
         assert_eq!(std::fs::read_to_string(file).unwrap(), "bad");
