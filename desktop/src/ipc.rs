@@ -205,10 +205,10 @@ pub async fn state_close(
 ) -> Result<(), Error> {
     local(&window)?;
     let mut slot = state.subscription.lock().await;
-    if slot.as_ref().is_some_and(|value| value.id == id) {
-        if let Some(value) = slot.take() {
-            value.cancel.cancel();
-        }
+    if slot.as_ref().is_some_and(|value| value.id == id)
+        && let Some(value) = slot.take()
+    {
+        value.cancel.cancel();
     }
     Ok(())
 }
@@ -274,8 +274,12 @@ mod tests {
         assert!(serde_json::from_value::<Request>(json!({"kind":"auth_settings"})).is_err());
         assert!(serde_json::from_value::<Request>(json!({"kind":"logout","extra":true})).is_err());
         let request =
-            serde_json::from_value::<Request>(json!({"kind":"games","value":{"query":""}}));
-        assert!(request.is_err() || request.unwrap().run(app.clone()).await.is_err());
+            serde_json::from_value::<Request>(json!({"kind":"games","value":{"search":""}}))
+                .unwrap();
+        assert!(matches!(
+            request.run(app.clone()).await,
+            Err(AppError::InvalidRequest)
+        ));
         let auth = Request::AuthStatus.run(app.clone()).await.unwrap();
         assert_eq!(auth["authenticated"], true);
         app.shutdown.cancel();

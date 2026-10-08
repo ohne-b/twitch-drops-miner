@@ -1,3 +1,4 @@
+import { DesktopUpdateButton } from './DesktopUpdates';
 import { isDesktop } from '../../shared/lib/platform';
 import { DesktopSettings } from './Desktop';
 import { Icon } from '@mdi/react';
@@ -451,7 +452,7 @@ function SettingsContent({ settings, auth }: { settings: SettingsData; auth: Aut
         <Access hidden={section !== 'access'} initial={auth} disabled={dirty || !connected} />
       )}
       <Section hidden={section !== 'maintenance'} id="maintenance">
-        <ReleaseNotice disabled={!connected} />
+        {isDesktop() ? <DesktopUpdateButton /> : <ReleaseNotice disabled={!connected} />}
         <div className="flex flex-wrap gap-2">
           <Button
             disabled={!connected || command.busy}

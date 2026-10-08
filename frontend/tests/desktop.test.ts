@@ -2,9 +2,18 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
 import { connectDesktop, desktopRequest, nativeRequest } from '../src/shared/lib/desktop';
 import fixture from './fixture.json' with { type: 'json' };
+import { newerUpdate, type UpdateStatus } from '../src/features/settings/DesktopUpdates';
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
 afterEach(() => vi.clearAllMocks());
+
+it('keeps completed update status when an earlier progress response arrives late', () => {
+  const ready = { revision: 8, phase: 'ready' } as UpdateStatus;
+  expect(newerUpdate(ready, { ...ready, revision: 7, phase: 'downloading' })).toBe(ready);
+  expect(newerUpdate(ready, { ...ready, revision: 9, phase: 'installing' }).phase).toBe(
+    'installing',
+  );
+});
 
 it('routes only supported native requests and preserves history filters', () => {
   expect(nativeRequest('/api/oauth/confirm', {}, 'POST')).toEqual({ kind: 'confirm_oauth' });

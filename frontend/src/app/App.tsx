@@ -1,3 +1,4 @@
+import DesktopUpdates from '../features/settings/DesktopUpdates';
 import { isDesktop } from '../shared/lib/platform';
 import { DesktopStartupError, DesktopStatus } from '../features/settings/Desktop';
 import { Icon } from '@mdi/react';
@@ -171,7 +172,12 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
               </Notice>
             </div>
           )}
-          {isDesktop() && <DesktopStatus />}
+          {isDesktop() && (
+            <>
+              <DesktopStatus />
+              <DesktopUpdates />
+            </>
+          )}
           {logoutError && <Notice error>{t('gui.auth.request_failed')}</Notice>}
           {auth.enabled && (
             <div className="mb-4 text-end lg:hidden">

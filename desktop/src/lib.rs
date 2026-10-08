@@ -1,5 +1,6 @@
 mod ipc;
 mod shell;
+mod updates;
 
 use std::{
     collections::HashMap,
@@ -35,6 +36,8 @@ struct Desktop {
     tray_available: AtomicBool,
     close_to_tray: AtomicBool,
     pause_action: Mutex<()>,
+    updates: updates::Updates,
+    installing: AtomicBool,
 }
 
 fn local_url(url: &url::Url) -> bool {
@@ -98,6 +101,17 @@ fn open_app_folder(
 }
 
 impl Desktop {
+    async fn drain(&self) {
+        self.cancel.cancel();
+        self.tasks.close();
+        if let Some(mut runtime) = self.runtime.lock().await.take()
+            && runtime.shutdown().await.is_err()
+        {
+            tracing::error!("Mining task failed during shutdown");
+        }
+        self.tasks.wait().await;
+        self.drained.store(true, Ordering::SeqCst);
+    }
     async fn application(&self) -> Result<Arc<Application>, ipc::Error> {
         let runtime = self.runtime.lock().await;
         runtime
@@ -133,15 +147,10 @@ fn finish(app: &tauri::AppHandle, restart: bool) {
     let handle = app.clone();
     tauri::async_runtime::spawn(async move {
         let state = handle.state::<Desktop>();
-        state.cancel.cancel();
-        state.tasks.close();
-        if let Some(mut runtime) = state.runtime.lock().await.take() {
-            if runtime.shutdown().await.is_err() {
-                tracing::error!("Mining task failed during shutdown");
-            }
-        }
-        state.tasks.wait().await;
-        state.drained.store(true, Ordering::SeqCst);
+        state.updates.cancel.cancel();
+        state.updates.tasks.close();
+        state.updates.tasks.wait().await;
+        state.drain().await;
         if restart {
             handle.restart();
         } else {
@@ -168,6 +177,7 @@ pub fn run() {
                 .build(),
         )
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let directory = app.path().app_local_data_dir()?;
             let logs = app.path().app_log_dir()?;
@@ -208,6 +218,8 @@ pub fn run() {
                 tray_available: AtomicBool::new(false),
                 close_to_tray: AtomicBool::new(close_to_tray),
                 pause_action: Mutex::new(()),
+                updates: updates::Updates::default(),
+                installing: AtomicBool::new(false),
             });
             let handle = app.handle().clone();
             let popup_handle = handle.clone();
@@ -245,6 +257,7 @@ pub fn run() {
             restart_app,
             open_app_folder,
             shell::desktop_settings,
+            updates::desktop_update,
             ipc::state_open,
             ipc::state_next,
             ipc::state_close
@@ -257,21 +270,28 @@ pub fn run() {
                 event: tauri::WindowEvent::CloseRequested { api, .. },
                 ..
             } = &event
+                && label == "main"
             {
-                if label == "main" {
-                    let state = app.state::<Desktop>();
-                    if state.tray_available.load(Ordering::SeqCst)
-                        && !state.quitting.load(Ordering::SeqCst)
-                        && state.close_to_tray.load(Ordering::SeqCst)
-                    {
-                        api.prevent_close();
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.hide();
-                        }
+                let state = app.state::<Desktop>();
+                if state.quitting.load(Ordering::SeqCst) {
+                    api.prevent_close();
+                    return;
+                }
+                if state.tray_available.load(Ordering::SeqCst)
+                    && !state.quitting.load(Ordering::SeqCst)
+                    && state.close_to_tray.load(Ordering::SeqCst)
+                {
+                    api.prevent_close();
+                    if let Some(window) = app.get_webview_window("main") {
+                        let _ = window.hide();
                     }
                 }
             }
             if let tauri::RunEvent::ExitRequested { api, .. } = event {
+                if app.state::<Desktop>().installing.load(Ordering::SeqCst) {
+                    api.prevent_exit();
+                    return;
+                }
                 if !app.state::<Desktop>().drained.load(Ordering::SeqCst) {
                     api.prevent_exit();
                     quit(app);

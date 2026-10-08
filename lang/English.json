@@ -381,7 +381,21 @@
             "start_failed": "Drops Miner could not start",
             "start_help": "The app could not open its data or logs. Check folder permissions and close any other miner using this data, then restart.",
             "open_data": "Open data folder",
-            "open_logs": "Open log folder"
+            "open_logs": "Open log folder",
+            "updates": "App updates",
+            "download": "Download update",
+            "install": "Install and restart",
+            "update_idle": "Check for a newer version.",
+            "update_checking": "Checking for updates...",
+            "update_current": "You are up to date.",
+            "update_available": "Version {version} is available.",
+            "update_downloading": "Downloading {version}...",
+            "update_ready": "The update is verified and ready to install.",
+            "update_installing": "Stopping mining and installing the update...",
+            "update_failed": "The update could not be completed.",
+            "check_failed": "Could not check for updates. Try again.",
+            "download_failed": "The download or signature check failed. Try downloading again.",
+            "install_failed": "Installation failed. Restart the app to resume mining, or install the release manually."
         }
     }
 }
