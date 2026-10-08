@@ -1,4 +1,5 @@
-import childProcess from 'node:child_process';
+import { run, validationSource } from './validated-artifacts.mjs';
+export { validatedRun } from './validated-artifacts.mjs';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -8,17 +9,6 @@ import { releaseImages, validateVersion } from './release.mjs';
 const repository = 'ohne-b/twitch-drops-miner';
 const image = `ghcr.io/${repository}`;
 const architectures = ['amd64', 'arm64'];
-
-export function validatedRun(runs, sha) {
-  const run = runs.find(run => run.headSha === sha && run.headBranch === 'main' &&
-    ['push', 'workflow_dispatch'].includes(run.event));
-  if (!run || run.status !== 'completed' || run.conclusion !== 'success' ||
-      !Number.isSafeInteger(run.databaseId) || run.databaseId <= 0 ||
-      !Number.isSafeInteger(run.attempt) || run.attempt <= 0) {
-    throw new Error('Complete validation on the exact current main commit before publishing.');
-  }
-  return { id: run.databaseId, attempt: run.attempt };
-}
 
 export function validatedImage(info, arch, version, sha) {
   if (info.Os !== 'linux' || info.Architecture !== arch ||
@@ -35,35 +25,12 @@ export function publishImages(version, target) {
   if (![releaseImages(version)[0], `${image}:edge`].includes(target)) {
     throw new Error('Only the requested GHCR version or edge tag may be published.');
   }
-  const sha = process.env.GITHUB_SHA;
-  if (process.env.GITHUB_REPOSITORY !== repository || process.env.GITHUB_REF !== 'refs/heads/main' ||
-      !/^[a-f0-9]{40}$/.test(sha ?? '') || !process.env.GH_TOKEN || !process.env.GITHUB_ACTOR) {
-    throw new Error('Publishing requires the canonical main workflow and its scoped token.');
-  }
-  const run = (command, args, options = {}) => childProcess.execFileSync(command, args, {
-    encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'], ...options,
-  });
-  const checkMain = () => {
-    if (run('git', ['ls-remote', 'origin', 'refs/heads/main']).split('\t')[0] !== sha) {
-      throw new Error('Main advanced. Validate and publish the current main commit.');
-    }
-  };
-  checkMain();
-  const currentValidation = () => validatedRun(JSON.parse(run('gh', ['run', 'list', '--repo', repository,
-    '--workflow', 'validation.yml', '--branch', 'main', '--commit', sha, '--limit', '20',
-    '--json', 'databaseId,attempt,headSha,headBranch,event,status,conclusion'])), sha);
-  const { id, attempt } = currentValidation();
-  const checkCurrent = () => {
-    checkMain();
-    const current = currentValidation();
-    if (current.id !== id || current.attempt !== attempt) {
-      throw new Error('Validation changed during publication. Restart with its tested artifacts.');
-    }
-  };
+  const source = validationSource();
+  const { id, sha } = source;
+  const checkCurrent = source.check;
   const directory = mkdtempSync(join(tmpdir(), 'tdm-images-'));
   try {
-    run('gh', ['run', 'download', String(id), '--repo', repository, '--dir', directory,
-      ...architectures.flatMap(arch => ['--name', `image-${arch}`])]);
+    source.download(architectures.map(arch => `image-${arch}`), directory);
   } catch {
     throw new Error(`Image artifacts for validation run ${id} are unavailable. Rerun validation on main; publishing never rebuilds them.`);
   }
