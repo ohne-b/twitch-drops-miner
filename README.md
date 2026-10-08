@@ -48,6 +48,14 @@ title, or the current paused/idle status.
 whether closing the window keeps mining. On Linux, keeping the app in the tray is opt-in;
 some desktop environments need a tray extension. Launching the app again reopens its window.
 
+**Keep computer awake while mining** is off by default. Enable it in **Settings > Desktop**
+to prevent automatic sleep during active mining. The screen can turn off, and pausing,
+going idle or quitting releases the request. Manual sleep still works. On Linux this uses
+systemd's idle inhibitor; desktop power managers may not honor it.
+
+Zoom with **Ctrl +/−**, **Ctrl+0** to reset, or **Ctrl+mouse wheel**. On macOS, use
+**Command** for the keyboard shortcuts.
+
 Installers currently have no Microsoft/Apple signing certificate, so the OS may ask for
 approval. The Mac app uses an ad-hoc signature. In-app update packages are signed and
 verified separately.

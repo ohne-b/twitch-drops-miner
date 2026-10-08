@@ -87,6 +87,17 @@ embed it and run without a build tool/runtime companion. Production builds never
   The tray menu begins with a disabled status row and separator. Update it through that same
   command, omit only the trailing app-name suffix, and escape native menu mnemonic markers.
   Retain game-only, channel-watching, paused, idle, disconnected and account-unavailable states.
+- Desktop-only `keep_awake` defaults false, including older preferences. Request idle-system
+  sleep prevention only for a logged-in, unpaused Watching/AwaitingProgress/ManualWatching
+  snapshot; release on idle, pause, logout, disable and shutdown. Never inhibit the display
+  or explicit user sleep. Keep platform requests off async/UI threads and acquire/release on
+  one owned blocking thread (required by Windows), coalescing state changes and draining on
+  exit/install. Report acquisition failures without stopping mining. Offline fixtures and
+  unit tests use fake guards, never real power requests. Linux uses systemd idle inhibition;
+  document that desktop power-manager support varies.
+- Enable Tauri's native zoom hotkeys and mouse-wheel support for the bundled main window,
+  with its scoped webview-zoom permission. Use Ctrl +/−/0 (Command on macOS) and Ctrl+wheel;
+  keep the browser dashboard's own zoom behavior unchanged.
 - Updates download and verify before stopping mining. Require signed versions, no downgrades,
   one operation at a time and cancellable bounded downloads. A failed install stays visible
   with restart/manual recovery. Only an explicit install action may replace the application.
