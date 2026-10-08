@@ -3,7 +3,7 @@
   "productName": "Drops Miner",
   "identifier": "dev.ohneb.dropsminer",
   "build": {
-    "beforeDevCommand": "npm --prefix ../frontend run dev",
+    "beforeDevCommand": "npm --prefix frontend run dev",
     "devUrl": "http://127.0.0.1:5173",
     "frontendDist": "../web"
   },
