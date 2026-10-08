@@ -30,6 +30,40 @@
     if (document.querySelector('a[href="/settings#access"]')) throw new Error('server auth exposed');
     document.querySelector('a[href="/settings#desktop"]').click();
     await wait(() => document.body.textContent.includes('Start when I sign in'), 'preferences not rendered');
+    const keepAwake = [...document.querySelectorAll('label')]
+      .find(label => label.textContent === 'Keep computer awake while mining')?.querySelector('input');
+    if (!keepAwake || keepAwake.checked) throw new Error('keep-awake must default off');
+    keepAwake.click();
+    await wait(async () => (await invoke('desktop_settings')).keep_awake === true, 'keep-awake preference not saved');
+    await wait(() => !keepAwake.disabled, 'preference action did not finish');
+    keepAwake.click();
+    await wait(async () => (await invoke('desktop_settings')).keep_awake === false, 'keep-awake preference not disabled');
+    await invoke('plugin:event|emit', { event: 'desktop-keep-awake-failed', payload: true });
+    await wait(() => document.body.textContent.includes('Could not prevent automatic sleep'), 'power failure missing');
+    await invoke('plugin:event|emit', { event: 'desktop-keep-awake-failed', payload: false });
+    await wait(() => !document.body.textContent.includes('Could not prevent automatic sleep'), 'power failure not cleared');
+    const originalWidth = window.innerWidth;
+    const windows = navigator.userAgent.includes('Windows');
+    const mac = navigator.userAgent.includes('Macintosh');
+    if (windows) {
+      // Synthetic keys cannot trigger WebView2's native accelerators; check its zoom IPC here.
+      await invoke('plugin:webview|set_webview_zoom', { value: 1.2 });
+    } else {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: '+', ctrlKey: !mac, metaKey: mac }));
+    }
+    await wait(() => window.innerWidth < originalWidth, 'native zoom did not increase');
+    if (windows) {
+      await invoke('plugin:webview|set_webview_zoom', { value: 1 });
+    } else {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: '0', ctrlKey: !mac, metaKey: mac }));
+    }
+    await wait(() => Math.abs(window.innerWidth - originalWidth) <= 1, 'native zoom did not reset');
+    if (!windows) {
+      window.dispatchEvent(new WheelEvent('mousewheel', { ctrlKey: true, deltaY: 120 }));
+      await wait(() => window.innerWidth > originalWidth, 'control-wheel zoom did not decrease');
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: '0', ctrlKey: !mac, metaKey: mac }));
+      await wait(() => Math.abs(window.innerWidth - originalWidth) <= 1, 'wheel zoom did not reset');
+    }
     await wait(async () => (await invoke('desktop_update')).phase === 'current', 'startup update check did not finish');
     const checked = await invoke('desktop_update');
     window.dispatchEvent(new Event('desktop-update-open'));
