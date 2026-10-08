@@ -374,7 +374,10 @@ embed it and run without a build tool/runtime companion. Production builds never
   Authenticated 401/403 and cancellation retain existing session handling. Validate identities,
   bounded metadata, image URLs and colors; fetch only identity, color and badge fields.
   Connection status lives in Settings > Connection and is labeled Dashboard connected, separate
-  from Twitch. The Twitch logout icon stays immediately beside the account identity.
+  from Twitch. The Twitch profile external-link and logout icons stay beside the account
+  identity. Use the validated login from the existing account query for the Twitch URL,
+  never the display name; omit the link when that login is unavailable. Reuse the activation
+  link's Open In New icon, shared icon-button style and native external-link handling.
   Logged-out authorization status stays visible. Device authorization keeps the
   copyable code, Twitch Activate and Done on one unboxed wrapping row with equal-height controls
   (36px desktop, 44px phone). Activate and Done use the same outlined button style. Successful

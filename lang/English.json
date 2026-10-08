@@ -243,6 +243,7 @@
             "game_priorities": "Game priorities",
             "no_game_priorities": "No games selected for mining.",
             "twitch_logout": "Log out of Twitch",
+            "open_twitch_profile": "Open Twitch profile",
             "clear_filters": "Clear filters",
             "help_for": "{topic} help",
             "mining_priority": "Mining priority",
