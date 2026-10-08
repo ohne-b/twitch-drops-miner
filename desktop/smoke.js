@@ -9,7 +9,7 @@
   };
   try {
     await wait(() => document.querySelector('[aria-label="Pause mining"]'), 'snapshot not rendered');
-    if (!document.title.includes('Rust')) throw new Error('confirmed title missing');
+    await wait(() => document.title.startsWith('70% Rust'), 'confirmed title missing');
     document.querySelector('[aria-label="Pause mining"]').click();
     await wait(() => document.title.startsWith('Paused'), 'pause not published');
     document.querySelector('[aria-label="Resume mining"]').click();
