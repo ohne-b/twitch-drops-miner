@@ -66,6 +66,33 @@ Build frontend assets before backend/static tests. `web/` is ignored output. Rel
 embed it and run without a build tool/runtime companion. Production builds never enable
 `dashboard-fixture`; fixture routes must return 404 in production.
 
+## Desktop contracts
+
+- `desktop/` is a Tauri wrapper around the same core and frontend. No HTTP listener,
+  sidecar, shell companion, alternate miner or second account. Keep Docker behavior intact.
+- Store native data/logs in the platform app directories, separate from the server. Keep
+  existing record formats; never import, delete or rewrite an installation automatically.
+  Store desktop preferences separately and report unreadable storage instead of resetting it.
+- Native IPC is limited to the bundled main window, typed commands and bounded requests.
+  Cancel reads, preserve accepted writes, coalesce snapshot patches and fence stale replies.
+  Restrict navigation; validated external HTTP(S) links open in the system browser.
+- Use official Tauri tray, single-instance, window-state, autostart, notification and updater
+  plugins. Reopening restores the existing window. Tray pause changes the shared saved setting.
+  Default close-to-tray off on Linux, where tray hosts vary. Failed tray creation must leave
+  the window reachable. Quit/restart/install own and drain core and native work.
+- Updates download and verify before stopping mining. Require signed versions, no downgrades,
+  one operation at a time and cancellable bounded downloads. A failed install stays visible
+  with restart/manual recovery. Only an explicit install action may replace the application.
+- Ship Windows x64 NSIS, universal macOS DMG plus the updater app archive, and Linux x64
+  AppImage/DEB. No MSI or portable Windows distribution. Keep one backward-compatible
+  `latest.json` for server and desktop. Platform-specific updater entries choose the right
+  package; both Mac architectures share the same universal update archive.
+- Validation builds the release bundles once. Publication only verifies/signs/promotes those
+  exact artifacts from current-main validation. The updater private key stays in `prod`;
+  pull requests never receive signing secrets. OS signing is separate from updater signing.
+- `desktop-fixture` is temporary/offline test code, excluded from all production builds and
+  installers. Native smoke checks exercise the real webview and IPC without Twitch access.
+
 ## Mining contracts
 
 - Discovery does not select games. `games_to_watch` is the ordered Unicode-casefolded
@@ -198,7 +225,7 @@ embed it and run without a build tool/runtime companion. Production builds never
   durable cleared-ID tombstones before refreshing; failure to persist must fail the clear.
 - Requests use bounded concurrency/rate, retries and cancellation. Connection Quality defaults
   to 3 for new or missing settings; preserve explicit saved values. Quality 1..6 controls connect
-  timeout 5×quality and total 10×quality seconds; the saved refresh interval actually schedules
+  timeout 5Ã—quality and total 10Ã—quality seconds; the saved refresh interval actually schedules
   inventory work. Slow discovery must not block watch cadence. Duplicate idle prompts collapse.
   Nonfatal notification dismissal failures remain visible but never extend or clear the shared
   scheduling retry deadline; authentication and cancellation still propagate.

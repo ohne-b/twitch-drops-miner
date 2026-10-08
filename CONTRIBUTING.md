@@ -62,6 +62,29 @@ behavior/architecture changes, and English messages when UI/console text changes
 translations as React text with validated links. Commit dependency lockfiles and avoid
 unrelated upgrades. Cargo owns version/lock consistency; Vite owns asset hashes.
 
+### Desktop development
+
+The `desktop/` package is a Tauri wrapper around `crates/core/`, using the same frontend.
+It calls Rust through native IPC; do not add a localhost server, sidecar or duplicate mining logic.
+Install Tauri's [platform prerequisites](https://v2.tauri.app/start/prerequisites/), then run:
+
+```bash
+npm --prefix frontend ci
+cd desktop
+node ../frontend/node_modules/@tauri-apps/cli/tauri.js dev
+```
+
+For production packages, build the frontend first and run Tauri from `desktop/` with
+`--no-sign --bundles nsis` on Windows, `--no-sign --target universal-apple-darwin --bundles dmg`
+on macOS, or `--no-sign --bundles appimage,deb` on Linux. Universal macOS builds need both
+Rust targets installed. Code-signing and notarization are not currently configured.
+
+The native smoke fixture uses temporary data and no Twitch client. From `desktop/`, run
+`node ../frontend/node_modules/@tauri-apps/cli/tauri.js build --debug --no-bundle --no-sign --features desktop-fixture --config tauri.fixture.conf.json`,
+then `node .github/scripts/native-smoke.mjs` from the repository root (use `xvfb-run -a` on
+headless Linux). Never package `desktop-fixture` for users. Its extra command and offline
+state are compiled out of production. Test release builds without that feature too.
+
 ## Pull requests
 
 1. Inspect the working tree and preserve others' changes. Start a descriptive `feat/` or
@@ -118,7 +141,8 @@ verifies readiness/reset, uses temporary data, and refuses server reuse. Vitest 
 Playwright/axe cover frontend logic, browser behavior and accessibility. No automated
 test needs credentials, sends real watch events, claims real rewards or contacts bots.
 
-CI builds the fixture once and passes it with the built dashboard to two browser shards.
+CI builds the dashboard once, then shares those assets with the server and native jobs.
+It builds the browser fixture once and passes it with the built dashboard to two browser shards.
 Each shard starts its own server on its own runner and still uses one worker; never
 increase workers against shared fixture state. Playwright's `--fully-parallel --shard=N/2`
 distributes individual tests between jobs without running them concurrently inside a job.
@@ -152,7 +176,10 @@ PRs changing only `README.md`, `CONTRIBUTING.md` and/or `AGENTS.md` run scope an
 checks without the code/image jobs. Any other path, including changelogs, licenses,
 workflows and tests, runs full validation. Renames check both paths; an empty diff or failed
 scope check cannot authorize skipping. Every main push and manual run still validates
-everything and retains its tested images. The final **Validation** check requires every
+everything and retains its tested images. Windows, universal macOS and Linux jobs check
+native code, exercise the offline native window, then build production packages once.
+Desktop artifacts are retained for seven days, including on PRs for manual review; PR
+artifacts can never be promoted by the release publisher. The final **Validation** check requires every
 selected job to succeed and also runs for documentation-only PRs; use it as the required
 status check when configuring branch protection.
 
@@ -203,13 +230,17 @@ from main for that version, requires successful push or manually dispatched vali
 and uses the `prod` environment. It downloads both tested image artifacts from that validation
 run, checks their platform, version and commit, preserves their digests, and publishes
 `ghcr.io/ohne-b/twitch-drops-miner:VERSION`, and creates a `Twitch Drops Miner vVERSION` draft release
-with the reviewed changelog notes, comparison link and issue link. It attaches and verifies
-`latest.json` before publication. The manifest uses `schemaVersion: 1`, a canonical SemVer
-`version`, and a `notes` link; it contains no installer or executable commands. This applies
+with the reviewed changelog notes, comparison link and issue link. It also downloads the desktop artifacts from that exact trusted validation, verifies
+version/commit/checksums, signs each updater package and verifies it with the public key
+embedded in the app. It attaches all installers, `SHA256SUMS` and the single `latest.json`
+to a draft, downloads them for checksum verification, then publishes. The manifest keeps
+`schemaVersion: 1`, a canonical SemVer `version` and `notes` for existing servers, with
+`pub_date` and Tauri's per-bundle `platforms` added. Both Mac architectures point at the
+same universal archive. It contains no executable commands. This applies
 to stable releases and prereleases. Stable releases update `latest`; prereleases do not.
 The first GHCR package may
 need public visibility configured for anonymous pulls. Ordinary merges publish nothing.
-Publishing never recompiles the application or rebuilds an image. If the artifacts are
+Publishing never recompiles the application, repackages an installer or rebuilds an image. If the artifacts are
 missing or expired, rerun **validation** on current main before publishing. A failed or
 unfinished newer validation on the same commit cannot fall back to an older successful run.
 Commits made with a workflow token do not trigger push workflows; run **validation**
@@ -234,8 +265,18 @@ docker buildx imagetools create --tag ghcr.io/ohne-b/twitch-drops-miner:latest g
 ```
 
 Maintenance reads the latest stable release's manifest with bounded requests and a short
-shared cache. Unknown/unreachable metadata must never be reported as up to date. It only
-offers release notes and manual checks; installing updates remains a terminal operation.
+shared cache. Unknown/unreachable metadata must never be reported as up to date. In the server dashboard it only
+offers release notes and manual checks; Docker updates remain a terminal operation.
+The desktop uses Tauri's updater and verifies the package signature and signed version
+before draining mining work and installing. Download or verification failure cannot stop mining.
+
+Desktop updater signing uses the `prod` environment's `TAURI_SIGNING_PRIVATE_KEY` and
+optional `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. The public key is in `desktop/tauri.conf.json`.
+Back up the private key securely outside the repository. Losing or replacing it prevents
+installed clients from trusting future updates; never silently rotate it. Publishing checks
+the signature against the configured public key using `minisign`. Validation never receives
+the key. OS code signing is separate and must happen before artifacts are retained, because
+it changes their bytes. Do not attach ad-hoc rebuilt installers to a release.
 
 Do not rewrite published tags or bypass checks. Revert source through a normal PR; an
 installation rollback redeploys a previously validated image with its backed-up data.
