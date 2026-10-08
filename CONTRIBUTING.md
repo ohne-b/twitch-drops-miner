@@ -75,7 +75,7 @@ node ../frontend/node_modules/@tauri-apps/cli/tauri.js dev
 ```
 
 For production packages, build the frontend first and run Tauri from `desktop/` with
-`--no-sign --bundles nsis` on Windows, `--no-sign --target universal-apple-darwin --bundles dmg`
+`--no-sign --bundles nsis` on Windows, `--no-sign --target universal-apple-darwin --bundles app,dmg`
 on macOS, or `--no-sign --bundles appimage,deb` on Linux. Universal macOS builds need both
 Rust targets installed. Code-signing and notarization are not currently configured.
 

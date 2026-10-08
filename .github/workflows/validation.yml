@@ -234,7 +234,7 @@ jobs:
           - platform: macos-universal
             runner: macos-15
             target: universal-apple-darwin
-            bundles: dmg
+            bundles: app,dmg
           - platform: linux-x64
             runner: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
@@ -289,7 +289,9 @@ jobs:
           NO_STRIP: 'true'
         run: node ../frontend/node_modules/@tauri-apps/cli/tauri.js build --no-sign --target '${{ matrix.target }}' --bundles '${{ matrix.bundles }}' -- --locked
       - name: Collect versioned desktop artifacts
-        run: node .github/scripts/desktop-artifacts.mjs pack '${{ matrix.platform }}' 'target/${{ matrix.target }}/release/bundle' 'dist/desktop'
+        run: |
+          node .github/scripts/native-smoke.mjs 'target/${{ matrix.target }}/release/twitch-drops-miner-desktop'
+          node .github/scripts/desktop-artifacts.mjs pack '${{ matrix.platform }}' 'target/${{ matrix.target }}/release/bundle' 'dist/desktop'
       - uses: actions/upload-artifact@v4
         with:
           name: desktop-${{ matrix.platform }}
