@@ -40,7 +40,7 @@ fn acquire() -> Result<keepawake::KeepAwake, keepawake::Error> {
         .idle(true)
         .sleep(false)
         .app_name("Drops Miner")
-        .app_reverse_domain("dev.ohneb.dropsminer")
+        .app_reverse_domain("app.twitch-drops-miner.local")
         .reason("Mining Twitch drops")
         .create()
 }
