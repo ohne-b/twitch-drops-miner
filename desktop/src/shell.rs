@@ -51,6 +51,29 @@ pub enum Change {
     Autostart(bool),
 }
 
+fn valid_title(title: &str) -> bool {
+    !title.is_empty() && title.len() <= 1024 && !title.chars().any(char::is_control)
+}
+
+#[tauri::command]
+pub fn desktop_title(
+    window: WebviewWindow,
+    app: tauri::AppHandle,
+    title: String,
+) -> Result<(), ipc::Error> {
+    ipc::local(&window)?;
+    if !valid_title(&title) {
+        return Err(AppError::InvalidRequest.into());
+    }
+    window
+        .set_title(&title)
+        .map_err(|_| AppError::Unavailable)?;
+    if let Some(tray) = app.tray_by_id("main") {
+        let _ = tray.set_tooltip(Some(&title));
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn desktop_settings(
     window: WebviewWindow,
@@ -217,6 +240,20 @@ pub fn observe(app: &tauri::AppHandle, pause: Option<MenuItem<tauri::Wry>>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn desktop_titles_allow_unicode_but_reject_control_characters_and_unbounded_input() {
+        for title in [
+            "5% Rocket League - Drops Miner",
+            "Paused - Drops Miner",
+            "龍 - Drops Miner",
+        ] {
+            assert!(valid_title(title));
+        }
+        for title in ["", "Drops\0Miner", "Drops\nMiner", &"x".repeat(1025)] {
+            assert!(!valid_title(title));
+        }
+    }
+
     #[test]
     fn desktop_preferences_are_separate_and_preserve_corrupt_files() {
         let dir = tempfile::tempdir().unwrap();

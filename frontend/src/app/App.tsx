@@ -42,10 +42,7 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
   const title = miningTitle(data, connected, t);
   useEffect(() => {
     document.title = title;
-    if (isDesktop())
-      void import('@tauri-apps/api/window')
-        .then(({ getCurrentWindow }) => getCurrentWindow().setTitle(title))
-        .catch(() => {});
+    if (isDesktop()) void invoke('desktop_title', { title }).catch(() => {});
     return () => {
       document.title = 'Drops Miner';
     };

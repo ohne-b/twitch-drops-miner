@@ -7,6 +7,7 @@ fn main() {
             "restart_app",
             "open_app_folder",
             "desktop_settings",
+            "desktop_title",
             "desktop_update",
             "state_open",
             "state_next",

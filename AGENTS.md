@@ -80,6 +80,9 @@ embed it and run without a build tool/runtime companion. Production builds never
   plugins. Reopening restores the existing window. Tray pause changes the shared saved setting.
   Default close-to-tray off on Linux, where tray hosts vary. Failed tray creation must leave
   the window reachable. Quit/restart/install own and drain core and native work.
+  The window title and supported tray tooltip use the same frontend mining-title formatter,
+  including confirmed percentages, pause and disconnect state. Apply both through one bounded,
+  local-window command; never derive a separate estimated tray counter.
 - Updates download and verify before stopping mining. Require signed versions, no downgrades,
   one operation at a time and cancellable bounded downloads. A failed install stays visible
   with restart/manual recovery. Only an explicit install action may replace the application.

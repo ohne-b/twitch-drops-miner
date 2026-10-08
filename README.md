@@ -39,6 +39,8 @@ Open **Drops Miner**, then follow [First login](#first-login). No Docker, termin
 configuration is needed. Keep the computer awake while mining.
 
 The tray menu has **Open**, **Pause/Resume mining**, **Check for updates** and **Quit**.
+On Windows and macOS, its tooltip shows the same confirmed progress and game as the window
+title, or the current paused/idle status.
 **Settings > Desktop** controls starting at sign-in, starting minimized, notifications and
 whether closing the window keeps mining. On Linux, keeping the app in the tray is opt-in;
 some desktop environments need a tray extension. Launching the app again reopens its window.

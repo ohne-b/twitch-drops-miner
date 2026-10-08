@@ -300,6 +300,7 @@ pub fn run() {
             restart_app,
             open_app_folder,
             shell::desktop_settings,
+            shell::desktop_title,
             updates::desktop_update,
             ipc::state_open,
             ipc::state_next,
