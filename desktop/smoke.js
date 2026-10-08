@@ -14,6 +14,19 @@
     }
   };
   try {
+    // Exercise the real opener IPC scope without launching a browser or another program.
+    for (const request of [
+      { url: 'file:///offline-test' },
+      { url: 'mailto:offline@example.invalid' },
+      { url: 'https://www.twitch.tv/activate', with: 'offline-test' },
+    ]) {
+      let error;
+      try { await invoke('plugin:opener|open_url', request); }
+      catch (failure) { error = String(failure); }
+      if (!error?.startsWith('Not allowed to open url ')) {
+        throw new Error('opener command permission or URL scope is incorrect');
+      }
+    }
     await wait(() => document.querySelector('[aria-label="Pause mining"]'), 'snapshot not rendered');
     if ((await invoke('desktop_settings')).tray_available && !await invoke('smoke_tray_status')) {
       throw new Error('tray status row missing');
