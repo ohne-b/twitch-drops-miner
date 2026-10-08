@@ -59,10 +59,10 @@ pub async fn desktop_settings(
     change: Option<Change>,
 ) -> Result<Settings, ipc::Error> {
     ipc::local(&window)?;
+    let _task = state.tasks.token();
     if state.cancel.is_cancelled() || state.startup_error.is_some() {
         return Err(AppError::Unavailable.into());
     }
-    let _task = state.tasks.token();
     let mut preferences = state.preferences.lock().await;
     if let Some(change) = change {
         let save_preferences = !matches!(change, Change::Autostart(_));
