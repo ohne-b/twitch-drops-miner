@@ -65,6 +65,7 @@ pub async fn desktop_settings(
     let _task = state.tasks.token();
     let mut preferences = state.preferences.lock().await;
     if let Some(change) = change {
+        let save_preferences = !matches!(change, Change::Autostart(_));
         let mut next = preferences.clone();
         match change {
             Change::CloseToTray(value) => next.close_to_tray = value,
@@ -84,12 +85,14 @@ pub async fn desktop_settings(
                 .map_err(|_| AppError::Unavailable)?;
             }
         }
-        let path = state.preferences_path.clone();
-        let saved = next.clone();
-        tauri::async_runtime::spawn_blocking(move || atomic_json(&path, &saved))
-            .await
-            .map_err(|_| AppError::Unavailable)?
-            .map_err(|_| AppError::Unavailable)?;
+        if save_preferences {
+            let path = state.preferences_path.clone();
+            let saved = next.clone();
+            tauri::async_runtime::spawn_blocking(move || atomic_json(&path, &saved))
+                .await
+                .map_err(|_| AppError::Unavailable)?
+                .map_err(|_| AppError::Unavailable)?;
+        }
         *preferences = next;
         state
             .close_to_tray
@@ -108,7 +111,7 @@ pub async fn desktop_settings(
     })
 }
 
-pub fn install(app: &tauri::AppHandle) -> tauri::Result<()> {
+pub fn install(app: &tauri::AppHandle) -> tauri::Result<MenuItem<tauri::Wry>> {
     let label = |key: &str| message(&format!("gui.desktop.{key}"), &[]);
     let show = MenuItem::with_id(app, "show", label("show"), true, None::<&str>)?;
     let pause = MenuItem::with_id(app, "pause", label("pause"), true, None::<&str>)?;
@@ -173,19 +176,31 @@ pub fn install(app: &tauri::AppHandle) -> tauri::Result<()> {
     app.state::<Desktop>()
         .tray_available
         .store(true, Ordering::SeqCst);
+    Ok(pause)
+}
+
+pub fn observe(app: &tauri::AppHandle, pause: Option<MenuItem<tauri::Wry>>) {
     let app = app.clone();
     app.clone().state::<Desktop>().spawn(async move {
         let state = app.state::<Desktop>();
-        let Ok(core) = state.application().await else { let _ = pause.set_enabled(false); return; };
+        let Ok(core) = state.application().await else {
+            if let Some(pause) = pause { let _ = pause.set_enabled(false); }
+            return;
+        };
         let mut changes = core.snapshot.subscribe();
         let mut notifications = core.notifications.subscribe();
         loop {
             let paused = core.snapshot.read().await.settings.values.mining_paused;
-            let _ = pause.set_text(message(if paused { "gui.desktop.resume" } else { "gui.desktop.pause" }, &[]));
+            if let Some(pause) = &pause {
+                let _ = pause.set_text(message(if paused { "gui.desktop.resume" } else { "gui.desktop.pause" }, &[]));
+            }
             tokio::select! {
                 biased;
                 _ = state.cancel.cancelled() => break,
-                _ = core.shutdown.cancelled() => { let _ = pause.set_enabled(false); break; },
+                _ = core.shutdown.cancelled() => {
+                    if let Some(pause) = &pause { let _ = pause.set_enabled(false); }
+                    break;
+                },
                 result = changes.changed() => if result.is_err() { break; },
                 result = notifications.recv() => match result {
                     Ok(notification) => if state.preferences.lock().await.notifications {
@@ -197,7 +212,6 @@ pub fn install(app: &tauri::AppHandle) -> tauri::Result<()> {
             }
         }
     });
-    Ok(())
 }
 
 #[cfg(test)]

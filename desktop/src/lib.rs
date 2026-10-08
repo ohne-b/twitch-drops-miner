@@ -274,9 +274,14 @@ pub fn run() {
                         let _ = (window, event);
                     })
                     .build()?;
-            if shell::install(app.handle()).is_err() {
-                tracing::warn!("Tray icon unavailable; keeping the window accessible");
-            }
+            let pause = match shell::install(app.handle()) {
+                Ok(pause) => Some(pause),
+                Err(_) => {
+                    tracing::warn!("Tray icon unavailable; keeping the window accessible");
+                    None
+                }
+            };
+            shell::observe(app.handle(), pause);
             let state = app.state::<Desktop>();
             if !start_minimized
                 || !state.tray_available.load(Ordering::SeqCst)
@@ -303,6 +308,10 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("could not initialize Drops Miner")
         .run(|app, event| {
+            #[cfg(target_os = "macos")]
+            if matches!(&event, tauri::RunEvent::Reopen { .. }) {
+                show(app);
+            }
             if let tauri::RunEvent::WindowEvent {
                 label,
                 event: tauri::WindowEvent::CloseRequested { api, .. },

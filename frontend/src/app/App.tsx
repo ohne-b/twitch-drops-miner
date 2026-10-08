@@ -2,6 +2,7 @@ import DesktopUpdates from '../features/settings/DesktopUpdates';
 import { isDesktop } from '../shared/lib/platform';
 import { DesktopStartupError, DesktopStatus } from '../features/settings/Desktop';
 import { Icon } from '@mdi/react';
+import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
 import {
   NavLink,
@@ -162,6 +163,13 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
             <div className="mb-5">
               <Notice>
                 {t(incompatible ? 'client_outdated' : data ? 'disconnected_help' : 'connecting')}
+                {isDesktop() && !incompatible && (
+                  <Button
+                    onClick={() => void invoke('restart_app').catch(() => setLogoutError(true))}
+                  >
+                    {t('gui.desktop.restart')}
+                  </Button>
+                )}
                 {incompatible && (
                   <IconButton
                     path={mdiReload}
