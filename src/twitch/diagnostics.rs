@@ -431,6 +431,7 @@ pub(super) fn operation(request: &Value) -> &'static str {
         "DirectoryPage_Game" => "DirectoryPage_Game",
         "VideoPlayerStreamInfoOverlayChannel" => "VideoPlayerStreamInfoOverlayChannel",
         "DropCurrentSessionContext" => "DropCurrentSessionContext",
+        "PlaybackAccessToken" => "PlaybackAccessToken",
         "DropsPage_ClaimDropRewards" => "DropsPage_ClaimDropRewards",
         "DropsHighlightService_AvailableDrops" => "DropsHighlightService_AvailableDrops",
         "OnsiteNotifications_DeleteNotification" => "OnsiteNotifications_DeleteNotification",
@@ -983,6 +984,32 @@ mod tests {
         assert_eq!(
             operation(&json!({"operationName":"private-operation"})),
             "unknown"
+        );
+    }
+
+    #[tokio::test]
+    async fn playback_token_response_is_redacted_as_a_whole() {
+        let server = MockServer::start().await;
+        Mock::given(method("POST")).and(path("/gql"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(json!({"data":{
+                "streamPlaybackAccessToken":{"value":"private-playback-token","signature":"private-playback-signature"}
+            }})))
+            .mount(&server).await;
+        let client = TwitchClient::new(Arc::new(http(&server)), &session());
+        let output = Writer::default();
+        client
+            .gql(Operation::PlaybackAccessToken.request(json!({"login":"streamer"})))
+            .with_subscriber(output.advanced_subscriber())
+            .await
+            .unwrap();
+        let text = output.text();
+        assert!(
+            text.contains("PlaybackAccessToken") && text.contains("[redacted]"),
+            "{text}"
+        );
+        assert!(
+            !text.contains("private-playback-") && !text.contains("testtoken"),
+            "{text}"
         );
     }
 

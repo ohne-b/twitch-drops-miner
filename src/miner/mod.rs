@@ -30,6 +30,7 @@ use crate::{
         channels::select_channel,
         inventory::Inventory,
         oauth::{DeviceLogin, Session},
+        playback::{POLL_INTERVAL, Playback},
         pubsub::{Event, PubSub},
     },
 };
@@ -94,6 +95,7 @@ enum JobKind {
     Inventory,
     Channels,
     Watch,
+    Playback,
     Poll,
     Claim,
     Update,
@@ -119,6 +121,12 @@ enum Job {
         result: Result<bool, TwitchError>,
         requested_at: Instant,
         at: Instant,
+    },
+    Playback {
+        state: Box<Playback>,
+        requested_at: Instant,
+        cancel: CancellationToken,
+        result: Result<(), TwitchError>,
     },
     Poll {
         channel: u64,
@@ -162,6 +170,9 @@ struct Mining {
     jobs: JoinSet<CompletedJob>,
     busy: HashSet<JobKind>,
     watch_abort: Option<tokio::task::AbortHandle>,
+    playback_cancel: Option<CancellationToken>,
+    playback: Option<Playback>,
+    next_playback: Instant,
     watch_failures: u8,
     epoch: u64,
     refresh: bool,
@@ -264,6 +275,9 @@ impl Mining {
             jobs: JoinSet::new(),
             busy: HashSet::new(),
             watch_abort: None,
+            playback_cancel: None,
+            playback: None,
+            next_playback: now,
             watch_failures: 0,
             epoch: 0,
             refresh: true,
@@ -325,6 +339,7 @@ impl Mining {
                         Some(Ok(completed))=>{
                             self.busy.remove(&completed.kind);
                             if completed.kind==JobKind::Watch{self.watch_abort=None;}
+                            if completed.kind==JobKind::Playback{self.playback_cancel=None;}
                             if completed.epoch==self.epoch || matches!(completed.job,Job::Claim{..}){self.complete(completed.job,pool).await?;}
                         },
                         Some(Err(error))=>{
@@ -353,6 +368,7 @@ impl Mining {
             if Instant::now() >= self.next_retry {
                 self.schedule(&settings).await;
             }
+            self.schedule_playback(&settings);
         }
     }
 
@@ -360,6 +376,8 @@ impl Mining {
         let intent = self.intent.borrow_and_update().clone();
         if intent.clear != self.seen.clear {
             self.cancel_watch();
+            self.playback = None;
+            self.next_playback = Instant::now();
             self.app.snapshot.write().await.current_drop = None;
             self.epoch = self.epoch.wrapping_add(1);
             self.campaigns.clear();
@@ -511,21 +529,7 @@ impl Mining {
                 }
                 if self.claim_wait.is_none()
                     && now >= self.next_watch
-                    && let Some(mut channel) = self
-                        .channels
-                        .iter()
-                        .find(|c| {
-                            c.identity.id == channel
-                                && c.online()
-                                && (self.manual.is_some_and(|manual| {
-                                    manual.channel == channel
-                                        && manual.expires_at.is_none_or(|at| now < at)
-                                }) || self
-                                    .campaigns
-                                    .iter()
-                                    .any(|campaign| campaign.can_watch(c, settings, wall)))
-                        })
-                        .cloned()
+                    && let Some(mut channel) = self.watch_channel(settings).cloned()
                 {
                     self.next_watch = now + WATCH_INTERVAL;
                     let client = self.client.clone();
@@ -645,6 +649,7 @@ impl Mining {
         let now = Instant::now();
         let inventory_failed = matches!(&job, Job::Inventory { result: Err(_), .. });
         let notification = matches!(&job, Job::Notification(_));
+        let playback = matches!(&job, Job::Playback { .. });
         let (operation, category, channel_id, drop_id, succeeded) = match &job {
             Job::Manual { result, .. } => ("manual", Category::Mining, None, None, result.is_ok()),
             Job::Inventory { result, .. } => (
@@ -667,6 +672,13 @@ impl Mining {
                 Some(channel.identity.id),
                 None,
                 *result == Ok(true),
+            ),
+            Job::Playback { state, result, .. } => (
+                "playback",
+                Category::Mining,
+                Some(state.channel),
+                None,
+                result.is_ok(),
             ),
             Job::Poll {
                 channel, result, ..
@@ -702,6 +714,33 @@ impl Mining {
         activity.channel_id = channel_id;
         activity.drop_id = drop_id;
         let error = match job {
+            Job::Playback {
+                state,
+                requested_at,
+                cancel,
+                result,
+            } => {
+                if cancel.is_cancelled() {
+                    // Keep acknowledged segments across pause, never revive a cancelled URL.
+                    if let Some(current) = &mut self.playback {
+                        current.retain_checks(&state);
+                    }
+                    return Ok(());
+                }
+                if result == Err(TwitchError::Unauthorized) {
+                    return Err(TwitchError::Unauthorized);
+                }
+                if requested_at < self.watch_started
+                    || settings.mining_paused
+                    || self.watching != Some(state.channel)
+                    || !self.channels.iter().any(|c| state.matches(c))
+                {
+                    return Ok(());
+                }
+                self.playback = Some(*state);
+                // Playback acknowledgements never confirm, estimate or schedule reward minutes.
+                result.err()
+            }
             Job::Manual {
                 revision,
                 requested_at,
@@ -1054,7 +1093,7 @@ impl Mining {
             if matches!(error, TwitchError::Unauthorized | TwitchError::Cancelled) {
                 return Err(error);
             }
-            if !inventory_failed && !notification {
+            if !inventory_failed && !notification && !playback {
                 self.next_retry = now + Duration::from_secs(10);
             }
             activity.message =

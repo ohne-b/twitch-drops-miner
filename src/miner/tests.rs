@@ -65,6 +65,348 @@ async fn finish_job(mining: &mut Mining, pool: &PubSub) {
 }
 
 #[tokio::test]
+async fn acknowledged_telemetry_also_checks_new_stream_segments() {
+    let server = MockServer::start().await;
+    gql_mock(&server, |_| json!({"data":{"streamPlaybackAccessToken":{"value":"mock-token","signature":"mock-signature"}}})).await;
+    for (method_name, url, body) in [
+        ("POST", "/track", ""),
+        (
+            "GET",
+            "/api/channel/hls/streamer.m3u8",
+            "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=100\n/media.m3u8\n",
+        ),
+        (
+            "GET",
+            "/media.m3u8",
+            "#EXTM3U\n#EXTINF:2,\n/one.ts\n#EXTINF:2,\n/two.ts\n",
+        ),
+        ("HEAD", "/one.ts", ""),
+        ("HEAD", "/two.ts", ""),
+    ] {
+        Mock::given(method(method_name))
+            .and(path(url))
+            .respond_with(
+                ResponseTemplate::new(if method_name == "POST" { 204 } else { 200 })
+                    .insert_header("Content-Type", "application/vnd.apple.mpegurl")
+                    .set_body_string(body),
+            )
+            .mount(&server)
+            .await;
+    }
+    let (_dir, mut miner, _intent, mut pool) = miner(&server).await;
+    let settings = select(&mut miner).await;
+    miner.refresh = false;
+    miner.channels_dirty = false;
+    miner.next_refresh = Instant::now() + Duration::from_secs(3600);
+    miner.channels[0].beacon_url = Some(format!("{}/track", server.uri()).parse().unwrap());
+    let minutes = miner.campaigns[0].drops[0].confirmed_minutes;
+    for _ in 0..3 {
+        miner.schedule(&settings).await;
+        miner.schedule_playback(&settings);
+        while !miner.jobs.is_empty() {
+            finish_job(&mut miner, &pool).await;
+        }
+    }
+    let requests = server.received_requests().await.unwrap();
+    assert_eq!(requests.iter().filter(|r| r.method == "HEAD").count(), 2);
+    assert_eq!(miner.campaigns[0].drops[0].confirmed_minutes, minutes);
+    pool.close().await;
+}
+
+#[tokio::test]
+async fn playback_runs_independently_without_accelerating_telemetry_or_progress() {
+    let server = MockServer::start().await;
+    gql_mock(&server, |_| json!({"data":{"streamPlaybackAccessToken":{"value":"mock-token","signature":"mock-signature"}}})).await;
+    for url in ["/api/channel/hls/streamer.m3u8", "/media.m3u8"] {
+        let body = if url == "/media.m3u8" {
+            "#EXTM3U\n#EXTINF:2,\n/one.ts\n"
+        } else {
+            "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=100\n/media.m3u8\n"
+        };
+        Mock::given(method("GET"))
+            .and(path(url))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_string(body)
+                    .insert_header("Content-Type", "application/vnd.apple.mpegurl"),
+            )
+            .mount(&server)
+            .await;
+    }
+    Mock::given(method("HEAD"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let (_dir, mut miner, _intent, mut pool) = miner(&server).await;
+    let settings = select(&mut miner).await;
+    miner.next_watch = Instant::now() + WATCH_INTERVAL;
+    miner.poll_at = Some(Instant::now() + PROGRESS_DELAY);
+    let watch_due = miner.next_watch;
+    let poll_due = miner.poll_at;
+    let minutes = miner.campaigns[0].drops[0].confirmed_minutes;
+    // A slow telemetry, claim or progress job must not prevent segment checks.
+    miner
+        .busy
+        .extend([JobKind::Watch, JobKind::Claim, JobKind::Poll]);
+    miner.schedule_playback(&settings);
+    finish_job(&mut miner, &pool).await;
+    miner.schedule_playback(&settings);
+    assert!(miner.jobs.is_empty());
+    tokio::time::pause();
+    tokio::time::advance(POLL_INTERVAL).await;
+    tokio::time::resume();
+    miner.schedule_playback(&settings);
+    assert!(miner.busy.contains(&JobKind::Playback));
+    finish_job(&mut miner, &pool).await;
+    assert_eq!(miner.next_watch, watch_due);
+    assert_eq!(miner.poll_at, poll_due);
+    assert_eq!(miner.campaigns[0].drops[0].confirmed_minutes, minutes);
+    assert_eq!(miner.campaigns[0].drops[0].estimated_minutes, 0);
+    // Same-broadcast metadata replacement must retain successful segment deduplication.
+    let state = miner.playback.take().unwrap();
+    let mut refreshed = miner.channels[0].clone();
+    refreshed.viewers = Some(999);
+    assert!(state.matches(&refreshed));
+    refreshed.broadcast_id = Some("new-broadcast".into());
+    assert!(!state.matches(&refreshed));
+    pool.close().await;
+}
+
+#[tokio::test]
+async fn pause_stream_changes_and_clear_cancel_playback_and_reject_late_results() {
+    for change in ["pause", "offline", "broadcast", "clear"] {
+        let server = MockServer::start().await;
+        Mock::given(method("POST"))
+            .and(path("/gql"))
+            .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_secs(30)))
+            .mount(&server)
+            .await;
+        let (_dir, mut miner, intent, mut pool) = miner(&server).await;
+        let mut settings = select(&mut miner).await;
+        miner.manual = Some(ManualSelection::new(10, Some(Duration::from_secs(120))));
+        let manual = miner.manual;
+        miner.schedule_playback(&settings);
+        let cancel = miner.playback_cancel.clone().unwrap();
+        tokio::time::timeout(Duration::from_secs(1), async {
+            while !server
+                .received_requests()
+                .await
+                .unwrap()
+                .iter()
+                .any(|r| r.method == "POST")
+            {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+        match change {
+            "pause" => {
+                settings.mining_paused = true;
+                *miner.app.settings.write().await = settings.clone();
+            }
+            "offline" => miner.event(Event::Offline(10)).await.unwrap(),
+            "broadcast" => miner.channels[0].broadcast_id = Some("replacement".into()),
+            "clear" => {
+                intent
+                    .send(Intent {
+                        clear: 1,
+                        ..Default::default()
+                    })
+                    .unwrap();
+                miner.apply_intent(&pool).await;
+            }
+            _ => unreachable!(),
+        }
+        miner.reselect(&settings).await;
+        assert!(cancel.is_cancelled(), "{change}");
+        if change == "pause" {
+            settings.mining_paused = false;
+            *miner.app.settings.write().await = settings.clone();
+            miner.reselect(&settings).await;
+            assert_eq!(miner.manual, manual);
+        }
+        // Even a result delivered after resume cannot restore the cancelled request's state.
+        finish_job(&mut miner, &pool).await;
+        if change != "pause" {
+            assert!(miner.playback.is_none());
+        }
+        assert_eq!(
+            server
+                .received_requests()
+                .await
+                .unwrap()
+                .iter()
+                .filter(|r| r.method == "POST")
+                .count(),
+            1
+        );
+        pool.close().await;
+    }
+}
+
+#[tokio::test]
+async fn playback_requires_selection_but_supports_unknown_manual_streams_and_timers() {
+    let server = MockServer::start().await;
+    let (_dir, mut miner, _intent, mut pool) = miner(&server).await;
+    let settings = Settings::default();
+    miner.schedule_playback(&settings);
+    assert!(miner.jobs.is_empty());
+    miner.campaigns.clear();
+    miner.manual = Some(ManualSelection::new(10, Some(Duration::from_secs(60))));
+    miner.reselect(&settings).await;
+    miner.schedule_playback(&settings);
+    assert!(miner.busy.contains(&JobKind::Playback));
+    tokio::time::pause();
+    tokio::time::advance(Duration::from_secs(61)).await;
+    tokio::time::resume();
+    miner.reselect(&settings).await;
+    assert!(miner.playback_cancel.as_ref().unwrap().is_cancelled());
+    assert!(miner.manual.is_none());
+    finish_job(&mut miner, &pool).await;
+    miner.schedule_playback(&settings);
+    assert!(miner.jobs.is_empty());
+    pool.close().await;
+}
+
+#[tokio::test]
+async fn playback_dedup_survives_metadata_and_claim_wait_during_a_segment_request() {
+    let server = MockServer::start().await;
+    gql_mock(&server, |_| json!({"data":{"streamPlaybackAccessToken":{"value":"mock-token","signature":"mock-signature"}}})).await;
+    for (url, body) in [
+        (
+            "/api/channel/hls/streamer.m3u8",
+            "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=100\n/media.m3u8\n",
+        ),
+        ("/media.m3u8", "#EXTM3U\n#EXTINF:2,\n/one.ts\n"),
+    ] {
+        Mock::given(method("GET"))
+            .and(path(url))
+            .respond_with(
+                ResponseTemplate::new(200).set_body_raw(body, "application/vnd.apple.mpegurl"),
+            )
+            .mount(&server)
+            .await;
+    }
+    Mock::given(method("HEAD"))
+        .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_millis(150)))
+        .mount(&server)
+        .await;
+    let (_dir, mut miner, _intent, mut pool) = miner(&server).await;
+    let settings = select(&mut miner).await;
+    miner.schedule_playback(&settings);
+    tokio::time::timeout(Duration::from_secs(2), async {
+        while !server
+            .received_requests()
+            .await
+            .unwrap()
+            .iter()
+            .any(|r| r.method == "HEAD")
+        {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    let mut channel = miner.channels[0].clone();
+    channel.viewers = Some(123);
+    miner
+        .complete(
+            Job::Update {
+                result: Ok(vec![channel]),
+                requested_at: Instant::now(),
+            },
+            &pool,
+        )
+        .await
+        .unwrap();
+    miner.claim_wait = Some(("another-reward".into(), Instant::now() + PROGRESS_DELAY, 0));
+    finish_job(&mut miner, &pool).await;
+    miner.claim_wait = None;
+    miner.next_playback = Instant::now();
+    miner.schedule_playback(&settings);
+    finish_job(&mut miner, &pool).await;
+    assert_eq!(
+        server
+            .received_requests()
+            .await
+            .unwrap()
+            .iter()
+            .filter(|r| r.method == "HEAD")
+            .count(),
+        1
+    );
+    assert_eq!(miner.channels[0].viewers, Some(123));
+    pool.close().await;
+}
+
+#[tokio::test]
+async fn pause_keeps_acknowledged_segments_but_retries_the_interrupted_request() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    let server = MockServer::start().await;
+    gql_mock(&server, |_| json!({"data":{"streamPlaybackAccessToken":{"value":"mock-token","signature":"mock-signature"}}})).await;
+    for (url, body) in [
+        (
+            "/api/channel/hls/streamer.m3u8",
+            "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=100\n/media.m3u8\n",
+        ),
+        (
+            "/media.m3u8",
+            "#EXTM3U\n#EXTINF:2,\n/fast.ts\n#EXTINF:2,\n/slow.ts\n",
+        ),
+    ] {
+        Mock::given(method("GET"))
+            .and(path(url))
+            .respond_with(
+                ResponseTemplate::new(200).set_body_raw(body, "application/vnd.apple.mpegurl"),
+            )
+            .mount(&server)
+            .await;
+    }
+    Mock::given(method("HEAD"))
+        .and(path("/fast.ts"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&server)
+        .await;
+    let calls = Arc::new(AtomicUsize::new(0));
+    let reads = calls.clone();
+    Mock::given(method("HEAD"))
+        .and(path("/slow.ts"))
+        .respond_with(move |_: &wiremock::Request| {
+            if reads.fetch_add(1, Ordering::SeqCst) == 0 {
+                ResponseTemplate::new(200).set_delay(Duration::from_secs(30))
+            } else {
+                ResponseTemplate::new(200)
+            }
+        })
+        .mount(&server)
+        .await;
+    let (_dir, mut miner, _intent, mut pool) = miner(&server).await;
+    let mut settings = select(&mut miner).await;
+    miner.schedule_playback(&settings);
+    tokio::time::timeout(Duration::from_secs(2), async {
+        while calls.load(Ordering::SeqCst) == 0 {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    settings.mining_paused = true;
+    *miner.app.settings.write().await = settings.clone();
+    miner.reselect(&settings).await;
+    finish_job(&mut miner, &pool).await;
+    settings.mining_paused = false;
+    *miner.app.settings.write().await = settings.clone();
+    miner.reselect(&settings).await;
+    miner.schedule_playback(&settings);
+    finish_job(&mut miner, &pool).await;
+    assert_eq!(calls.load(Ordering::SeqCst), 2);
+    pool.close().await;
+}
+
+#[tokio::test]
 async fn pause_stops_automatic_and_manual_watches_and_fences_late_results() {
     for manual in [false, true] {
         let server = MockServer::start().await;
@@ -2130,6 +2472,8 @@ async fn public_page_rejection_keeps_the_validated_saved_session() {
         .mount(&server)
         .await;
     gql_mock(&server, |q| match q["operationName"].as_str().unwrap() {
+        "PlaybackAccessToken" => json!({"data":{"streamPlaybackAccessToken":null}}),
+        "AccountProfile" | "AccountBadges" => json!({"data":null}),
         "Inventory" => {
             let mut campaign = campaign_json("one");
             campaign["allow"] = json!({"isEnabled":true,"channels":[{"id":"10","login":"streamer","displayName":"Streamer"}]});
@@ -3669,6 +4013,8 @@ async fn hourly_token_validation_preserves_manual_choice() {
         .mount(&server)
         .await;
     gql_mock(&server,|q|match q["operationName"].as_str().unwrap(){
+        "PlaybackAccessToken" => json!({"data":{"streamPlaybackAccessToken":null}}),
+        "AccountProfile" | "AccountBadges" => json!({"data":null}),
         "Inventory"=>json!({"data":{"currentUser":{"inventory":{"dropCampaignsInProgress":[campaign_json("one")],"gameEventDrops":[]}}}}),
         "DirectoryPage_Game"=>json!({"data":{"game":{"streams":{"edges":[
             {"node":{"id":"b1","broadcaster":{"id":"10","login":"first","displayName":"First"},"game":{"id":"1","name":"Rust"},"viewersCount":100}},
@@ -4129,7 +4475,9 @@ async fn channel_choice_during_hourly_reload_is_retained_until_channels_are_read
     Mock::given(method("POST")).and(path("/gql")).respond_with(move |request: &wiremock::Request| {
         let body: serde_json::Value = request.body_json().unwrap();
         let handler = |q: &serde_json::Value| match q["operationName"].as_str().unwrap() {
-            "Inventory" => json!({"data":{"currentUser":{"inventory":{"dropCampaignsInProgress":[campaign_json("one")],"gameEventDrops":[]}}}}),
+            "PlaybackAccessToken" => json!({"data":{"streamPlaybackAccessToken":null}}),
+        "AccountProfile" | "AccountBadges" => json!({"data":null}),
+        "Inventory" => json!({"data":{"currentUser":{"inventory":{"dropCampaignsInProgress":[campaign_json("one")],"gameEventDrops":[]}}}}),
             "DirectoryPage_Game" => json!({"data":{"game":{"streams":{"edges":[
                 {"node":{"id":"b1","broadcaster":{"id":"10","login":"first","displayName":"First"},"game":{"id":"1","name":"Rust"},"viewersCount":100}},
                 {"node":{"id":"b2","broadcaster":{"id":"11","login":"second","displayName":"Second"},"game":{"id":"1","name":"Rust"},"viewersCount":50}}
