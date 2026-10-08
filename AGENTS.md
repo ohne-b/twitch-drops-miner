@@ -84,6 +84,9 @@ embed it and run without a build tool/runtime companion. Production builds never
   The window title and supported tray tooltip use the same frontend mining-title formatter,
   including confirmed percentages, pause and disconnect state. Apply both through one bounded,
   local-window command; never derive a separate estimated tray counter.
+  The tray menu begins with a disabled status row and separator. Update it through that same
+  command, omit only the trailing app-name suffix, and escape native menu mnemonic markers.
+  Retain game-only, channel-watching, paused, idle, disconnected and account-unavailable states.
 - Updates download and verify before stopping mining. Require signed versions, no downgrades,
   one operation at a time and cancellable bounded downloads. A failed install stays visible
   with restart/manual recovery. Only an explicit install action may replace the application.

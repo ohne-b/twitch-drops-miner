@@ -55,6 +55,13 @@ fn valid_title(title: &str) -> bool {
     !title.is_empty() && title.len() <= 1024 && !title.chars().any(char::is_control)
 }
 
+fn tray_status_text(title: &str) -> String {
+    title
+        .strip_suffix(" - Drops Miner")
+        .unwrap_or(title)
+        .replace('&', "&&")
+}
+
 #[tauri::command]
 pub fn desktop_title(
     window: WebviewWindow,
@@ -70,6 +77,9 @@ pub fn desktop_title(
         .map_err(|_| AppError::Unavailable)?;
     if let Some(tray) = app.tray_by_id("main") {
         let _ = tray.set_tooltip(Some(&title));
+    }
+    if let Some(status) = app.try_state::<MenuItem<tauri::Wry>>() {
+        let _ = status.set_text(tray_status_text(&title));
     }
     Ok(())
 }
@@ -136,12 +146,25 @@ pub async fn desktop_settings(
 
 pub fn install(app: &tauri::AppHandle) -> tauri::Result<MenuItem<tauri::Wry>> {
     let label = |key: &str| message(&format!("gui.desktop.{key}"), &[]);
+    let status = MenuItem::with_id(app, "status", "Drops Miner", false, None::<&str>)?;
+    let status_separator = PredefinedMenuItem::separator(app)?;
     let show = MenuItem::with_id(app, "show", label("show"), true, None::<&str>)?;
     let pause = MenuItem::with_id(app, "pause", label("pause"), true, None::<&str>)?;
     let update = MenuItem::with_id(app, "updates", label("check_updates"), true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", label("quit"), true, None::<&str>)?;
     let separator = PredefinedMenuItem::separator(app)?;
-    let menu = Menu::with_items(app, &[&show, &pause, &update, &separator, &quit])?;
+    let menu = Menu::with_items(
+        app,
+        &[
+            &status,
+            &status_separator,
+            &show,
+            &pause,
+            &update,
+            &separator,
+            &quit,
+        ],
+    )?;
     let pause_action = pause.clone();
     TrayIconBuilder::with_id("main")
         .icon(tauri::image::Image::from_bytes(include_bytes!(
@@ -196,6 +219,7 @@ pub fn install(app: &tauri::AppHandle) -> tauri::Result<MenuItem<tauri::Wry>> {
             _ => {}
         })
         .build(app)?;
+    app.manage(status);
     app.state::<Desktop>()
         .tray_available
         .store(true, Ordering::SeqCst);
@@ -240,6 +264,24 @@ pub fn observe(app: &tauri::AppHandle, pause: Option<MenuItem<tauri::Wry>>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn tray_status_preserves_title_states_and_literal_game_names() {
+        for status in [
+            "5% Rocket League",
+            "Rocket League",
+            "Watching northwind",
+            "Paused",
+            "Idle",
+            "Disconnected",
+            "Drops Miner",
+            "Game - Drops Miner",
+        ] {
+            assert_eq!(tray_status_text(&format!("{status} - Drops Miner")), status);
+        }
+        assert_eq!(tray_status_text("Drops Miner"), "Drops Miner");
+        assert_eq!(tray_status_text("5% S&F - Drops Miner"), "5% S&&F");
+    }
+
     #[test]
     fn desktop_titles_allow_unicode_but_reject_control_characters_and_unbounded_input() {
         for title in [

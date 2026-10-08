@@ -38,7 +38,10 @@ Download the installer for your computer from [Releases](https://github.com/ohne
 Open **Drops Miner**, then follow [First login](#first-login). No Docker, terminal or port
 configuration is needed. Keep the computer awake while mining.
 
-The tray menu has **Open**, **Pause/Resume mining**, **Check for updates** and **Quit**.
+The tray menu starts with a non-clickable status row, followed by **Open**, **Pause/Resume
+mining**, **Check for updates** and **Quit**. The status matches the browser title: confirmed
+percentage and game, game alone before confirmation, **Watching [channel]**, **Paused**,
+**Idle**, **Disconnected**, or **Drops Miner** before account data is available.
 On Windows and macOS, its tooltip shows the same confirmed progress and game as the window
 title, or the current paused/idle status.
 **Settings > Desktop** controls starting at sign-in, starting minimized, notifications and
