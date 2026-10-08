@@ -1,5 +1,19 @@
 # Changelog
 
+## [v2.0.0](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v2.0.0) — 2026-10-08
+
+- add a desktop app for Windows, macOS and Linux, using the same mining core and dashboard as Docker ([#79](https://github.com/ohne-b/twitch-drops-miner/pull/79))
+- add tray controls and mining status, optional startup at sign-in, window-state restoration and reward notifications
+- add signed in-app updates, with an update link in the sidebar and explicit download and install actions
+- add optional sleep prevention while mining, plus keyboard and mouse-wheel zoom; display sleep and manual sleep remain available
+- check stream playlists and new segment response headers alongside watch telemetry, preserving the watch cadence and Twitch-confirmed progress ([#80](https://github.com/ohne-b/twitch-drops-miner/pull/80))
+
+Downloads include a Windows x64 installer, a universal macOS DMG, and Linux x64 AppImage/DEB packages.
+Existing Docker settings, credentials, history and container mounts remain compatible.
+The desktop app stores its data separately and requires its own Twitch login; it does not import a Docker installation.
+Windows installers have no Authenticode signature; macOS uses ad-hoc signing without notarization.
+In-app update packages are signed and verified separately.
+
 ## [v1.6.0](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v1.6.0) — 2026-10-07
 
 - add Pause and Resume to Now mining, keeping selected games and current progress; pause persists across restarts while inventory refreshes and earned claims continue ([#75](https://github.com/ohne-b/twitch-drops-miner/pull/75), [#77](https://github.com/ohne-b/twitch-drops-miner/pull/77))
