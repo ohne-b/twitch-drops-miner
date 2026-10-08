@@ -2,5 +2,9 @@
   "identifier": "fixture",
   "description": "Offline smoke result, absent from production commands.",
   "windows": ["main"],
-  "permissions": ["allow-smoke-result"]
+  "permissions": [
+    "allow-smoke-result",
+    "core:event:allow-emit",
+    "core:window:allow-title"
+  ]
 }
