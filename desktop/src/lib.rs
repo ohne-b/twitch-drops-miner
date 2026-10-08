@@ -267,7 +267,9 @@ pub fn run() {
                     })
                     .on_page_load(|window, event| {
                         #[cfg(feature = "desktop-fixture")]
-                        if event.event() == tauri::webview::PageLoadEvent::Finished {
+                        if event.event() == tauri::webview::PageLoadEvent::Finished
+                            && std::env::args().any(|argument| argument == "--offline-smoke")
+                        {
                             let _ = window.eval(include_str!("../smoke.js"));
                         }
                         #[cfg(not(feature = "desktop-fixture"))]

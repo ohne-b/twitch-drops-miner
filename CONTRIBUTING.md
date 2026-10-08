@@ -84,6 +84,7 @@ The native smoke fixture uses temporary data and no Twitch client. From `desktop
 then `node .github/scripts/native-smoke.mjs` from the repository root (use `xvfb-run -a` on
 headless Linux). Never package `desktop-fixture` for users. Its extra command and offline
 state are compiled out of production. Test release builds without that feature too.
+For manual UI checks, launch the built fixture directly with `--offline-preview`.
 
 ## Pull requests
 

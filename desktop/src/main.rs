@@ -14,7 +14,9 @@ fn main() {
         );
         return;
     }
-    if arguments.iter().any(|value| value == "--offline-smoke")
+    if arguments
+        .iter()
+        .any(|value| matches!(value.as_str(), "--offline-smoke" | "--offline-preview"))
         && !cfg!(feature = "desktop-fixture")
     {
         eprintln!("The offline fixture was not built. Refusing to start a real miner for testing.");

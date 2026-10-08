@@ -8,8 +8,9 @@ const executable = resolve((production ?? 'target/debug/twitch-drops-miner-deskt
 if (production) {
   const version = spawnSync(executable, ['--version'], { timeout: 10_000, encoding: 'utf8' });
   const refusal = spawnSync(executable, ['--offline-smoke'], { timeout: 10_000, encoding: 'utf8' });
+  const preview = spawnSync(executable, ['--offline-preview'], { timeout: 10_000, encoding: 'utf8' });
   if (version.error || version.status !== 0 || version.stdout.trim() !== `Drops Miner ${readVersion()}` ||
-      refusal.error || refusal.status !== 2) {
+      refusal.error || refusal.status !== 2 || preview.error || preview.status !== 2) {
     throw new Error('The production executable must report its version and reject the offline fixture.');
   }
   console.log('Production executable: correct version, offline fixture excluded.');
