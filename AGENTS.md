@@ -43,7 +43,7 @@ Do not add forwarding hierarchies or speculative traits with one implementation.
 | `domain.rs`, `policy.rs` | Campaign/drop/channel eligibility and dependency-aware ignores |
 | `store.rs` | Exclusive data directory, atomic settings/history/archive/claim journal |
 | `auth.rs`, `origin.rs` | Dashboard passwords/sessions, origin and cookie policy |
-| `twitch/` | OAuth, bounded HTTP/GQL, inventory/catalog, beacon watch, PubSub shards |
+| `twitch/` | OAuth, bounded HTTP/GQL, inventory/catalog, playlist/segment checks, beacon telemetry, PubSub shards |
 | `app/` | Application commands/settings, typed Activity, revisioned snapshot publication and patches |
 | `miner/` | One session supervisor and owned jobs; session, watch, inventory and claim responsibilities |
 | `store/records.rs` | Frozen version-one archive/journal records, independent of runtime presentation fields |
@@ -139,7 +139,19 @@ embed it and run without a build tool/runtime companion. Production builds never
   shared five-attempt transport/429/5xx retry policy with cancellable backoff (1/2/4/8 seconds,
   or Retry-After bounded to 1..60 seconds). Retry the identical payload, never an acknowledged
   204 or ordinary 4xx, and never count retries as progress. Exhaustion returns to owned watch
-  recovery. No playlists/video/audio downloads. Confirm via PubSub or CurrentDrop, distinguish
+  recovery. Independently poll the selected broadcast's lowest-bandwidth HLS playlist about
+  every 10 seconds and HEAD each unseen media segment; never GET video/audio bodies.
+  Request PlaybackAccessToken with the existing Smart TV session and use the isolated public HTTP
+  client for validated HTTPS Twitch/CDN playlist and segment URLs, with no redirects or
+  account headers/cookies. Bound playlist bodies to 512 KiB, entries and successful segment
+  cache to 256, each poll to 10 seconds, playlist requests to 5 seconds and HEADs to 3 seconds.
+  Retry failed segments on the next poll; renew expired URLs on 401/403/404 without logging out.
+  Keep signed URLs/tokens out of logs, snapshots and storage. Retain successful segment checks
+  across same-broadcast metadata refreshes; reset on stream/selection/network generation changes.
+  Own and cancel playback work on pause, deselection, offline/changed streams, cache clear and
+  shutdown. Manual timers and shared watch eligibility still apply. Playback acknowledgements
+  never confirm or estimate minutes, accelerate beacon/progress polling or imply claim success.
+  Confirm via PubSub or CurrentDrop, distinguish
   estimates, and recover at 15 unconfirmed estimates. Only currently eligible drop progress
   suppresses fallback. Failed/unacknowledged beacons invalidate the owned channel's cached
   address. Three consecutive current-stream watch failures renew the network generation;
