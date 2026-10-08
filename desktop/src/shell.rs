@@ -21,6 +21,7 @@ pub struct Preferences {
     pub close_to_tray: bool,
     pub start_minimized: bool,
     pub notifications: bool,
+    pub keep_awake: bool,
 }
 
 impl Default for Preferences {
@@ -29,6 +30,7 @@ impl Default for Preferences {
             close_to_tray: !cfg!(target_os = "linux"),
             start_minimized: false,
             notifications: true,
+            keep_awake: false,
         }
     }
 }
@@ -39,6 +41,7 @@ pub struct Settings {
     preferences: Preferences,
     autostart: bool,
     tray_available: bool,
+    keep_awake_failed: bool,
     version: &'static str,
 }
 
@@ -48,6 +51,7 @@ pub enum Change {
     CloseToTray(bool),
     StartMinimized(bool),
     Notifications(bool),
+    KeepAwake(bool),
     Autostart(bool),
 }
 
@@ -104,6 +108,7 @@ pub async fn desktop_settings(
             Change::CloseToTray(value) => next.close_to_tray = value,
             Change::StartMinimized(value) => next.start_minimized = value,
             Change::Notifications(value) => next.notifications = value,
+            Change::KeepAwake(value) => next.keep_awake = value,
             Change::Autostart(value) => {
                 let handle = app.clone();
                 tauri::async_runtime::spawn_blocking(move || {
@@ -130,6 +135,7 @@ pub async fn desktop_settings(
         state
             .close_to_tray
             .store(preferences.close_to_tray, Ordering::SeqCst);
+        state.preferences_changed.notify_one();
     }
     let handle = app.clone();
     let autostart = tauri::async_runtime::spawn_blocking(move || handle.autolaunch().is_enabled())
@@ -140,6 +146,7 @@ pub async fn desktop_settings(
         preferences: preferences.clone(),
         autostart,
         tray_available: state.tray_available.load(Ordering::SeqCst),
+        keep_awake_failed: state.keep_awake_failed.load(Ordering::SeqCst),
         version: env!("CARGO_PKG_VERSION"),
     })
 }
@@ -236,8 +243,18 @@ pub fn observe(app: &tauri::AppHandle, pause: Option<MenuItem<tauri::Wry>>) {
         };
         let mut changes = core.snapshot.subscribe();
         let mut notifications = core.notifications.subscribe();
+        let awake = crate::power::start(&app);
         loop {
-            let paused = core.snapshot.read().await.settings.values.mining_paused;
+            let enabled = state.preferences.lock().await.keep_awake;
+            let snapshot = core.snapshot.read().await;
+            let paused = snapshot.settings.values.mining_paused;
+            awake.send_if_modified(|desired| {
+                let next = crate::power::needed(enabled, &snapshot);
+                let changed = *desired != next;
+                *desired = next;
+                changed
+            });
+            drop(snapshot);
             if let Some(pause) = &pause {
                 let _ = pause.set_text(message(if paused { "gui.desktop.resume" } else { "gui.desktop.pause" }, &[]));
             }
@@ -248,6 +265,7 @@ pub fn observe(app: &tauri::AppHandle, pause: Option<MenuItem<tauri::Wry>>) {
                     if let Some(pause) = &pause { let _ = pause.set_enabled(false); }
                     break;
                 },
+                _ = state.preferences_changed.notified() => {},
                 result = changes.changed() => if result.is_err() { break; },
                 result = notifications.recv() => match result {
                     Ok(notification) => if state.preferences.lock().await.notifications {
@@ -309,9 +327,26 @@ mod tests {
             .unwrap()
             .unwrap();
         assert!(!loaded.notifications);
+        assert!(!loaded.keep_awake);
         assert_eq!(loaded.close_to_tray, Preferences::default().close_to_tray);
         std::fs::write(&file, "bad").unwrap();
         assert!(twitch_drops_miner_core::store::read_json::<Preferences>(&file).is_err());
         assert_eq!(std::fs::read_to_string(file).unwrap(), "bad");
+    }
+
+    #[test]
+    fn keep_awake_is_opt_in_for_existing_preferences() {
+        let mut preferences: Preferences = serde_json::from_str(
+            r#"{"close_to_tray":true,"start_minimized":false,"notifications":false}"#,
+        )
+        .unwrap();
+        assert!(!preferences.keep_awake);
+        preferences.keep_awake = true;
+        let saved = serde_json::to_string(&preferences).unwrap();
+        assert!(
+            serde_json::from_str::<Preferences>(&saved)
+                .unwrap()
+                .keep_awake
+        );
     }
 }

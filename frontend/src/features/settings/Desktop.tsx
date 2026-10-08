@@ -9,6 +9,8 @@ type Preferences = {
   start_minimized: boolean;
   autostart: boolean;
   notifications: boolean;
+  keep_awake: boolean;
+  keep_awake_failed: boolean;
   tray_available: boolean;
   version: string;
 };
@@ -24,7 +26,9 @@ export function DesktopSettings() {
   return (
     <div className="space-y-3">
       {settings &&
-        (['autostart', 'start_minimized', 'close_to_tray', 'notifications'] as const).map((key) => (
+        (
+          ['autostart', 'start_minimized', 'close_to_tray', 'keep_awake', 'notifications'] as const
+        ).map((key) => (
           <Check
             key={key}
             label={t(`gui.desktop.${key}`)}
@@ -67,18 +71,41 @@ export function DesktopSettings() {
 
 export function DesktopStatus() {
   const [failed, setFailed] = useState(false);
+  const [keepAwakeFailed, setKeepAwakeFailed] = useState(false);
   const t = useT();
   useEffect(() => {
+    let disposed = false;
+    let receivedPowerStatus = false;
     const listener = listen('desktop-error', () => setFailed(true));
+    const powerListener = listen<boolean>('desktop-keep-awake-failed', ({ payload }) => {
+      receivedPowerStatus = true;
+      if (!disposed) setKeepAwakeFailed(payload);
+    });
+    void powerListener
+      .then(() => invoke<Preferences>('desktop_settings'))
+      .then((settings) => {
+        if (!disposed && !receivedPowerStatus) setKeepAwakeFailed(settings.keep_awake_failed);
+      })
+      .catch(() => {});
     return () => {
+      disposed = true;
       void listener.then((stop) => stop());
+      void powerListener.then((stop) => stop());
     };
   }, []);
   return (
-    failed && (
+    (failed || keepAwakeFailed) && (
       <div className="mb-4">
         <Notice error>
-          {t('gui.desktop.error')} <Button onClick={() => setFailed(false)}>{t('close')}</Button>
+          {t(keepAwakeFailed ? 'gui.desktop.keep_awake_failed' : 'gui.desktop.error')}{' '}
+          <Button
+            onClick={() => {
+              setFailed(false);
+              setKeepAwakeFailed(false);
+            }}
+          >
+            {t('close')}
+          </Button>
         </Notice>
       </div>
     )

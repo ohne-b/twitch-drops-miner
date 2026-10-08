@@ -376,6 +376,8 @@
             "start_minimized": "Start in the tray",
             "autostart": "Start when I sign in",
             "notifications": "Notify me when a reward is claimed",
+            "keep_awake": "Keep computer awake while mining",
+            "keep_awake_failed": "Could not prevent automatic sleep. Your system's power settings still apply.",
             "tray_unavailable": "The system tray is unavailable. Closing the window will quit the app.",
             "error": "Could not complete that action. Try again.",
             "start_failed": "Drops Miner could not start",

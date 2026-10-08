@@ -1,6 +1,7 @@
 #[cfg(feature = "desktop-fixture")]
 mod fixture;
 mod ipc;
+mod power;
 mod shell;
 mod updates;
 
@@ -15,7 +16,7 @@ use std::{
 
 use tauri::Manager;
 use tauri_plugin_opener::OpenerExt;
-use tokio::sync::{Mutex, Semaphore};
+use tokio::sync::{Mutex, Notify, Semaphore};
 use tokio_util::{sync::CancellationToken, task::TaskTracker};
 use twitch_drops_miner_core::{
     app::{AppError, Application},
@@ -35,6 +36,8 @@ struct Desktop {
     pending: Mutex<HashMap<String, CancellationToken>>,
     preferences: Mutex<shell::Preferences>,
     preferences_path: PathBuf,
+    preferences_changed: Notify,
+    keep_awake_failed: AtomicBool,
     tray_available: AtomicBool,
     close_to_tray: AtomicBool,
     pause_action: Mutex<()>,
@@ -243,6 +246,8 @@ pub fn run() {
                 pending: Mutex::new(HashMap::new()),
                 preferences: Mutex::new(preferences),
                 preferences_path,
+                preferences_changed: Notify::new(),
+                keep_awake_failed: AtomicBool::new(false),
                 tray_available: AtomicBool::new(false),
                 close_to_tray: AtomicBool::new(close_to_tray),
                 pause_action: Mutex::new(()),
