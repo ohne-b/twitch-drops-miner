@@ -33,6 +33,7 @@ tempfile = { workspace = true, optional = true }
 
 [dev-dependencies]
 tempfile.workspace = true
+tokio = { workspace = true, features = ["test-util"] }
 
 [lints.rust]
 unsafe_code = "forbid"

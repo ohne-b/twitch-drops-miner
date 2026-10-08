@@ -13,7 +13,7 @@ use crate::{Desktop, ipc};
 
 const MAX_DOWNLOAD: u64 = 512 * 1024 * 1024;
 
-#[derive(Clone, Copy, Default, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Phase {
     #[default]
@@ -70,6 +70,54 @@ pub struct Updates {
 }
 
 impl Pending {
+    fn validate(&self, action: &Action) -> Result<(), AppError> {
+        if matches!(
+            self.status.phase,
+            Phase::Checking | Phase::Downloading | Phase::Installing
+        ) || self.status.restart_required
+        {
+            return Err(AppError::Unavailable);
+        }
+        if matches!(action, Action::Download) && self.update.is_none()
+            || matches!(action, Action::Install)
+                && (self.status.phase != Phase::Ready
+                    || self.bytes.is_none()
+                    || self.update.is_none())
+        {
+            return Err(AppError::InvalidRequest);
+        }
+        Ok(())
+    }
+
+    fn downloaded(
+        &mut self,
+        result: Option<tauri_plugin_updater::Result<Vec<u8>>>,
+        oversized: bool,
+        cancelled: bool,
+    ) {
+        self.bytes = None;
+        match result {
+            Some(Ok(bytes)) if !oversized && !cancelled => {
+                self.status.phase = Phase::Ready;
+                self.status.downloaded = bytes.len() as u64;
+                self.bytes = Some(bytes);
+            }
+            None if !oversized => self.status.phase = Phase::Available,
+            _ => {
+                self.status.phase = Phase::Failed;
+                self.status.error = Some("download_failed");
+            }
+        }
+        self.cancel = None;
+    }
+
+    fn install_failed(&mut self) {
+        self.status.phase = Phase::Failed;
+        self.status.error = Some("install_failed");
+        self.status.restart_required = true;
+        self.cancel = None;
+    }
+
     fn publish(&mut self, app: &tauri::AppHandle) -> Status {
         self.status.revision += 1;
         let _ = app.emit_to("main", "desktop-update", &self.status);
@@ -109,14 +157,10 @@ pub async fn start(app: &tauri::AppHandle, action: Action) -> Result<Status, ipc
         }
         return Ok(pending.status.clone());
     }
-    if matches!(
-        pending.status.phase,
-        Phase::Checking | Phase::Downloading | Phase::Installing
-    ) || state.quitting.load(Ordering::SeqCst)
-        || pending.status.restart_required
-    {
+    if state.quitting.load(Ordering::SeqCst) {
         return Err(AppError::Unavailable.into());
     }
+    pending.validate(&action)?;
     pending.status.error = None;
     let cancel = state.updates.cancel.child_token();
     pending.cancel = Some(cancel.clone());
@@ -141,12 +185,6 @@ pub async fn start(app: &tauri::AppHandle, action: Action) -> Result<Status, ipc
             });
         }
         Action::Install => {
-            if pending.status.phase != Phase::Ready
-                || pending.bytes.is_none()
-                || pending.update.is_none()
-            {
-                return Err(AppError::InvalidRequest.into());
-            }
             if state.quitting.swap(true, Ordering::SeqCst) {
                 return Err(AppError::ShuttingDown.into());
             }
@@ -165,10 +203,7 @@ pub async fn start(app: &tauri::AppHandle, action: Action) -> Result<Status, ipc
                     handle.restart();
                 }
                 let mut pending = state.updates.pending.lock().await;
-                pending.status.phase = Phase::Failed;
-                pending.status.error = Some("install_failed");
-                pending.status.restart_required = true;
-                pending.cancel = None;
+                pending.install_failed();
                 pending.publish(&handle);
                 state.quitting.store(false, Ordering::SeqCst);
                 crate::show(&handle);
@@ -184,10 +219,7 @@ async fn check(app: tauri::AppHandle, cancel: CancellationToken) {
     let operation = async { Ok::<Option<Update>, tauri_plugin_updater::Error>(None) };
     #[cfg(not(feature = "desktop-fixture"))]
     let operation = async {
-        let updater = app
-            .updater_builder()
-            .timeout(Duration::from_secs(600))
-            .build()?;
+        let updater = app.updater_builder().build()?;
         updater.check().await
     };
     let result = tokio::select! {
@@ -259,32 +291,99 @@ async fn download(app: tauri::AppHandle, update: Update, cancel: CancellationTok
         },
         || {},
     );
-    let result = tokio::select! {
-        biased;
-        _ = cancel.cancelled() => None,
-        result = operation => Some(result),
-    };
+    let result = download_result(operation, &cancel).await;
     let state = app.state::<Desktop>();
     let mut pending = state.updates.pending.lock().await;
-    match result {
-        Some(Ok(bytes)) if !oversized && !cancel.is_cancelled() => {
-            pending.status.phase = Phase::Ready;
-            pending.status.downloaded = bytes.len() as u64;
-            pending.bytes = Some(bytes);
-        }
-        None if !oversized => pending.status.phase = Phase::Available,
-        _ => {
-            pending.status.phase = Phase::Failed;
-            pending.status.error = Some("download_failed");
-        }
-    }
-    pending.cancel = None;
+    pending.downloaded(result, oversized, cancel.is_cancelled());
     pending.publish(&app);
+}
+
+async fn download_result(
+    operation: impl std::future::Future<Output = tauri_plugin_updater::Result<Vec<u8>>>,
+    cancel: &CancellationToken,
+) -> Option<tauri_plugin_updater::Result<Vec<u8>>> {
+    tokio::select! {
+        biased;
+        _ = cancel.cancelled() => None,
+        result = tokio::time::timeout(Duration::from_secs(600), operation) => Some(
+            result.unwrap_or_else(|_| Err(std::io::Error::from(std::io::ErrorKind::TimedOut).into()))
+        ),
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn only_verified_downloads_can_install_and_failed_install_requires_restart() {
+        let mut pending = Pending::default();
+        assert!(pending.validate(&Action::Download).is_err());
+        assert!(pending.validate(&Action::Install).is_err());
+        for phase in [Phase::Checking, Phase::Downloading, Phase::Installing] {
+            pending.status.phase = phase;
+            for action in [Action::Check, Action::Download, Action::Install] {
+                assert!(matches!(
+                    pending.validate(&action),
+                    Err(AppError::Unavailable)
+                ));
+            }
+        }
+        for error in [
+            tauri_plugin_updater::Error::MissingSignedVersion,
+            tauri_plugin_updater::Error::Network("interrupted".into()),
+        ] {
+            pending.downloaded(Some(Err(error)), false, false);
+            assert_eq!(pending.status.phase, Phase::Failed);
+            assert_eq!(pending.status.error, Some("download_failed"));
+            assert!(pending.bytes.is_none());
+            assert!(pending.validate(&Action::Install).is_err());
+            assert!(pending.validate(&Action::Check).is_ok());
+        }
+        pending.downloaded(None, false, true);
+        assert_eq!(pending.status.phase, Phase::Available);
+        assert!(pending.bytes.is_none());
+        pending.downloaded(Some(Ok(vec![1])), true, true);
+        assert_eq!(pending.status.phase, Phase::Failed);
+        assert!(pending.bytes.is_none());
+        pending.downloaded(Some(Ok(vec![1])), false, false);
+        assert_eq!(pending.status.phase, Phase::Ready);
+        assert_eq!(pending.bytes.take(), Some(vec![1]));
+        pending.install_failed();
+        assert_eq!(pending.status.error, Some("install_failed"));
+        assert!(pending.status.restart_required);
+        for action in [Action::Check, Action::Download, Action::Install] {
+            assert!(matches!(
+                pending.validate(&action),
+                Err(AppError::Unavailable)
+            ));
+        }
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn stalled_download_times_out_and_cancellation_does_not_become_an_error() {
+        let cancel = CancellationToken::new();
+        let start = tokio::time::Instant::now();
+        let stalled = download_result(std::future::pending(), &cancel).await;
+        assert!(
+            matches!(stalled, Some(Err(tauri_plugin_updater::Error::Io(error)))
+            if error.kind() == std::io::ErrorKind::TimedOut)
+        );
+        assert_eq!(start.elapsed(), Duration::from_secs(600));
+        assert_eq!(
+            download_result(async { Ok(vec![1]) }, &cancel)
+                .await
+                .unwrap()
+                .unwrap(),
+            vec![1]
+        );
+        cancel.cancel();
+        assert!(
+            download_result(std::future::pending(), &cancel)
+                .await
+                .is_none()
+        );
+    }
+
     #[test]
     fn installer_links_are_confined_to_the_announced_release() {
         let good = "https://github.com/ohne-b/twitch-drops-miner/releases/download/v1.7.0/Drops-Miner-setup.exe";
