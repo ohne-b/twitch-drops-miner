@@ -6,6 +6,9 @@ the alternate agent instruction files; do not recreate copies or links.
 
 ## Workflow
 
+- Use focused conventional commits. When merging is authorized, use a merge commit with
+  a conventional subject and PR number (for example `feat(desktop): add native application (#123)`),
+  not the default merge message.
 - Use descriptive `feat/` or `fix/` branches, conventional commits and PRs against
   `ohne-b/twitch-drops-miner:main`. Keep branches, commits and documentation free of assistant branding.
 - Preserve existing user changes, data, credentials, logs and backups. Ask before significant
@@ -32,13 +35,17 @@ The product is Twitch Drops Miner (dashboard: Drops Miner), repository and
 Cargo package/binary are twitch-drops-miner. Preserve the existing Compose service/container name,
 data/log directories, TDM log prefix, auth cookie and CSRF header for upgrade compatibility.
 
-One Rust Cargo package owns the backend. Use concrete structs with methods and composition
+A Cargo workspace separates the shared core in `crates/core/` from the root server package
+and the Tauri wrapper in `desktop/`. The core owns mining, application commands and durable
+storage; it has no production HTTP-server or graphical dependencies. Both wrappers use its
+owned runtime and credential-safe logging. Use concrete structs with methods and composition
 for domain/services (the repository's OOP requirement), typed enums and DRY shared policies.
 Do not add forwarding hierarchies or speculative traits with one implementation.
 
 | Module | Responsibility |
 | --- | --- |
-| `main.rs` | CLI/env, credential-safe logging, owned shutdown, healthcheck |
+| `src/main.rs` | Server CLI/env, HTTP lifecycle and healthcheck |
+| `crates/core/src/runtime.rs`, `logging.rs` | Shared owned miner shutdown and credential-safe logging |
 | `config.rs`, `dto.rs` | Typed settings, compatible migration, API snapshots |
 | `domain.rs`, `policy.rs` | Campaign/drop/channel eligibility and dependency-aware ignores |
 | `store.rs` | Exclusive data directory, atomic settings/history/archive/claim journal |
@@ -51,9 +58,66 @@ Do not add forwarding hierarchies or speculative traits with one implementation.
 | `fixture.rs`, `bin/dashboard-fixture.rs` | Feature-gated offline browser fixture |
 | `frontend/`, `lang/English.json` | React/TypeScript/Tailwind and one message catalog |
 
+The domain/application/storage/Twitch modules below live in `crates/core/src/`; web and
+dashboard authentication remain in the root server package. Workspace package metadata owns
+the shared version. Default Cargo members validate the server and core without desktop system libraries.
+
 Build frontend assets before backend/static tests. `web/` is ignored output. Release binaries
 embed it and run without a build tool/runtime companion. Production builds never enable
 `dashboard-fixture`; fixture routes must return 404 in production.
+
+## Desktop contracts
+
+- `desktop/` is a Tauri wrapper around the same core and frontend. No HTTP listener,
+  sidecar, shell companion, alternate miner or second account. Keep Docker behavior intact.
+- Store native data/logs in the platform app directories, separate from the server. Keep
+  existing record formats; never import, delete or rewrite an installation automatically.
+  Store desktop preferences separately and report unreadable storage instead of resetting it.
+- Native IPC is limited to the bundled main window, typed commands and bounded requests.
+  Cancel reads, preserve accepted writes, coalesce snapshot patches and fence stale replies.
+  Restrict navigation; validated external HTTP(S) links open in the system browser.
+  Native CSP permits bundled fonts from local assets and data URLs, including Vite's inlined subsets.
+- Use official Tauri tray, single-instance, window-state, autostart, notification and updater
+  plugins. Reopening restores the existing window. Tray pause changes the shared saved setting.
+  Default close-to-tray off on Linux, where tray hosts vary. Failed tray creation must leave
+  the window reachable. Quit/restart/install own and drain core and native work.
+  The window title and supported tray tooltip use the same frontend mining-title formatter,
+  including confirmed percentages, pause and disconnect state. Apply both through one bounded,
+  local-window command; never derive a separate estimated tray counter.
+  The tray menu begins with a disabled status row and separator. Update it through that same
+  command, omit only the trailing app-name suffix, and escape native menu mnemonic markers.
+  Retain game-only, channel-watching, paused, idle, disconnected and account-unavailable states.
+- Desktop-only `keep_awake` defaults false, including older preferences. Request idle-system
+  sleep prevention only for a logged-in, unpaused Watching/AwaitingProgress/ManualWatching
+  snapshot; release on idle, pause, logout, disable and shutdown. Never inhibit the display
+  or explicit user sleep. Keep platform requests off async/UI threads and acquire/release on
+  one owned blocking thread (required by Windows), coalescing state changes and draining on
+  exit/install. Report acquisition failures without stopping mining. Offline fixtures and
+  unit tests use fake guards, never real power requests. Linux uses systemd idle inhibition
+  with a five-second bound covering D-Bus connection/authentication and Inhibit; hold only
+  the returned owned descriptor. Document that desktop power-manager support varies.
+- Enable Tauri's native zoom hotkeys and mouse-wheel support for the bundled main window,
+  with its scoped webview-zoom permission. Use Ctrl +/−/0 (Command on macOS) and Ctrl+wheel;
+  keep the browser dashboard's own zoom behavior unchanged.
+- Updates download and verify before stopping mining. Require signed versions, no downgrades,
+  one operation at a time and cancellable bounded downloads. A failed install stays visible
+  with restart/manual recovery. Only an explicit install action may replace the application.
+  Show a quiet, clickable Update v… link above the sidebar's GitHub/account controls when
+  an update version is known; keep it beside the brand in compact windows without adding height.
+  Truncate long labels while retaining the full accessible name and tooltip. Reuse the existing
+  update status and dialog, retain access during downloads/failures and across navigation,
+  and keep checking/current states quiet. Clicking the link never installs automatically.
+- Ship Windows x64 NSIS, universal macOS DMG plus the updater app archive, and Linux x64
+  AppImage/DEB. No MSI or portable Windows distribution. Keep one backward-compatible
+  `latest.json` for server and desktop. Platform-specific updater entries choose the right
+  package; both Mac architectures share the same universal update archive.
+- Validation builds the release bundles once. Publication only verifies/signs/promotes those
+  exact artifacts from current-main validation. The updater private key stays in `prod`;
+  pull requests never receive signing secrets. OS signing is separate from updater signing.
+  macOS bundles use Tauri's ad-hoc identity before the DMG and update archive are created;
+  verify the extracted archive's bundle signature and both architectures in CI.
+- `desktop-fixture` is temporary/offline test code, excluded from all production builds and
+  installers. Native smoke checks exercise the real webview and IPC without Twitch access.
 
 ## Mining contracts
 
@@ -199,7 +263,7 @@ embed it and run without a build tool/runtime companion. Production builds never
   durable cleared-ID tombstones before refreshing; failure to persist must fail the clear.
 - Requests use bounded concurrency/rate, retries and cancellation. Connection Quality defaults
   to 3 for new or missing settings; preserve explicit saved values. Quality 1..6 controls connect
-  timeout 5×quality and total 10×quality seconds; the saved refresh interval actually schedules
+  timeout 5Ã—quality and total 10Ã—quality seconds; the saved refresh interval actually schedules
   inventory work. Slow discovery must not block watch cadence. Duplicate idle prompts collapse.
   Nonfatal notification dismissal failures remain visible but never extend or clear the shared
   scheduling retry deadline; authentication and cancellation still propagate.
@@ -394,7 +458,7 @@ embed it and run without a build tool/runtime companion. Production builds never
   CSV/JSON export, Since filter or separate history clear action. Clear all cache clears history
   and publishes the durable change to open dashboards; archives never recreate cleared rows.
 - History artwork is optional; retain old rows and use matching live benefits as display fallback.
-  No Telegram controls/API/credentials in responses and no dashboard updater.
+  No Telegram controls/API/credentials in responses and no server-dashboard installer/updater.
 - Campaigns starts with Settings-style Available/History icon tabs and the total campaign count
   immediately left of refresh on the right. Omit the filtered count; match Last confirmed's
   12px/#888888 text. Keep the page heading screen-reader-only. Clear filters stays beside All games

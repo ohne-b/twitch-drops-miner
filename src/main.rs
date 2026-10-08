@@ -7,9 +7,9 @@ use std::{
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 use twitch_drops_miner::{
-    miner::Miner,
+    logging,
+    runtime::Runtime,
     web::{self, App},
 };
 
@@ -37,47 +37,6 @@ struct Args {
 #[derive(Subcommand)]
 enum Action {
     Healthcheck,
-}
-
-fn log_filter(verbose: u8, diagnostics: bool) -> EnvFilter {
-    // Transport TRACE output includes OAuth-bearing frames. Only this package
-    // may increase verbosity; ambient RUST_LOG cannot enable dependency traces.
-    let level = match verbose {
-        0 => "info",
-        1 => "debug",
-        _ => "trace",
-    };
-    let diagnostics = if diagnostics { "debug" } else { "off" };
-    EnvFilter::new(format!(
-        "warn,twitch_drops_miner={level},tdm_diagnostics={diagnostics}"
-    ))
-}
-
-fn logging(args: &Args) -> Result<tracing_appender::non_blocking::WorkerGuard> {
-    let file = tracing_appender::rolling::Builder::new()
-        .rotation(tracing_appender::rolling::Rotation::DAILY)
-        .filename_prefix("TDM")
-        .filename_suffix("log")
-        .max_log_files(5)
-        .build(&args.log_dir)
-        .context("could not open log directory")?;
-    let (writer, guard) = tracing_appender::non_blocking(file);
-    tracing_subscriber::registry()
-        .with(log_filter(args.verbose, args.diagnostics))
-        .with(
-            tracing_subscriber::fmt::layer()
-                .with_target(false)
-                .with_writer(std::io::stderr),
-        )
-        .with(
-            tracing_subscriber::fmt::layer()
-                .with_target(false)
-                .with_ansi(false)
-                .with_writer(writer),
-        )
-        .try_init()
-        .context("could not initialize logging")?;
-    Ok(guard)
 }
 
 async fn shutdown_signal() {
@@ -121,7 +80,7 @@ async fn run(args: Args) -> Result<()> {
         );
         return Ok(());
     }
-    let _logs = logging(&args)?;
+    let _logs = logging::initialize(&args.log_dir, args.verbose, args.diagnostics)?;
     if args.diagnostics {
         tracing::info!("Advanced upstream diagnostics enabled (redacted and bounded)");
     }
@@ -141,21 +100,19 @@ async fn run(args: Args) -> Result<()> {
         .with_graceful_shutdown(shutdown.cancelled_owned())
         .await
     });
-    let mut miner = tokio::spawn(Miner::new(app.application.clone(), commands).run());
-    let mut miner_finished = false;
+    let mut runtime = Runtime::start(app.application.clone(), commands);
     let mut server_finished = false;
     let mut failure = None;
     tokio::select! {
         _=shutdown_signal()=>{},
         _=app.shutdown.cancelled()=>{},
-        result=&mut miner=>{miner_finished=true;if !matches!(result,Ok(Ok(()))){failure=Some("mining task failed");}},
+        result=runtime.wait()=>{if result.is_err(){failure=Some("mining task failed");}},
         result=&mut server=>{server_finished=true;if !matches!(result,Ok(Ok(()))){failure=Some("dashboard server failed");}},
     }
     app.shutdown.cancel();
-    if !miner_finished && !matches!(miner.await, Ok(Ok(()))) {
+    if runtime.shutdown().await.is_err() {
         failure = Some("mining task failed");
     }
-    app.drain_writes().await;
     app.sockets.close().await;
     if !server_finished {
         match tokio::time::timeout(Duration::from_secs(10), &mut server).await {
@@ -182,70 +139,5 @@ async fn main() -> ExitCode {
             eprintln!("Twitch Drops Miner: {error}");
             ExitCode::FAILURE
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::sync::{Arc, Mutex};
-    #[derive(Clone)]
-    struct Writer(Arc<Mutex<Vec<u8>>>);
-    impl std::io::Write for Writer {
-        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-            self.0.lock().unwrap().extend(bytes);
-            Ok(bytes.len())
-        }
-        fn flush(&mut self) -> std::io::Result<()> {
-            Ok(())
-        }
-    }
-    #[test]
-    fn maximal_verbosity_cannot_log_transport_frames_or_request_credentials() {
-        let output = Arc::new(Mutex::new(vec![]));
-        let writer = Writer(output.clone());
-        let subscriber = tracing_subscriber::registry()
-            .with(log_filter(255, false))
-            .with(
-                tracing_subscriber::fmt::layer()
-                    .with_ansi(false)
-                    .with_writer(move || writer.clone()),
-            );
-        tracing::subscriber::with_default(subscriber, || {
-            tracing::trace!(target:"tungstenite::protocol","LISTEN auth_token=secret");
-            tracing::debug!(target:"reqwest::connect","proxy password=secret");
-            tracing::trace!(target:"twitch_drops_miner","safe application diagnostic");
-            tracing::debug!(target:"tdm_diagnostics","advanced response capture");
-        });
-        let text = String::from_utf8(output.lock().unwrap().clone()).unwrap();
-        assert!(text.contains("safe application diagnostic"));
-        assert!(!text.contains("secret"));
-        assert!(!text.contains("advanced response capture"));
-    }
-
-    #[test]
-    fn diagnostics_requires_explicit_opt_in_and_keeps_dependency_traces_disabled() {
-        let output = Arc::new(Mutex::new(vec![]));
-        let writer = Writer(output.clone());
-        let subscriber = tracing_subscriber::registry()
-            .with(log_filter(0, true))
-            .with(
-                tracing_subscriber::fmt::layer()
-                    .with_ansi(false)
-                    .with_writer(move || writer.clone()),
-            );
-        tracing::subscriber::with_default(subscriber, || {
-            tracing::debug!(target:"tdm_diagnostics", "advanced response capture");
-            tracing::trace!(target:"tungstenite::protocol", "auth_token=secret");
-            tracing::debug!(target:"reqwest::connect", "proxy password=secret");
-        });
-        let text = String::from_utf8(output.lock().unwrap().clone()).unwrap();
-        assert!(text.contains("advanced response capture"));
-        assert!(!text.contains("secret"));
-        assert!(
-            Args::try_parse_from(["miner", "--diagnostics"])
-                .unwrap()
-                .diagnostics
-        );
     }
 }

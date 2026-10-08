@@ -10,7 +10,7 @@
   <a href="https://github.com/ohne-b/twitch-drops-miner?tab=License-1-ov-file"><img src="https://img.shields.io/badge/license-PolyForm_Noncommercial-9146ff" alt="License: PolyForm Noncommercial"></a>
 </p>
 
-Choose your games in the web dashboard, and the miner watches eligible channels and
+Choose your games in the app or web dashboard, and the miner watches eligible channels and
 claims your drops. It runs on your own hardware with one Twitch account per installation.
 Mining reads small stream playlists and checks new segments' response headers; it does
 not download video or audio. Only Twitch-reported progress counts as confirmed watch time.
@@ -24,6 +24,47 @@ not download video or audio. Only Twitch-reported progress counts as confirmed w
 > hosting and services for other users aren't supported. Twitch changes can break compatibility.
 
 ## Quick start
+
+### Desktop app
+
+Download the installer for your computer from [Releases](https://github.com/ohne-b/twitch-drops-miner/releases).
+
+| System | Download |
+| --- | --- |
+| Windows 10/11 (64-bit) | `windows-x64-setup.exe` |
+| macOS 12 or newer (Intel and Apple silicon) | `macos-universal.dmg` |
+| Linux (64-bit, Ubuntu 22.04 or newer) | `linux-x64.AppImage` or `linux-x64.deb` |
+
+Open **Drops Miner**, then follow [First login](#first-login). No Docker, terminal or port
+configuration is needed. Keep the computer awake while mining.
+
+The tray menu starts with a non-clickable status row, followed by **Open**, **Pause/Resume
+mining**, **Check for updates** and **Quit**. The status matches the browser title: confirmed
+percentage and game, game alone before confirmation, **Watching [channel]**, **Paused**,
+**Idle**, **Disconnected**, or **Drops Miner** before account data is available.
+On Windows and macOS, its tooltip shows the same confirmed progress and game as the window
+title, or the current paused/idle status.
+**Settings > Desktop** controls starting at sign-in, starting minimized, notifications and
+whether closing the window keeps mining. On Linux, keeping the app in the tray is opt-in;
+some desktop environments need a tray extension. Launching the app again reopens its window.
+
+**Keep computer awake while mining** is off by default. Enable it in **Settings > Desktop**
+to prevent automatic sleep during active mining. The screen can turn off, and pausing,
+going idle or quitting releases the request. Manual sleep still works. On Linux this uses
+systemd's idle inhibitor; desktop power managers may not honor it.
+
+Zoom with **Ctrl +/−**, **Ctrl+0** to reset, or **Ctrl+mouse wheel**. On macOS, use
+**Command** for the keyboard shortcuts.
+
+Installers currently have no Microsoft/Apple signing certificate, so the OS may ask for
+approval. The Mac app uses an ad-hoc signature. In-app update packages are signed and
+verified separately.
+
+When an update is available, **Update v…** appears at the bottom left, above the GitHub
+and account controls. Select it to open the download/install dialog. In narrow windows,
+the link sits beside the app name in the header.
+
+### Docker
 
 With Docker Compose installed, save this as `compose.yaml` in a new folder:
 
@@ -188,8 +229,12 @@ A live channel can be watched without a known campaign, but Twitch decides wheth
 
 ## Updating
 
-**Settings > Maintenance** checks for new releases and links to their notes.
-Install updates from the terminal.
+**Desktop:** use **Check for updates** in the tray menu or **Settings > Maintenance**.
+Download the update, then select **Install and restart**. Mining continues during the
+download and stops safely before installation. You can also install a newer release manually.
+The Linux package may ask for your system password when updating a DEB.
+
+**Docker:** Maintenance links to new releases. Install the image from the terminal:
 
 Save your Compose file first and keep the previous image for rollback. If `image:` pins
 a version, change it to the version you want.
@@ -246,6 +291,14 @@ The historical image remains at `ghcr.io/ohne-b/twitch-miner:0.1.0` for rollback
 </details>
 
 ## Data and access
+
+Desktop data stays separate from Docker. Use **Settings > Desktop > Open data folder**
+or **Open log folder** to find it. Settings and credentials are in the `data` subfolder;
+`desktop.json` contains only app preferences. Quit from the tray before backing up this folder.
+There is no desktop HTTP listener or dashboard password. Your operating system account
+protects these files. The app does not import an existing Docker installation automatically.
+
+Docker uses these mounted folders:
 
 | Folder | Contents |
 | --- | --- |
@@ -340,7 +393,7 @@ existing `environment` block, keeping its other settings. Then recreate only the
 docker compose up -d --no-deps twitch-drops-miner
 ```
 
-For a standalone binary, use `--diagnostics` or `TDM_DIAGNOSTICS=true`.
+For the server binary, use `--diagnostics` or `TDM_DIAGNOSTICS=true`.
 It is off by default, even with `-v` or `-vv`; startup logs confirm when enabled.
 
 1. Reproduce the problem. Diagnostics cannot recover earlier failures.
@@ -407,7 +460,7 @@ Switch back to `:latest` to return to stable releases.
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) for development, testing and review requirements.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for server/desktop development, testing and review requirements.
 Report bugs through [GitHub issues](https://github.com/ohne-b/twitch-drops-miner/issues),
 including your version, installation method and redacted logs. Never share credentials or device codes.
 

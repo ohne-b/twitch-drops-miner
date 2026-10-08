@@ -52,7 +52,7 @@ impl Session {
         Ok(saved)
     }
     fn preserve_invalid(directory: &Path) -> Result<(), TwitchError> {
-        let suffix = crate::auth::random_hex::<16>().map_err(|_| TwitchError::Storage)?;
+        let suffix = crate::random_hex::<16>().map_err(|_| TwitchError::Storage)?;
         std::fs::rename(
             directory.join(SESSION_FILE),
             directory.join(format!("twitch_session.invalid-{suffix}.json")),

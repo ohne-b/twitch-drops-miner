@@ -1,7 +1,7 @@
+import { isDesktop } from '../shared/lib/platform';
 import { createContext, useContext, useEffect, useReducer, useRef, type ReactNode } from 'react';
-import { io, type Socket } from 'socket.io-client';
-import type { AuthStatus, ServerEvents, Snapshot } from '../shared/lib/types';
-import { request } from '../shared/lib/api';
+import type { Snapshot } from '../shared/lib/types';
+import { connectBrowser, type Subscription } from './transport';
 import { I18n } from '../shared/lib/i18n';
 import { useAutosave } from './useAutosave';
 import { initialState, reducer } from './reducer';
@@ -27,59 +27,27 @@ const Context = createContext<{
 
 export function MinerProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const transport = useRef<Socket<ServerEvents, { state_resync: () => void }> | null>(null);
+  const transport = useRef<Subscription | null>(null);
   const autosave = useAutosave(state.data?.settings, state.hydrated, (settings, revision) => {
     dispatch({ type: 'settings', settings, revision });
   });
   useEffect(() => {
-    if (state.resync) transport.current?.emit('state_resync');
+    if (state.resync) transport.current?.resync();
   }, [state.resync]);
   useEffect(() => {
-    const socket: Socket<ServerEvents, { state_resync: () => void }> = io({
-      autoConnect: false,
-      query: { protocol: '2' },
-    });
-    transport.current = socket;
     let disposed = false;
-    let incompatible = false;
-    const checkAuth = (reconnect = false) => {
-      void request<AuthStatus>('/api/auth/status')
-        .then((auth) => {
-          if (disposed) return;
-          if (!auth.authenticated) window.dispatchEvent(new Event('auth-expired'));
-          else {
-            window.dispatchEvent(new Event('auth-updated'));
-            if (reconnect && !incompatible) socket.connect();
-          }
-        })
-        .catch(() => {});
+    const start = async () => {
+      const connect = isDesktop()
+        ? (await import('../shared/lib/desktop')).connectDesktop
+        : connectBrowser;
+      if (disposed) return;
+      transport.current = connect(dispatch);
     };
-    const mismatch = () => {
-      incompatible = true;
-      dispatch({ type: 'incompatible' });
-    };
-    socket.on('state_snapshot', (value) => dispatch({ type: 'snapshot', value }));
-    socket.on('state_patch', (value) => dispatch({ type: 'patch', value }));
-    socket.on('protocol_mismatch', mismatch);
-    socket.on('initial_state', mismatch);
-    socket.on('disconnect', (reason) => {
-      dispatch({ type: 'disconnect' });
-      checkAuth(reason === 'io server disconnect');
-    });
-    socket.on('connect_error', () => {
-      dispatch({ type: 'disconnect' });
-      checkAuth();
-    });
-    socket.on('notification', (value) => {
-      if ('Notification' in window && Notification.permission === 'granted')
-        new Notification(value.title, { body: value.message });
-    });
-    socket.connect();
+    void start();
     return () => {
       disposed = true;
+      transport.current?.close();
       transport.current = null;
-      socket.removeAllListeners();
-      socket.disconnect();
     };
   }, []);
   return (

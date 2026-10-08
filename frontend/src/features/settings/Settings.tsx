@@ -1,3 +1,6 @@
+import { DesktopUpdateButton } from './DesktopUpdates';
+import { isDesktop } from '../../shared/lib/platform';
+import { DesktopSettings } from './Desktop';
 import { Icon } from '@mdi/react';
 import { Link, useLocation } from 'react-router';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -11,6 +14,7 @@ import {
   mdiShieldLockOutline,
   mdiLanConnect,
   mdiWrenchOutline,
+  mdiMonitor,
 } from '@mdi/js';
 import type {
   AuthStatus,
@@ -241,8 +245,9 @@ function SettingsContent({ settings, auth }: { settings: SettingsData; auth: Aut
   const draft = autosave.draft ?? settings;
   const location = useLocation();
   const section =
-    ['account', 'access', 'connection', 'maintenance'].find((id) => `#${id}` === location.hash) ??
-    'account';
+    ['account', isDesktop() ? 'desktop' : 'access', 'connection', 'maintenance'].find(
+      (id) => `#${id}` === location.hash,
+    ) ?? 'account';
   const [confirmation, setConfirmation] = useState<{
     title: string;
     text: string;
@@ -296,7 +301,7 @@ function SettingsContent({ settings, auth }: { settings: SettingsData; auth: Aut
         {(
           [
             ['account', mdiAccountOutline],
-            ['access', mdiShieldLockOutline],
+            isDesktop() ? ['desktop', mdiMonitor] : ['access', mdiShieldLockOutline],
             ['connection', mdiLanConnect],
             ['maintenance', mdiWrenchOutline],
           ] as const
@@ -308,7 +313,7 @@ function SettingsContent({ settings, auth }: { settings: SettingsData; auth: Aut
             to={`#${id}`}
           >
             <Icon path={icon} className="mdi-icon" />
-            {t(id)}
+            {t(id === 'desktop' ? 'gui.desktop.tab' : id)}
           </Link>
         ))}
       </nav>
@@ -399,7 +404,7 @@ function SettingsContent({ settings, auth }: { settings: SettingsData; auth: Aut
               />
             </Field>
 
-            <p className="muted">{t(connected ? 'connected' : 'connecting')}</p>
+            {!isDesktop() && <p className="muted">{t(connected ? 'connected' : 'connecting')}</p>}
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label={t('proxy')} help={t('proxy_help')}>
                 <Input
@@ -439,9 +444,15 @@ function SettingsContent({ settings, auth }: { settings: SettingsData; auth: Aut
           </Section>
         </fieldset>
       </form>
-      <Access hidden={section !== 'access'} initial={auth} disabled={dirty || !connected} />
+      {isDesktop() ? (
+        <Section hidden={section !== 'desktop'} id="desktop">
+          <DesktopSettings />
+        </Section>
+      ) : (
+        <Access hidden={section !== 'access'} initial={auth} disabled={dirty || !connected} />
+      )}
       <Section hidden={section !== 'maintenance'} id="maintenance">
-        <ReleaseNotice disabled={!connected} />
+        {isDesktop() ? <DesktopUpdateButton /> : <ReleaseNotice disabled={!connected} />}
         <div className="flex flex-wrap gap-2">
           <Button
             disabled={!connected || command.busy}

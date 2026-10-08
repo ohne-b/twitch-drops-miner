@@ -189,7 +189,7 @@ mod tests {
     #[test]
     fn version_one_records_exclude_runtime_projection_and_round_trip() {
         let fixture: serde_json::Value =
-            serde_json::from_str(include_str!("../../frontend/tests/fixture.json")).unwrap();
+            serde_json::from_str(include_str!("../../../../frontend/tests/fixture.json")).unwrap();
         let mut campaign: CampaignView =
             serde_json::from_value(fixture["campaigns"][0].clone()).unwrap();
         campaign.game_key = "rust".into();

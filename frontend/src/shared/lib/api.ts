@@ -1,3 +1,4 @@
+import { isDesktop } from './platform';
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -12,6 +13,10 @@ export async function request<T>(
   method = data === undefined ? 'GET' : 'POST',
   signal?: AbortSignal,
 ): Promise<T> {
+  if (isDesktop()) {
+    const { desktopRequest } = await import('./desktop');
+    return desktopRequest<T>(path, data, method, signal);
+  }
   const response = await fetch(path, {
     method,
     credentials: 'same-origin',

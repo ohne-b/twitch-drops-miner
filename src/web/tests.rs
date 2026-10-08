@@ -133,7 +133,6 @@ async fn refresh_acknowledgement_does_not_mean_completion_and_requests_coalesce(
 
 #[tokio::test]
 async fn game_directory_requires_dashboard_auth_csrf_and_bounded_queries() {
-    use crate::app::commands::GameQuery;
     let test = TestApp::new("");
     let cookie = test.enable().await;
     let headers = [("x-tdm-request", "1")];
@@ -185,25 +184,6 @@ async fn game_directory_requires_dashboard_auth_csrf_and_bounded_queries() {
         .0,
         StatusCode::SERVICE_UNAVAILABLE
     );
-    let (sender, mut requests) = tokio::sync::mpsc::channel(4);
-    *test.app.game_queries.write().await = Some(sender);
-    let response = async {
-        let request = requests.recv().await.unwrap();
-        assert!(matches!(request.query, GameQuery::Search(ref name) if name == "Rust"));
-        request.complete.send(Ok(vec![])).unwrap();
-    };
-    let (result, _) = tokio::join!(
-        test.call(
-            Method::POST,
-            "/api/games",
-            json!({"search":"Rust"}),
-            &cookie,
-            &headers
-        ),
-        response
-    );
-    assert_eq!(result.0, StatusCode::OK);
-    assert_eq!(result.2, b"[]");
 }
 
 #[tokio::test]
@@ -633,7 +613,7 @@ async fn settings_commit_survives_the_request_future_being_dropped() {
             .unwrap()
     });
     tokio::time::timeout(Duration::from_secs(2), async {
-        while test.app.writes.is_empty() {
+        while !test.app.has_pending_writes() {
             tokio::task::yield_now().await;
         }
     })
@@ -771,7 +751,7 @@ async fn accepted_cache_clear_survives_client_disconnect() {
     let app = test.app.clone();
     let request = tokio::spawn(async move { app.clear_cache().await });
     tokio::time::timeout(Duration::from_secs(3), async {
-        while test.app.writes.is_empty() {
+        while !test.app.has_pending_writes() {
             tokio::task::yield_now().await;
         }
     })

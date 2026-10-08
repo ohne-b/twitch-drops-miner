@@ -3,7 +3,7 @@ pub mod socket;
 #[cfg(test)]
 mod tests;
 
-use std::{net::SocketAddr, path::PathBuf, sync::Arc, time::Duration};
+use std::{net::SocketAddr, path::PathBuf, sync::Arc};
 
 use anyhow::Result;
 use axum::{
@@ -15,7 +15,6 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
     routing::{get, post},
 };
-use chrono::{NaiveDate, NaiveDateTime};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use socketioxide::SocketIo;
@@ -28,11 +27,13 @@ use crate::{
     },
     dto::SettingsView,
     origin::DashboardOrigin,
-    store::HistoryFilter,
 };
 use socket::SocketHub;
 
-use crate::app::{AppError, Application, ENGLISH};
+use crate::app::{
+    AppError, Application, ENGLISH,
+    api::{ChannelSelection, HistoryQuery},
+};
 pub use crate::app::{Command, CommandRequest, message};
 
 pub struct WebState {
@@ -84,25 +85,7 @@ async fn games(
     State(app): State<Arc<App>>,
     Json(query): Json<crate::app::commands::GameQuery>,
 ) -> Result<Json<Vec<crate::config::GameMetadata>>, ApiError> {
-    if !query.valid() {
-        return Err(ApiError::invalid());
-    }
-    let sender = app
-        .game_queries
-        .read()
-        .await
-        .clone()
-        .ok_or_else(ApiError::unavailable)?;
-    let (complete, result) = tokio::sync::oneshot::channel();
-    sender
-        .try_send(crate::app::commands::GameRequest { query, complete })
-        .map_err(|_| ApiError::unavailable())?;
-    let games = tokio::time::timeout(Duration::from_secs(12), result)
-        .await
-        .map_err(|_| ApiError::unavailable())?
-        .map_err(|_| ApiError::unavailable())?
-        .map_err(|_| ApiError::unavailable())?;
-    Ok(Json(games))
+    Ok(Json(app.games(query).await?))
 }
 impl ApiError {
     fn invalid() -> Self {
@@ -115,6 +98,12 @@ impl ApiError {
 impl From<AppError> for ApiError {
     fn from(error: AppError) -> Self {
         match error {
+            AppError::InvalidRequest => Self::invalid(),
+            AppError::InvalidManualDuration => {
+                Self(StatusCode::BAD_REQUEST, "invalid_manual_duration")
+            }
+            AppError::InvalidChannel => Self(StatusCode::BAD_REQUEST, "invalid_channel"),
+            AppError::ChannelNotFound => Self(StatusCode::NOT_FOUND, "channel_not_found"),
             AppError::ShuttingDown => Self(StatusCode::CONFLICT, "shutting_down"),
             AppError::LoginRequired => Self(StatusCode::CONFLICT, "twitch_login_required"),
             AppError::SettingsConflict => Self(StatusCode::CONFLICT, "settings_conflict"),
@@ -421,45 +410,7 @@ async fn update_settings(
     request: Request,
 ) -> Result<Json<Value>, ApiError> {
     let patch: Value = document(request).await?;
-    let permit = app
-        .settings_slot
-        .clone()
-        .acquire_owned()
-        .await
-        .map_err(|_| ApiError::unavailable())?;
-    let owned = app.clone();
-    // Once a write starts, an HTTP disconnect cannot leave disk and live state
-    // disagreeing. Shutdown drains the transaction before releasing the data lock.
-    app.writes
-        .spawn(async move {
-            let result = save_settings(owned.clone(), patch).await;
-            // The miner can append a manually selected game during reconfiguration.
-            // Never hold the settings transaction while waiting for it to drain.
-            drop(permit);
-            if result.is_ok() {
-                owned.command(Command::SettingsChanged).await?;
-            }
-            result
-        })
-        .await
-        .map_err(|_| ApiError::unavailable())?
-}
-
-async fn save_settings(app: Arc<App>, patch: Value) -> Result<Json<Value>, ApiError> {
-    let settings = app
-        .change_settings(|current| {
-            if patch
-                .get("revision")
-                .is_some_and(|v| !v.is_null() && v.as_str() != Some(current.revision.as_str()))
-            {
-                return Err(AppError::SettingsConflict);
-            }
-            current
-                .values
-                .patched(&patch)
-                .map_err(|_| AppError::InvalidSettings)
-        })
-        .await?;
+    let settings = app.application.update_settings(patch).await?;
     Ok(Json(json!({"success":true,"settings":settings})))
 }
 
@@ -467,90 +418,15 @@ async fn select_channel(
     State(app): State<Arc<App>>,
     request: Request,
 ) -> Result<Json<Value>, ApiError> {
-    #[derive(Deserialize)]
-    #[serde(deny_unknown_fields)]
-    struct Selection {
-        channel_id: Option<u64>,
-        channel: Option<String>,
-        duration_minutes: Option<u32>,
-    }
-    let selection: Selection = document(request).await?;
-    if app.snapshot.read().await.login.user_id.is_none() {
-        return Err(ApiError(StatusCode::CONFLICT, "twitch_login_required"));
-    }
-    if selection
-        .duration_minutes
-        .is_some_and(|minutes| !(1..=1440).contains(&minutes))
-    {
-        return Err(ApiError(StatusCode::BAD_REQUEST, "invalid_manual_duration"));
-    }
-    let duration = selection
-        .duration_minutes
-        .map(|minutes| Duration::from_secs(u64::from(minutes) * 60));
-    if selection.channel.is_some() == selection.channel_id.is_some() {
-        return Err(ApiError::invalid());
-    }
-    if let Some(channel) = selection.channel {
-        let login = crate::twitch::channels::channel_login(&channel)
-            .ok_or(ApiError(StatusCode::BAD_REQUEST, "invalid_channel"))?;
-        app.command(Command::MineChannel(login, duration)).await?;
-        return Ok(Json(json!({"success":true})));
-    }
-    let channel_id = selection.channel_id.unwrap();
-    if !app
-        .snapshot
-        .read()
-        .await
-        .channels
-        .iter()
-        .any(|c| c.id == channel_id)
-    {
-        return Err(ApiError(StatusCode::NOT_FOUND, "channel_not_found"));
-    }
-    app.command(Command::SelectChannel(channel_id, duration))
-        .await?;
+    let selection: ChannelSelection = document(request).await?;
+    app.application.select_channel(selection).await?;
     Ok(Json(json!({"success":true})))
 }
 
-#[derive(Deserialize, Default)]
-struct HistoryQuery {
-    game: Option<String>,
-    campaign_id: Option<String>,
-    since: Option<String>,
-    limit: Option<usize>,
-}
-impl HistoryQuery {
-    fn filter(self) -> HistoryFilter {
-        let since = self.since.and_then(|s| {
-            s.parse()
-                .ok()
-                .or_else(|| {
-                    NaiveDate::parse_from_str(&s, "%Y-%m-%d")
-                        .ok()
-                        .and_then(|d| d.and_hms_opt(0, 0, 0))
-                        .map(|d| d.and_utc())
-                })
-                .or_else(|| {
-                    NaiveDateTime::parse_from_str(&s, "%Y-%m-%dT%H:%M:%S")
-                        .ok()
-                        .map(|d| d.and_utc())
-                })
-        });
-        HistoryFilter {
-            game: self.game.filter(|s| !s.is_empty()),
-            campaign_id: self.campaign_id,
-            since,
-            limit: self.limit.filter(|n| *n > 0).map(|n| n.min(5000)),
-        }
-    }
-}
 async fn history(State(app): State<Arc<App>>, Query(query): Query<HistoryQuery>) -> Json<Value> {
-    let history = app.history.lock().await;
-    let state = app.snapshot.read().await;
-    Json(
-        json!({"total":history.total(),"entries":history.entries(&query.filter()),"instance":state.instance,"revision":state.history_revision,"clear_revision":state.history_clear_revision}),
-    )
+    Json(app.application.history(query).await)
 }
+
 async fn history_stats(State(app): State<Arc<App>>) -> Json<Value> {
     Json(app.history.lock().await.stats())
 }
@@ -598,21 +474,7 @@ async fn verify_proxy(
     if app.fixture {
         return Ok(Json(json!({"success":true})));
     }
-    let _ = app;
-    let started = std::time::Instant::now();
-    let client = reqwest::Client::builder()
-        .no_proxy()
-        .proxy(reqwest::Proxy::all(&proxy).map_err(|_| ApiError::invalid())?)
-        .timeout(std::time::Duration::from_secs(10))
-        .build()
-        .map_err(|_| ApiError::unavailable())?;
-    let response = client.get("https://www.twitch.tv").send().await;
-    Ok(Json(match response {
-        Ok(response) if response.status().as_u16() < 500 => {
-            json!({"success":true,"latency":started.elapsed().as_millis(),"message":message("gui.backend.proxy_connected",&[])})
-        }
-        _ => json!({"success":false,"message":message("gui.backend.proxy_failed",&[])}),
-    }))
+    Ok(Json(app.application.verify_proxy(&proxy).await?))
 }
 
 async fn version(State(app): State<Arc<App>>) -> Json<releases::ReleaseInfo> {

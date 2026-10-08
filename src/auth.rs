@@ -30,11 +30,7 @@ pub fn unix_now() -> f64 {
         .as_secs_f64()
 }
 
-pub fn random_hex<const N: usize>() -> Result<String> {
-    let mut bytes = [0; N];
-    getrandom::fill(&mut bytes).map_err(|_| anyhow::anyhow!("secure random generator failed"))?;
-    Ok(hex::encode(bytes))
-}
+use twitch_drops_miner_core::random_hex;
 
 pub fn token_from_headers(headers: &HeaderMap) -> String {
     for header in headers.get_all(http::header::COOKIE) {

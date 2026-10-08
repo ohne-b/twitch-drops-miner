@@ -50,6 +50,14 @@ pub struct CommandRequest {
 
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
+    #[error("invalid_request")]
+    InvalidRequest,
+    #[error("invalid_manual_duration")]
+    InvalidManualDuration,
+    #[error("invalid_channel")]
+    InvalidChannel,
+    #[error("channel_not_found")]
+    ChannelNotFound,
     #[error("shutting_down")]
     ShuttingDown,
     #[error("request_failed")]

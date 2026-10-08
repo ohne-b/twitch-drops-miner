@@ -445,6 +445,11 @@
     border-bottom: 1px solid var(--color-divider);
     overflow: visible;
   }
+  .app-sidebar:has(.desktop-update-link) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+  }
   .brand-row {
     min-height: 60px;
   }

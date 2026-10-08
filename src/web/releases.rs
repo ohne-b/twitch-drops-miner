@@ -135,7 +135,9 @@ mod tests {
                     } else {
                         "<script>bad</script>"
                     },
-                    "release_url":"https://evil.test"
+                    "release_url":"https://evil.test",
+                    "pub_date":"2026-10-08T12:00:00Z",
+                    "platforms":{"windows-x86_64-nsis":{"url":"https://evil.test/installer.exe","signature":"not executable by the dashboard"}}
                 })))
                 .expect(1)
                 .mount(&server)

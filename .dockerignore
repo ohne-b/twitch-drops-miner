@@ -6,6 +6,11 @@
 !NOTICE.md
 !src/
 !src/**
+!crates/
+!crates/**
+!desktop/
+!desktop/**
+desktop/gen/
 !lang/
 !lang/English.json
 !frontend/

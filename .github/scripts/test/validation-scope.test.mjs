@@ -60,9 +60,9 @@ test('the Linux workflow completion gate rejects failed or unexpectedly skipped 
   }).status;
   for (const full of ['true', 'false']) {
     const expected = full === 'true' ? 'success' : 'skipped';
-    const values = { SCOPE_RESULT: 'success', FULL: full, TEST_RESULT: expected, BROWSER_RESULT: expected, DOCKER_RESULT: expected };
+    const values = { SCOPE_RESULT: 'success', FULL: full, TEST_RESULT: expected, BROWSER_RESULT: expected, DOCKER_RESULT: expected, DASHBOARD_RESULT: expected, DESKTOP_RESULT: expected };
     assert.equal(run(values), 0);
-    for (const name of ['SCOPE_RESULT', 'TEST_RESULT', 'BROWSER_RESULT', 'DOCKER_RESULT']) {
+    for (const name of ['SCOPE_RESULT', 'TEST_RESULT', 'BROWSER_RESULT', 'DOCKER_RESULT', 'DASHBOARD_RESULT', 'DESKTOP_RESULT']) {
       for (const result of ['success', 'skipped', 'failure', 'cancelled', '']) {
         if (result === values[name]) continue;
         assert.notEqual(run({ ...values, [name]: result }), 0, `${full}: ${name}=${result}`);

@@ -30,9 +30,35 @@ jobs:
           node .github/scripts/validation-scope.mjs >> "$GITHUB_OUTPUT"
           git diff --check HEAD^ HEAD
 
+  dashboard:
+    name: Dashboard
+    needs: scope
+    if: needs.scope.outputs.full == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build and check dashboard
+        run: |
+          npm --prefix frontend ci
+          npm --prefix frontend run format:check
+          npm --prefix frontend test
+          npm --prefix frontend run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-assets
+          path: web/
+          if-no-files-found: error
+          retention-days: 1
+          overwrite: true
+
   test:
     name: Rust and Dashboard Tests
-    needs: scope
+    needs: [scope, dashboard]
     if: needs.scope.outputs.full == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -47,12 +73,11 @@ jobs:
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           cache-bin: false
-      - name: Build and check dashboard
-        run: |
-          npm --prefix frontend ci
-          npm --prefix frontend run format:check
-          npm --prefix frontend test
-          npm --prefix frontend run build
+      - run: npm --prefix frontend ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: dashboard-assets
+          path: web/
       - name: Check Rust and repository automation
         run: |
           cargo fmt --all -- --check
@@ -130,7 +155,7 @@ jobs:
         id: image
         run: |
           command -v skopeo || { sudo apt-get update; sudo apt-get install -y --no-install-recommends skopeo; }
-          echo "version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["package"]["version"])')" >> "$GITHUB_OUTPUT"
+          echo "version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["workspace"]["package"]["version"])')" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
           platforms: arm64
@@ -192,27 +217,136 @@ jobs:
           retention-days: 7
           overwrite: true
 
+  desktop:
+    name: Desktop (${{ matrix.platform }})
+    needs: [scope, dashboard]
+    if: needs.scope.outputs.full == 'true'
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-x64
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            bundles: nsis
+          - platform: macos-universal
+            runner: macos-15
+            target: universal-apple-darwin
+            bundles: app,dmg
+          - platform: linux-x64
+            runner: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            bundles: appimage,deb
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install Linux desktop libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xvfb
+      - name: Install pinned Rust toolchain
+        run: |
+          rustup show
+          if [ '${{ runner.os }}' = macOS ]; then rustup target add aarch64-apple-darwin x86_64-apple-darwin; fi
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          cache-bin: false
+          key: desktop-${{ matrix.platform }}
+      - run: npm --prefix frontend ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: dashboard-assets
+          path: web/
+      - name: Check native code
+        run: |
+          cargo clippy -p twitch-drops-miner-desktop --all-targets --all-features --locked -- -D warnings
+          cargo test -p twitch-drops-miner-desktop --all-targets --all-features --locked
+      - name: Build offline native fixture
+        working-directory: desktop
+        run: node ../frontend/node_modules/@tauri-apps/cli/tauri.js build --debug --no-bundle --no-sign --features desktop-fixture --config tauri.fixture.conf.json -- --locked
+      - name: Exercise the native window without Twitch
+        env:
+          WEBKIT_DISABLE_DMABUF_RENDERER: '1'
+        run: |
+          if [ '${{ runner.os }}' = Linux ]; then
+            xvfb-run -a node .github/scripts/native-smoke.mjs
+          else
+            node .github/scripts/native-smoke.mjs
+          fi
+      - name: Build production installers once
+        working-directory: desktop
+        env:
+          NO_STRIP: 'true'
+        run: |
+          if [ '${{ runner.os }}' = macOS ]; then
+            # Ad-hoc sign the app before packaging; updater signing belongs to publication.
+            node ../frontend/node_modules/@tauri-apps/cli/tauri.js build --target '${{ matrix.target }}' --bundles '${{ matrix.bundles }}' --config '{"bundle":{"createUpdaterArtifacts":false}}' -- --locked
+            bundle='../target/${{ matrix.target }}/release/bundle/macos'
+            COPYFILE_DISABLE=1 tar -czf "$bundle/Drops Miner.app.tar.gz" -C "$bundle" 'Drops Miner.app'
+          else
+            node ../frontend/node_modules/@tauri-apps/cli/tauri.js build --no-sign --target '${{ matrix.target }}' --bundles '${{ matrix.bundles }}' -- --locked
+          fi
+      - name: Collect versioned desktop artifacts
+        run: |
+          binary='target/${{ matrix.target }}/release/twitch-drops-miner-desktop'
+          if [ '${{ runner.os }}' = macOS ]; then
+            unpacked=$(mktemp -d)
+            tar -xzf 'target/${{ matrix.target }}/release/bundle/macos/Drops Miner.app.tar.gz' -C "$unpacked"
+            app="$unpacked/Drops Miner.app"
+            binary="$app/Contents/MacOS/twitch-drops-miner-desktop"
+            lipo "$binary" -verify_arch x86_64 arm64
+            codesign --verify --deep --strict "$app"
+            test -r "$app/Contents/Resources/LICENSE.md"
+            test -r "$app/Contents/Resources/NOTICE.md"
+          fi
+          node .github/scripts/native-smoke.mjs "$binary"
+          node .github/scripts/desktop-artifacts.mjs pack '${{ matrix.platform }}' 'target/${{ matrix.target }}/release/bundle' 'dist/desktop'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.platform }}
+          path: dist/desktop/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+          overwrite: true
+
   complete:
     name: Validation
     if: always()
-    needs: [scope, test, browser, docker]
+    needs: [scope, dashboard, test, browser, docker, desktop]
     runs-on: ubuntu-latest
     steps:
       - name: Require the selected checks
         env:
           SCOPE_RESULT: ${{ needs.scope.result }}
           FULL: ${{ needs.scope.outputs.full }}
+          DASHBOARD_RESULT: ${{ needs.dashboard.result }}
+          DESKTOP_RESULT: ${{ needs.desktop.result }}
           TEST_RESULT: ${{ needs.test.result }}
           BROWSER_RESULT: ${{ needs.browser.result }}
           DOCKER_RESULT: ${{ needs.docker.result }}
         run: |
           test "$SCOPE_RESULT" = success
           if [ "$FULL" = false ]; then
+            test "$DASHBOARD_RESULT" = skipped
+            test "$DESKTOP_RESULT" = skipped
             test "$TEST_RESULT" = skipped
             test "$BROWSER_RESULT" = skipped
             test "$DOCKER_RESULT" = skipped
             echo 'Documentation-only PR: code and image checks are not needed.' >> "$GITHUB_STEP_SUMMARY"
           elif [ "$FULL" = true ]; then
+            test "$DASHBOARD_RESULT" = success
+            test "$DESKTOP_RESULT" = success
             test "$TEST_RESULT" = success
             test "$BROWSER_RESULT" = success
             test "$DOCKER_RESULT" = success

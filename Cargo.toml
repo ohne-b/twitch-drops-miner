@@ -1,26 +1,15 @@
-[package]
-name = "twitch-drops-miner"
+[workspace]
+members = [".", "crates/core", "desktop"]
+default-members = [".", "crates/core"]
+resolver = "3"
+
+[workspace.package]
 version = "1.6.0"
 edition = "2024"
 rust-version = "1.94"
 license = "PolyForm-Noncommercial-1.0.0"
-description = "A self-hosted Twitch Drops miner with a React dashboard"
-repository = "https://github.com/ohne-b/twitch-drops-miner"
-default-run = "twitch-drops-miner"
 
-[features]
-dashboard-fixture = []
-
-[[bin]]
-name = "twitch-drops-miner"
-path = "src/main.rs"
-
-[[bin]]
-name = "dashboard-fixture"
-path = "src/bin/dashboard-fixture.rs"
-required-features = ["dashboard-fixture"]
-
-[dependencies]
+[workspace.dependencies]
 anyhow = "1"
 axum = { version = "0.8", features = ["ws"] }
 base64 = "0.22"
@@ -55,6 +44,59 @@ twitch_oauth2 = { version = "0.17", features = ["client"] }
 tungstenite = { version = "0.28", default-features = false }
 unicode-casefold = "0.2"
 url = { version = "2", features = ["serde"] }
+
+
+[package]
+name = "twitch-drops-miner"
+version.workspace = true
+edition = "2024"
+rust-version = "1.94"
+license = "PolyForm-Noncommercial-1.0.0"
+description = "A self-hosted Twitch Drops miner with a React dashboard"
+repository = "https://github.com/ohne-b/twitch-drops-miner"
+default-run = "twitch-drops-miner"
+
+[features]
+dashboard-fixture = ["twitch-drops-miner-core/dashboard-fixture"]
+
+[[bin]]
+name = "twitch-drops-miner"
+path = "src/main.rs"
+
+[[bin]]
+name = "dashboard-fixture"
+path = "src/bin/dashboard-fixture.rs"
+required-features = ["dashboard-fixture"]
+
+[dependencies]
+twitch-drops-miner-core = { path = "crates/core" }
+anyhow.workspace = true
+axum.workspace = true
+base64.workspace = true
+chrono.workspace = true
+clap.workspace = true
+cookie.workspace = true
+futures-util.workspace = true
+getrandom.workspace = true
+hex.workspace = true
+http.workspace = true
+mime_guess.workspace = true
+reqwest.workspace = true
+reqwest-websocket.workspace = true
+rust-embed.workspace = true
+scrypt.workspace = true
+semver.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+socketioxide.workspace = true
+subtle.workspace = true
+tempfile.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+tracing.workspace = true
+url.workspace = true
 
 [dev-dependencies]
 http-body-util = "0.1"

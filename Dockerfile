@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 COPY Cargo.toml Cargo.lock rust-toolchain.toml ./
 COPY src/ ./src/
+COPY crates/ ./crates/
+COPY desktop/ ./desktop/
 COPY lang/ ./lang/
 COPY --from=dashboard /build/web/ ./web/
 ENV CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc \

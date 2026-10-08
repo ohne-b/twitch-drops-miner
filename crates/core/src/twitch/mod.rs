@@ -23,7 +23,7 @@ use tokio::{
 use tokio_util::sync::CancellationToken;
 use url::Url;
 
-use crate::{auth::random_hex, config::Settings};
+use crate::{config::Settings, random_hex};
 
 pub const CLIENT_ID: &str = "ue6666qo983tsx6so1t0vnawi233wa";
 pub const CLIENT_ORIGIN: &str = "https://android.tv.twitch.tv";
