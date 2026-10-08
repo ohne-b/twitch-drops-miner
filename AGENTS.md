@@ -71,11 +71,15 @@ embed it and run without a build tool/runtime companion. Production builds never
 - `desktop/` is a Tauri wrapper around the same core and frontend. No HTTP listener,
   sidecar, shell companion, alternate miner or second account. Keep Docker behavior intact.
 - Store native data/logs in the platform app directories, separate from the server. Keep
-  existing record formats; never import, delete or rewrite an installation automatically.
+  the production identifier `app.twitch-drops-miner.local` and a separate `.fixture` identity.
+  Do not migrate or delete the former `dev.ohneb.dropsminer` directories.
+  Keep existing record formats; never import, delete or rewrite an installation automatically.
   Store desktop preferences separately and report unreadable storage instead of resetting it.
 - Native IPC is limited to the bundled main window, typed commands and bounded requests.
   Cancel reads, preserve accepted writes, coalesce snapshot patches and fence stale replies.
   Restrict navigation; validated external HTTP(S) links open in the system browser.
+  The main-window opener capability permits only HTTP(S) URLs through the default browser;
+  do not grant arbitrary programs, file URLs or the broader opener default permission set.
   Native CSP permits bundled fonts from local assets and data URLs, including Vite's inlined subsets.
 - Use official Tauri tray, single-instance, window-state, autostart, notification and updater
   plugins. Reopening restores the existing window. Tray pause changes the shared saved setting.

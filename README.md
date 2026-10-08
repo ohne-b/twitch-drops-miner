@@ -297,6 +297,8 @@ The historical image remains at `ghcr.io/ohne-b/twitch-miner:0.1.0` for rollback
 Desktop data stays separate from Docker. Use **Settings > Desktop > Open data folder**
 or **Open log folder** to find it. Settings and credentials are in the `data` subfolder;
 `desktop.json` contains only app preferences. Quit from the tray before backing up this folder.
+On Windows, app data is stored in `%LOCALAPPDATA%\app.twitch-drops-miner.local`.
+Version 2.0.1 starts fresh in this folder; the old 2.0.0 folder is left untouched.
 There is no desktop HTTP listener or dashboard password. Your operating system account
 protects these files. The app does not import an existing Docker installation automatically.
 
