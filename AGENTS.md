@@ -420,7 +420,7 @@ embed it and run without a build tool/runtime companion. Production builds never
   CSV/JSON export, Since filter or separate history clear action. Clear all cache clears history
   and publishes the durable change to open dashboards; archives never recreate cleared rows.
 - History artwork is optional; retain old rows and use matching live benefits as display fallback.
-  No Telegram controls/API/credentials in responses and no dashboard updater.
+  No Telegram controls/API/credentials in responses and no server-dashboard installer/updater.
 - Campaigns starts with Settings-style Available/History icon tabs and the total campaign count
   immediately left of refresh on the right. Omit the filtered count; match Last confirmed's
   12px/#888888 text. Keep the page heading screen-reader-only. Clear filters stays beside All games
