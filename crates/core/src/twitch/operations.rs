@@ -6,6 +6,7 @@ pub enum Operation {
     GameDirectory,
     StreamInfo,
     CurrentDrop,
+    PlaybackAccessToken,
     ClaimDrop,
     AvailableDrops,
     DeleteNotification,
@@ -16,6 +17,13 @@ impl Operation {
         match self {
             Self::Inventory => variables["fetchRewardCampaigns"] = false.into(),
             Self::CurrentDrop => variables["channelLogin"] = "".into(),
+            Self::PlaybackAccessToken => {
+                variables["isLive"] = true.into();
+                variables["isVod"] = false.into();
+                variables["vodID"] = "".into();
+                variables["platform"] = "web".into();
+                variables["playerType"] = "site".into();
+            }
             _ => {}
         }
         let (name, hash) = match self {
@@ -34,6 +42,10 @@ impl Operation {
             Self::CurrentDrop => (
                 "DropCurrentSessionContext",
                 "4d06b702d25d652afb9ef835d2a550031f1cf762b193523a92166f40ea3d142b",
+            ),
+            Self::PlaybackAccessToken => (
+                "PlaybackAccessToken",
+                "ed230aa1e33e07eebb8928504583da78a5173989fadfb1ac94be06a04f3cdbe9",
             ),
             Self::ClaimDrop => (
                 "DropsPage_ClaimDropRewards",
@@ -68,6 +80,7 @@ pub(super) fn can_replay_response(request: &Value) -> bool {
             Operation::GameDirectory,
             Operation::StreamInfo,
             Operation::CurrentDrop,
+            Operation::PlaybackAccessToken,
             Operation::AvailableDrops,
         ]
         .into_iter()
@@ -89,6 +102,7 @@ mod tests {
             (Operation::GameDirectory, true),
             (Operation::StreamInfo, true),
             (Operation::CurrentDrop, true),
+            (Operation::PlaybackAccessToken, true),
             (Operation::AvailableDrops, true),
             (Operation::ClaimDrop, false),
             (Operation::DeleteNotification, false),

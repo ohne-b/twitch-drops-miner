@@ -12,6 +12,8 @@
 
 Choose your games in the app or web dashboard, and the miner watches eligible channels and
 claims your drops. It runs on your own hardware with one Twitch account per installation.
+Mining reads small stream playlists and checks new segments' response headers; it does
+not download video or audio. Only Twitch-reported progress counts as confirmed watch time.
 
 ![Drops Miner dashboard with a Twitch profile and badge, Fortnite reward progress, channels and queued campaigns](.github/assets/dashboard-mining.png)
 
@@ -356,7 +358,8 @@ five daily files; Docker log retention follows your Compose settings.
 
 **Connection Quality** defaults to **3**: 15 seconds to connect and 30 seconds per request.
 Existing saved choices are kept. Higher values allow more time but also delay timeout errors.
-The watch interval stays **59 seconds**.
+Minute-watched messages stay **59 seconds** apart. Stream playlists are checked about every
+**10 seconds**, with shorter request limits so a stalled segment cannot block mining.
 
 Changing the setting reconnects Twitch too, so an improvement may come from either change.
 Keep 3 if mining is reliable. Transient watch failures already retry automatically.

@@ -1,6 +1,59 @@
 use super::*;
 
 impl Mining {
+    pub(super) fn watch_channel(&self, settings: &Settings) -> Option<&Channel> {
+        if settings.mining_paused || self.claim_wait.is_some() {
+            return None;
+        }
+        self.channels.iter().find(|c| {
+            Some(c.identity.id) == self.watching
+                && c.online()
+                && (self.manual.is_some_and(|manual| {
+                    manual.channel == c.identity.id
+                        && manual.expires_at.is_none_or(|at| Instant::now() < at)
+                }) || self
+                    .campaigns
+                    .iter()
+                    .any(|campaign| campaign.can_watch(c, settings, Utc::now())))
+        })
+    }
+
+    pub(super) fn schedule_playback(&mut self, settings: &Settings) {
+        if self.busy.contains(&JobKind::Playback) || Instant::now() < self.next_playback {
+            return;
+        }
+        let Some(channel) = self.watch_channel(settings) else {
+            return;
+        };
+        let Some(mut state) = self
+            .playback
+            .as_ref()
+            .filter(|p| p.matches(channel))
+            .cloned()
+            .or_else(|| Playback::new(channel))
+        else {
+            return;
+        };
+        self.playback = Some(state.clone());
+        let cancel = self.client.http.cancel.child_token();
+        self.playback_cancel = Some(cancel.clone());
+        let client = self.client.clone();
+        let requested_at = Instant::now();
+        self.next_playback = requested_at + POLL_INTERVAL;
+        self.spawn(JobKind::Playback, async move {
+            let result = tokio::select! {biased;
+                _ = cancel.cancelled() => Err(TwitchError::Cancelled),
+                result = state.poll(&client) => result,
+            };
+            Job::Playback {
+                state: Box::new(state),
+                requested_at,
+                cancel,
+                result,
+            }
+        });
+    }
+
     pub(super) fn apply_manual(&mut self, intent: &Intent) {
         if intent.manual_revision != self.seen.manual_revision
             && let Some(login) = &intent.channel_login
@@ -227,6 +280,18 @@ impl Mining {
 
     pub(super) async fn reselect(&mut self, settings: &Settings) {
         let now = Utc::now();
+        if self.playback.as_ref().is_some_and(|state| {
+            self.channels
+                .iter()
+                .find(|c| Some(c.identity.id) == self.watching)
+                .is_none_or(|c| !state.matches(c))
+        }) {
+            if let Some(cancel) = &self.playback_cancel {
+                cancel.cancel();
+            }
+            self.playback = None;
+            self.next_playback = Instant::now();
+        }
         if self.paused != settings.mining_paused {
             self.paused = settings.mining_paused;
             self.cancel_watch();
@@ -239,6 +304,7 @@ impl Mining {
             self.claim_wait = None;
             self.watch_failures = 0;
             self.next_watch = Instant::now();
+            self.next_playback = Instant::now();
             self.publish = true;
             let key = if self.paused {
                 "status.paused"
@@ -265,6 +331,8 @@ impl Mining {
         );
         if next != self.watching {
             self.cancel_watch();
+            self.playback = None;
+            self.next_playback = Instant::now();
             self.watching = next;
             self.watch_started = Instant::now();
             self.watch_failures = 0;
@@ -291,6 +359,9 @@ impl Mining {
     }
 
     pub(super) fn cancel_watch(&self) {
+        if let Some(cancel) = &self.playback_cancel {
+            cancel.cancel();
+        }
         if let Some(watch) = &self.watch_abort {
             watch.abort();
         }
