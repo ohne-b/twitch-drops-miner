@@ -1,5 +1,13 @@
 # Changelog
 
+## [v2.0.1](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v2.0.1) — 2026-10-08
+
+- fix Twitch Activate and other external links opening in the desktop app's default browser
+- use `app.twitch-drops-miner.local` as the desktop app identifier and data-folder name
+
+Desktop settings and login start fresh. The old 2.0.0 data folder is left untouched; there is no migration or deletion.
+Docker settings, credentials and mounts are unchanged.
+
 ## [v2.0.0](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v2.0.0) — 2026-10-08
 
 - add a desktop app for Windows, macOS and Linux, using the same mining core and dashboard as Docker ([#79](https://github.com/ohne-b/twitch-drops-miner/pull/79))
