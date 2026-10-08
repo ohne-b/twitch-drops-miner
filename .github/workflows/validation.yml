@@ -294,8 +294,8 @@ jobs:
           if [ '${{ runner.os }}' = macOS ]; then
             app='target/${{ matrix.target }}/release/bundle/macos/Drops Miner.app'
             binary="$app/Contents/MacOS/twitch-drops-miner-desktop"
-            lipo -verify_arch x86_64 arm64 "$binary"
-            codesign --verify --strict --arch arm64 "$binary"
+            lipo "$binary" -verify_arch x86_64 arm64
+            codesign --verify --strict --architecture arm64 "$binary"
             test -r "$app/Contents/Resources/LICENSE.md"
             test -r "$app/Contents/Resources/NOTICE.md"
           fi
