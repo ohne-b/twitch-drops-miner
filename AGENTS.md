@@ -93,8 +93,9 @@ embed it and run without a build tool/runtime companion. Production builds never
   or explicit user sleep. Keep platform requests off async/UI threads and acquire/release on
   one owned blocking thread (required by Windows), coalescing state changes and draining on
   exit/install. Report acquisition failures without stopping mining. Offline fixtures and
-  unit tests use fake guards, never real power requests. Linux uses systemd idle inhibition;
-  document that desktop power-manager support varies.
+  unit tests use fake guards, never real power requests. Linux uses systemd idle inhibition
+  with a five-second bound covering D-Bus connection/authentication and Inhibit; hold only
+  the returned owned descriptor. Document that desktop power-manager support varies.
 - Enable Tauri's native zoom hotkeys and mouse-wheel support for the bundled main window,
   with its scoped webview-zoom permission. Use Ctrl +/−/0 (Command on macOS) and Ctrl+wheel;
   keep the browser dashboard's own zoom behavior unchanged.

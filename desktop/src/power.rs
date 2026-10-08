@@ -33,7 +33,7 @@ pub fn start(app: &tauri::AppHandle) -> watch::Sender<bool> {
     sender
 }
 
-#[cfg(not(any(test, feature = "desktop-fixture")))]
+#[cfg(all(not(target_os = "linux"), not(any(test, feature = "desktop-fixture"))))]
 fn acquire() -> Result<keepawake::KeepAwake, keepawake::Error> {
     keepawake::Builder::default()
         .display(false)
@@ -43,6 +43,34 @@ fn acquire() -> Result<keepawake::KeepAwake, keepawake::Error> {
         .app_reverse_domain("dev.ohneb.dropsminer")
         .reason("Mining Twitch drops")
         .create()
+}
+
+#[cfg(all(target_os = "linux", not(any(test, feature = "desktop-fixture"))))]
+fn acquire() -> anyhow::Result<zbus::zvariant::OwnedFd> {
+    tokio::runtime::Handle::current().block_on(inhibit_linux(zbus::Connection::system()))
+}
+
+#[cfg(all(target_os = "linux", any(test, not(feature = "desktop-fixture"))))]
+async fn inhibit_linux(
+    connection: impl std::future::Future<Output = zbus::Result<zbus::Connection>>,
+) -> anyhow::Result<zbus::zvariant::OwnedFd> {
+    // Bound connection/authentication as well as the power-manager reply.
+    Ok(
+        tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            let connection = connection.await?;
+            let reply = connection
+                .call_method(
+                    Some("org.freedesktop.login1"),
+                    "/org/freedesktop/login1",
+                    Some("org.freedesktop.login1.Manager"),
+                    "Inhibit",
+                    &("idle", "Drops Miner", "Mining Twitch drops", "block"),
+                )
+                .await?;
+            reply.body().deserialize::<zbus::zvariant::OwnedFd>()
+        })
+        .await??,
+    )
 }
 
 #[cfg(any(test, feature = "desktop-fixture"))]
@@ -79,6 +107,15 @@ fn run<T, E>(
 mod tests {
     use super::*;
     use std::sync::{Arc, Mutex, mpsc};
+
+    #[cfg(target_os = "linux")]
+    #[tokio::test(start_paused = true)]
+    async fn stalled_linux_power_service_is_bounded() {
+        let start = tokio::time::Instant::now();
+        let error = inhibit_linux(std::future::pending()).await.unwrap_err();
+        assert!(error.is::<tokio::time::error::Elapsed>());
+        assert_eq!(start.elapsed(), std::time::Duration::from_secs(5));
+    }
 
     #[test]
     fn only_active_unpaused_account_mining_prevents_idle_sleep() {
