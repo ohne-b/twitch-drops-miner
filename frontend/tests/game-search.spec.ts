@@ -199,7 +199,11 @@ test('older webviews can search, dismiss and select without the Popover API', as
     delete (HTMLElement.prototype as Partial<HTMLElement>).showPopover;
     delete (HTMLElement.prototype as Partial<HTMLElement>).hidePopover;
   });
-  await page.route('**/api/games', (route) => route.fulfill({ json: [stardew] }));
+  await page.route('**/api/games', (route) =>
+    route.request().postDataJSON().search === 'fail'
+      ? route.fulfill({ status: 503, json: { detail: 'request_failed' } })
+      : route.fulfill({ json: [stardew] }),
+  );
   await page.goto('/?edit=priorities');
   const search = page.getByRole('combobox', { name: 'Search games' });
   const result = page.getByRole('option', { name: stardew.name });
@@ -216,6 +220,13 @@ test('older webviews can search, dismiss and select without the Popover API', as
   await search.press('Enter');
   await expect(page.locator('[data-game="Stardew Valley"]')).toBeVisible();
   await expect(result).toBeHidden();
+  await search.fill('fail');
+  const retry = page.getByRole('button', { name: 'Try again', exact: true });
+  await retry.focus();
+  await retry.press('Escape');
+  await expect(retry).toBeHidden();
+  await expect(search).toBeFocused();
+  await expect(search).toHaveValue('fail');
 });
 test.beforeEach(async ({ request, page }) => {
   expect((await request.post('/__test/reset', { headers, data: {} })).ok()).toBeTruthy();

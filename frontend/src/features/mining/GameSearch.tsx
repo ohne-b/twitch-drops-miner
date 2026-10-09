@@ -117,6 +117,15 @@ export default function GameSearch({
     <div
       ref={picker}
       className="flex min-w-0 flex-1 gap-2 max-md:basis-full"
+      onKeyDownCapture={(event) => {
+        if (event.key !== 'Escape' || event.nativeEvent.isComposing) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (popup.current?.contains(document.activeElement))
+          input.current?.focus({ preventScroll: true });
+        setOpen(false);
+        setActive(null);
+      }}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) {
           setOpen(false);
@@ -161,11 +170,6 @@ export default function GameSearch({
                 event.preventDefault();
                 if (visible && options[activeIndex]) select(options[activeIndex]);
                 else onResolve();
-              } else if (event.key === 'Escape') {
-                event.preventDefault();
-                event.stopPropagation();
-                setOpen(false);
-                setActive(null);
               }
             },
           }}
