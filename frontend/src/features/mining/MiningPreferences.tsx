@@ -1,23 +1,21 @@
 import { Icon } from '@mdi/react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { mdiArrowLeft, mdiPlus, mdiPriorityHigh, mdiReload } from '@mdi/js';
+import { mdiArrowLeft, mdiPriorityHigh, mdiReload } from '@mdi/js';
 import type { Settings as SettingsData, GameMetadata } from '../../shared/lib/types';
 import { useMiner } from '../../app/MinerProvider';
 import { useT } from '../../shared/lib/i18n';
 import { GamePriorities } from './GamePriorities';
+import GameSearch from './GameSearch';
 import { lookupGames, useGameSearch } from './useGameSearch';
 import {
   ActionResult,
-  Art,
   Button,
   Check,
   Dialog,
   Field,
   HelpButton,
   IconButton,
-  Notice,
-  Search,
   useAction,
 } from '../../shared/ui/index';
 
@@ -158,33 +156,39 @@ export default function MiningPreferences() {
             >
               <div className="flex min-h-0 flex-col gap-2">
                 <div className="flex shrink-0 flex-wrap justify-end gap-2">
-                  <fieldset
+                  <GameSearch
                     disabled={!connected}
-                    aria-busy={directory.loading}
-                    className="min-w-0 flex-1 max-md:basis-full"
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault();
-                        resolveGame();
-                      }
+                    loading={directory.loading}
+                    ready={!!gameError || available.length > 0 || directory.complete}
+                    options={available}
+                    onSelect={addGame}
+                    onResolve={resolveGame}
+                    value={search}
+                    onChange={(value) => {
+                      setSearch(value);
+                      setGameError('');
                     }}
                   >
-                    <Search
-                      value={search}
-                      onChange={(value) => {
-                        setSearch(value);
-                        setGameError('');
-                        gameList.current?.scrollTo(0, 0);
-                      }}
-                      label={t('gui.settings.search_games')}
-                    />
-                  </fieldset>
-                  <IconButton
-                    path={mdiPlus}
-                    label={t('gui.settings.add_game')}
-                    onClick={resolveGame}
-                    disabled={!connected || !search.trim() || directory.loading}
-                  />
+                    {gameError && (
+                      <p role="alert" className="muted px-3 py-2">
+                        {gameError}
+                      </p>
+                    )}
+                    {directory.complete && !directory.error && !available.length && (
+                      <p role="status" className="muted px-3 py-2">
+                        {t('game_search_empty')}
+                      </p>
+                    )}
+                    {directory.error && (
+                      <div
+                        role="status"
+                        className="flex items-center gap-2 px-3 py-2 text-[13px] text-muted"
+                      >
+                        <span>{t('game_search_failed')}</span>
+                        <IconButton path={mdiReload} label={t('retry')} onClick={directory.retry} />
+                      </div>
+                    )}
+                  </GameSearch>
                   <div
                     className="icon-button has-[:disabled]:opacity-50"
                     title={`${t('mining_priority')}: ${t(`priority_${draft.mining_priority_mode}`)}`}
@@ -216,44 +220,6 @@ export default function MiningPreferences() {
                     text={t(`priority_${draft.mining_priority_mode}_help`)}
                   />
                 </div>
-                {(gameError || (search && (available.length > 0 || directory.complete))) && (
-                  <div
-                    key={search}
-                    role="region"
-                    aria-label={t('gui.settings.search_games')}
-                    tabIndex={!connected ? 0 : undefined}
-                    className="scroll-list max-h-40 min-h-11 overflow-y-auto rounded border border-divider focus-visible:bg-field lg:overscroll-y-contain"
-                  >
-                    {gameError && <Notice error>{gameError}</Notice>}
-                    {directory.complete && !directory.error && !available.length && (
-                      <p role="status" className="muted px-3 py-2">
-                        {t('game_search_empty')}
-                      </p>
-                    )}
-                    {directory.error && (
-                      <div
-                        role="status"
-                        className="flex items-center gap-2 px-3 py-2 text-[13px] text-muted"
-                      >
-                        <span>{t('game_search_failed')}</span>
-                        <IconButton path={mdiReload} label={t('retry')} onClick={directory.retry} />
-                      </div>
-                    )}
-                    <fieldset disabled={!connected}>
-                      {available.map((game) => (
-                        <button
-                          type="button"
-                          key={game.name}
-                          className="flex min-h-11 w-full items-center gap-3 px-3 py-2 text-start text-[13px] hover:bg-hover"
-                          onClick={() => addGame(game.name, game.metadata)}
-                        >
-                          <Art url={game.image} className="size-8" />
-                          <span>{game.name}</span>
-                        </button>
-                      ))}
-                    </fieldset>
-                  </div>
-                )}
               </div>
               <div
                 ref={gameList}

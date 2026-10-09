@@ -87,7 +87,7 @@
             "add_game": "Add Game",
             "connection_quality": "Connection Quality:",
             "minimum_refresh": "Minimum Refresh Interval (minutes):",
-            "multiple_games_found": "Multiple games found for your search. Please be more specific.",
+            "multiple_games_found": "Choose a game from the results.",
             "manual_game_warning": "Add \"{game}\" manually? Use the exact Twitch category name.",
             "confirm_btn": "Confirm",
             "remove_game": "Remove {game}"

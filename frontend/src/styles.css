@@ -102,9 +102,6 @@
   .preferences-games > div:first-child {
     min-height: 36px;
   }
-  .preferences-games > div:first-child:has(> [role='region']) {
-    min-height: 88px;
-  }
   .preferences-games > [role='region'] {
     min-height: 44px;
   }
@@ -129,6 +126,22 @@
   font-weight: 400;
   line-height: 1.6;
   box-shadow: 0 4px 16px #0004;
+}
+.game-search-popover {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-divider);
+  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 4px 16px #0004;
+}
+.game-search-popover:popover-open {
+  display: flex;
+  flex-direction: column;
 }
 @supports (position-area: bottom) {
   @media (min-width: 768px) {
