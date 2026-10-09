@@ -406,6 +406,7 @@ embed it and run without a build tool/runtime companion. Production builds never
   when there is insufficient room below. Keep input focus with listbox/combobox semantics,
   arrow-key navigation and Enter selection. Selection, Escape, outside click and leaving the
   picker dismiss results; Escape preserves the query. Preserve manual-name entry and retry.
+  Webviews without Popover API use the same fixed-position dropdown with outside-click dismissal.
   Search Twitch's Helix category directory through the current Smart TV session with no
   added scopes. Use debounced, cancellable queries and a bounded generation-owned queue;
   keep search separate from campaign discovery and watch scheduling. Pending searches stay

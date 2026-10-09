@@ -149,6 +149,30 @@ test.describe('touch game selection', () => {
     await expect(page.getByRole('listbox')).toBeHidden();
   });
 });
+
+test('older webviews can search, dismiss and select without the Popover API', async ({ page }) => {
+  await page.addInitScript(() => {
+    delete (HTMLElement.prototype as Partial<HTMLElement>).showPopover;
+    delete (HTMLElement.prototype as Partial<HTMLElement>).hidePopover;
+  });
+  await page.route('**/api/games', (route) => route.fulfill({ json: [stardew] }));
+  await page.goto('/?edit=priorities');
+  const search = page.getByRole('combobox', { name: 'Search games' });
+  const result = page.getByRole('option', { name: stardew.name });
+  await search.fill('stardew');
+  await expect(result).toBeInViewport();
+  await page.getByRole('heading', { name: 'Mining preferences', exact: true }).click();
+  await expect(result).toBeHidden();
+  await search.click();
+  await expect(result).toBeVisible();
+  await search.press('Escape');
+  await expect(result).toBeHidden();
+  await expect(search).toHaveValue('stardew');
+  await search.press('ArrowDown');
+  await search.press('Enter');
+  await expect(page.locator('[data-game="Stardew Valley"]')).toBeVisible();
+  await expect(result).toBeHidden();
+});
 test.beforeEach(async ({ request, page }) => {
   expect((await request.post('/__test/reset', { headers, data: {} })).ok()).toBeTruthy();
   await page.route('https://static-cdn.jtvnw.net/**', (route) =>

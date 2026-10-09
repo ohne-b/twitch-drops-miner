@@ -129,6 +129,7 @@
 }
 .game-search-popover {
   position: fixed;
+  z-index: 50;
   inset: auto;
   margin: 0;
   padding: 0;
@@ -139,7 +140,8 @@
   color: var(--color-text);
   box-shadow: 0 4px 16px #0004;
 }
-.game-search-popover:popover-open {
+.game-search-popover:popover-open,
+.game-search-popover[data-fallback-open] {
   display: flex;
   flex-direction: column;
 }

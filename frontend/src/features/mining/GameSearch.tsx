@@ -30,7 +30,9 @@ export default function GameSearch({
   const t = useT();
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
+  const picker = useRef<HTMLDivElement>(null);
   const popup = useRef<HTMLDivElement>(null);
+  const [nativePopover] = useState(() => typeof HTMLElement.prototype.showPopover === 'function');
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<{ query: string; name: string } | null>(null);
   const visible = open && !!value.trim() && ready && !disabled;
@@ -41,7 +43,7 @@ export default function GameSearch({
     const element = popup.current!;
     const anchor = input.current!;
     if (!visible) {
-      element.hidePopover();
+      element.hidePopover?.();
       if (disabled) {
         setOpen(false);
         setActive(null);
@@ -69,7 +71,11 @@ export default function GameSearch({
       });
     }
     position();
-    element.showPopover({ source: anchor });
+    element.showPopover?.({ source: anchor });
+    function dismiss(event: PointerEvent) {
+      if (!picker.current?.contains(event.target as Node)) setOpen(false);
+    }
+    if (!nativePopover) document.addEventListener('pointerdown', dismiss);
     const observer = new ResizeObserver(position);
     observer.observe(anchor);
     window.addEventListener('resize', position);
@@ -78,12 +84,13 @@ export default function GameSearch({
     window.visualViewport?.addEventListener('scroll', position);
     return () => {
       observer.disconnect();
+      document.removeEventListener('pointerdown', dismiss);
       window.removeEventListener('resize', position);
       document.removeEventListener('scroll', position, true);
       window.visualViewport?.removeEventListener('resize', position);
       window.visualViewport?.removeEventListener('scroll', position);
     };
-  }, [visible, disabled]);
+  }, [visible, disabled, nativePopover]);
 
   useLayoutEffect(() => {
     if (visible && activeIndex >= 0)
@@ -99,6 +106,7 @@ export default function GameSearch({
 
   return (
     <div
+      ref={picker}
       className="flex min-w-0 flex-1 gap-2 max-md:basis-full"
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) {
@@ -166,7 +174,9 @@ export default function GameSearch({
       />
       <div
         ref={popup}
-        popover="auto"
+        popover={nativePopover ? 'auto' : undefined}
+        hidden={!nativePopover && !visible}
+        data-fallback-open={!nativePopover && visible ? true : undefined}
         className="game-search-popover"
         onBeforeToggle={(event) => {
           if (event.newState === 'closed' && visible) {
