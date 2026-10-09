@@ -79,14 +79,15 @@
     }
     await wait(async () => (await invoke('desktop_update')).phase === 'current', 'startup update check did not finish');
     const checked = await invoke('desktop_update');
-    window.dispatchEvent(new Event('desktop-update-open'));
-    await wait(() => document.querySelector('dialog[open]'), 'updater dialog not opened');
-    await wait(() => document.querySelector('dialog[open]').textContent.includes('You are up to date'), 'offline updater status not rendered');
+    await invoke('plugin:event|emit', { event: 'desktop-update-open', payload: null });
+    const maintenance = () => document.getElementById('maintenance');
+    await wait(() => maintenance() && !maintenance().hidden, 'tray updates did not open Maintenance');
+    await wait(() => maintenance().textContent.includes("You're up to date."), 'offline updater status not rendered');
     await wait(async () => (await invoke('desktop_update')).revision > checked.revision, 'opening updates did not check again');
-    const close = () => [...document.querySelectorAll('dialog[open] button')]
-      .find(button => button.textContent === 'Close').click();
-    close();
-    const indicator = () => document.querySelector('aside button[aria-haspopup="dialog"]');
+    if (document.querySelector('dialog[open]') || maintenance().querySelector('details')) {
+      throw new Error('desktop updates expose a dialog or server shutdown controls');
+    }
+    const indicator = () => document.querySelector('.desktop-update-link a');
     if (indicator()) throw new Error('update indicator visible without an available update');
     let revision = (await invoke('desktop_update')).revision;
     const publish = (phase, version, error = null) => invoke('plugin:event|emit', {
@@ -101,9 +102,12 @@
     ]) {
       await publish(phase, '99.0.0', error);
       await wait(() => indicator()?.textContent === 'Update v99.0.0', 'sidebar update link missing');
+      document.querySelector('a[href="/activity"]').click();
       indicator().click();
-      await wait(() => document.querySelector('dialog[open]')?.textContent.includes(text), 'update link lost the current phase');
-      close();
+      await wait(() => maintenance() && !maintenance().hidden && maintenance().textContent.includes(text), 'update link lost the current phase');
+      if (document.querySelector('dialog[open]') || maintenance().querySelector('[role="progressbar"], progress')) {
+        throw new Error('updates opened a dialog or custom download progress bar');
+      }
     }
     await invoke('plugin:window|set_size', {
       label: 'main', value: { Logical: { width: 360, height: 480 } },

@@ -110,8 +110,15 @@ embed it and run without a build tool/runtime companion. Production builds never
   Show a quiet, clickable Update v… link above the sidebar's GitHub/account controls when
   an update version is known; keep it beside the brand in compact windows without adding height.
   Truncate long labels while retaining the full accessible name and tooltip. Reuse the existing
-  update status and dialog, retain access during downloads/failures and across navigation,
-  and keep checking/current states quiet. Clicking the link never installs automatically.
+  update state across navigation. The link opens Settings > Maintenance, where the installed
+  version sits beside the icon-only update check and inline status. Tray update checks open
+  the same section; never open a separate update dialog. Keep download/cancel, verified install
+  and restart recovery inline, using Tauri's updater without a custom download progress bar.
+  Checking/current states do not add a sidebar link. Navigation never installs automatically.
+  Desktop Maintenance omits the server's Advanced actions / Shut down miner controls; native
+  Quit remains in the tray. Omit the redundant application-description sentence in both wrappers.
+  Desktop folder shortcuts use Data / Logs with folder icons and descriptive accessible names.
+  Label the download action Update with the MDI Download icon; retain explicit verified install.
 - Ship Windows x64 NSIS, universal macOS DMG plus the updater app archive, and Linux x64
   AppImage/DEB. No MSI or portable Windows distribution. Keep one backward-compatible
   `latest.json` for server and desktop. Platform-specific updater entries choose the right
@@ -527,14 +534,21 @@ embed it and run without a build tool/runtime companion. Production builds never
   successful operation recovers its failures; unrelated messages never imply recovery.
   Keep category filtering, but omit the This session heading suffix and per-event category tags.
   Inset row separators to align with the content instead of touching the panel edges.
+  Center Activity row contents and reserve the same minimum height with or without details
+  actions; wrapped messages and recovery text may grow. Retain full-size phone action targets.
   Fit the list to the remaining viewport on desktop and phone; keep notices and controls
   reachable in short windows. Distinguish an empty event buffer from no filter matches.
   Count adjacent repeats in Activity while suppressing duplicate server log lines.
 - Maintenance checks the latest stable release's `latest.json`, compares SemVer precedence
   without build metadata, and distinguishes failure from up-to-date status. Keep requests
   bounded/coalesced and release links within this repository. No install/download execution.
+  Desktop and server share a compact installed-version badge (`vVERSION`) beside the update
+  check and inline result, with actions or manual-update guidance below. Use the badge's muted
+  accent only after a successful current-version check; errors never appear up to date.
+  Desktop and server use the same checking, current, available and check-failure wording.
   Check for updates uses the fixed-size MDI Update icon button, with a checking label/tooltip,
-  busy state and spinning icon during requests (respect reduced motion); retain result text below.
+  busy state and spinning icon during requests (respect reduced motion); let inline results wrap
+  below the controls when space is limited.
 - Shared Field content starts at the top; helper text cannot stretch neighboring label rows.
   No focus rings, but visible keyboard background/border changes must outrank utility layers;
   keep system focus in forced colors. Verify computed field/button/checkbox focus and axe checks.

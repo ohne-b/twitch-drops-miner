@@ -69,7 +69,7 @@ pub async fn smoke_result(
         eprintln!("Native smoke failed: {error}");
         app.exit(1);
     } else {
-        println!("Native smoke passed: snapshot, pause/resume, settings and updater dialog");
+        println!("Native smoke passed: snapshot, pause/resume, settings and inline updates");
         app.exit(0);
     }
     Ok(())

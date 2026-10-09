@@ -1,4 +1,4 @@
-import DesktopUpdates from '../features/settings/DesktopUpdates';
+import { DesktopUpdateLink, DesktopUpdateProvider } from '../features/settings/DesktopUpdates';
 import { isDesktop } from '../shared/lib/platform';
 import { DesktopStartupError, DesktopStatus } from '../features/settings/Desktop';
 import { Icon } from '@mdi/react';
@@ -116,7 +116,7 @@ function Shell({ auth, onLogout }: { auth: AuthStatus; onLogout: () => Promise<v
           ))}
         </nav>
         <div className="min-w-0 lg:mt-auto">
-          {isDesktop() && <DesktopUpdates />}
+          {isDesktop() && <DesktopUpdateLink />}
           <div className="hidden p-4 lg:block">
             <a
               className="icon-button size-11"
@@ -261,13 +261,15 @@ export default function App() {
     );
   return (
     <MinerProvider>
-      <Shell
-        auth={auth}
-        onLogout={async () => {
-          await request('/api/auth/logout', {});
-          await refresh();
-        }}
-      />
+      <DesktopUpdateProvider>
+        <Shell
+          auth={auth}
+          onLogout={async () => {
+            await request('/api/auth/logout', {});
+            await refresh();
+          }}
+        />
+      </DesktopUpdateProvider>
     </MinerProvider>
   );
 }

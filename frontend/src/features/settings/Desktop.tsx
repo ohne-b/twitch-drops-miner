@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { mdiFolderOutline } from '@mdi/js';
+import { Icon } from '@mdi/react';
 import { useT } from '../../shared/lib/i18n';
 import { ActionResult, Button, Check, Empty, Notice, useAction } from '../../shared/ui';
 
@@ -55,14 +57,20 @@ export function DesktopSettings() {
       )}
       <div className="flex flex-wrap gap-2 pt-2">
         <Button
+          title={t('gui.desktop.open_data')}
+          aria-label={t('gui.desktop.open_data')}
           onClick={() => void action.run(() => invoke('open_app_folder', { folder: 'data' }))}
         >
-          {t('gui.desktop.open_data')}
+          <Icon path={mdiFolderOutline} className="mdi-icon" />
+          {t('gui.desktop.data')}
         </Button>
         <Button
+          title={t('gui.desktop.open_logs')}
+          aria-label={t('gui.desktop.open_logs')}
           onClick={() => void action.run(() => invoke('open_app_folder', { folder: 'logs' }))}
         >
-          {t('gui.desktop.open_logs')}
+          <Icon path={mdiFolderOutline} className="mdi-icon" />
+          {t('gui.desktop.logs')}
         </Button>
       </div>
     </div>

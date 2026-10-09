@@ -154,6 +154,57 @@ test('Activity fits short desktop and phone viewports and distinguishes empty fi
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
+test('Activity aligns rows with optional details and lets longer messages grow', async ({
+  page,
+  request,
+}) => {
+  const rows = [
+    { ...activity[0], message: 'Claimed reward' },
+    { ...activity[1], message: 'Mining paused', campaign_id: null, drop_id: null },
+    {
+      ...activity[2],
+      message: 'Connection restored after retrying the request. '.repeat(14),
+      recovered: true,
+      count: 3,
+    },
+    activity[3],
+  ];
+  await request.post('/__test/event', {
+    headers,
+    data: { event: 'initial_state', data: { ...fixture, activity: rows } },
+  });
+  for (const width of [1440, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/activity');
+    const articles = page.locator('#activity-list article');
+    await expect(articles).toHaveCount(4);
+    const bounds = await articles.evaluateAll((elements) =>
+      elements.map((el) => {
+        const row = el.getBoundingClientRect();
+        return {
+          height: row.height,
+          centers: Array.from(el.children).map((child) => {
+            const box = child.getBoundingClientRect();
+            return box.y + box.height / 2 - row.y;
+          }),
+        };
+      }),
+    );
+    expect(bounds[0]!.height).toBe(bounds[1]!.height);
+    for (const row of bounds.slice(0, 2))
+      expect(Math.max(...row.centers) - Math.min(...row.centers)).toBeLessThan(1);
+    expect(bounds[2]!.height).toBeGreaterThan(bounds[0]!.height);
+    const action = articles.first().getByRole('link', { name: 'Campaign details' });
+    const box = (await action.boundingBox())!;
+    expect(box.width).toBeGreaterThanOrEqual(width < 768 ? 44 : 36);
+    expect(box.height).toBeGreaterThanOrEqual(width < 768 ? 44 : 36);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+    await articles.first().scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `../artifacts/activity-row-alignment-${width}.png` });
+  }
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
 test('Settings tabs keep their position, drafts and browser history', async ({ page }) => {
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 700 });
