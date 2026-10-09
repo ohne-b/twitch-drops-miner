@@ -248,7 +248,7 @@ test('compact desktop folder actions retain accessible names and native destinat
     ['Logs', 'logs'],
   ] as const) {
     const button = page.getByRole('button', {
-      name: `Open ${folder === 'data' ? 'data' : 'log'} folder`,
+      name: `Open ${folder} folder`,
       exact: true,
     });
     await expect(button).toHaveText(label);

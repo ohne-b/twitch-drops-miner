@@ -381,7 +381,7 @@
             "start_failed": "Drops Miner could not start",
             "start_help": "The app could not open its data or logs. Check folder permissions and close any other miner using this data, then restart.",
             "open_data": "Open data folder",
-            "open_logs": "Open log folder",
+            "open_logs": "Open logs folder",
             "data": "Data",
             "logs": "Logs",
             "updates": "App updates",
