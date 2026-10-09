@@ -222,7 +222,6 @@
             "save_first": "Wait for your changes to finish saving before continuing.",
             "disable_protection": "Disable protection",
             "disable_help": "Anyone who can reach this dashboard will be able to use it. Your password and existing sessions will be cleared.",
-            "authorization_waiting": "Waiting for Twitch to confirm authorization.",
             "authorization_pending": "The miner will display an authorization code when Twitch login is required. If it remains unavailable, check Activity for the reported error.",
             "cache_help": "Clear cached campaigns, channels, derived miner state, and local claim history, then refresh from Twitch. Cleared claims will not be imported again. Login, settings, and completed campaign records are kept. This cannot be undone.",
             "advanced": "Advanced actions",

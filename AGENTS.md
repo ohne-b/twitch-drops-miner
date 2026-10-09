@@ -385,7 +385,8 @@ embed it and run without a build tool/runtime companion. Production builds never
   identity. Use the validated login from the existing account query for the Twitch URL,
   never the display name; omit the link when that login is unavailable. Reuse the activation
   link's Open In New icon, shared icon-button style and native external-link handling.
-  Logged-out authorization status stays visible. Device authorization keeps the
+  Logged-out authorization status stays visible. Done adds no second waiting notice;
+  retain its pending/disabled state and request errors. Device authorization keeps the
   copyable code, Twitch Activate and Done on one unboxed wrapping row with equal-height controls
   (36px desktop, 44px phone). Activate and Done use the same outlined button style. Successful
   copying shows a tick, tooltip and accessible status for three seconds; another successful copy

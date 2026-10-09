@@ -2303,6 +2303,52 @@ test('copy confirmation expires, restarts and ignores superseded code results', 
   await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
+test('authorization Done keeps one login status and preserves request errors', async ({
+  page,
+  request,
+}) => {
+  const login = {
+    status: 'Waiting for authentication...',
+    user_id: null,
+    oauth_pending: { code: 'TESTCODE', url: 'https://www.twitch.tv/activate' },
+  };
+  expect(
+    (
+      await request.post('/__test/event', {
+        headers,
+        data: { event: 'login_status', data: login },
+      })
+    ).ok(),
+  ).toBe(true);
+  await page.goto('/settings#account');
+  const account = page.locator('#account');
+  const status = account.getByText(login.status, { exact: true });
+  const done = account.getByRole('button', { name: 'Done', exact: true });
+  const result = account.locator('[role="status"], [role="alert"]');
+  let finish!: () => void;
+  const pending = new Promise<void>((resolve) => (finish = resolve));
+  await page.route('**/api/oauth/confirm', async (route) => {
+    await pending;
+    await route.fulfill({ status: 503, json: { detail: 'request_failed' } });
+  });
+  try {
+    await done.click();
+    await expect(done).toBeDisabled();
+    await expect(status).toBeVisible();
+  } finally {
+    finish();
+  }
+  await expect(account.getByRole('alert')).toContainText('Request failed');
+  await expect(done).toBeEnabled();
+  await page.unroute('**/api/oauth/confirm');
+  const confirmed = page.waitForResponse('**/api/oauth/confirm');
+  await done.click();
+  expect((await confirmed).ok()).toBe(true);
+  await expect(done).toBeEnabled();
+  await expect(status).toBeVisible();
+  await expect(result).toHaveCount(0);
+});
+
 for (const width of [1280, 390, 320]) {
   test(`copy feedback keeps the authorization layout stable at ${width}px`, async ({
     page,
