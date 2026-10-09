@@ -1,5 +1,13 @@
 # Changelog
 
+## [v2.0.2](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v2.0.2) — 2026-10-09
+
+- show the installed version and update checks inline in Settings > Maintenance on desktop and server
+- keep desktop updates, cancellation and install recovery on that page, with an Update button and download icon
+- shorten desktop folder shortcuts to Data and Logs, and remove server-only shutdown controls from desktop settings
+- align Activity rows with and without campaign detail buttons while preserving room for longer messages ([#84](https://github.com/ohne-b/twitch-drops-miner/issues/84))
+- add a link to the signed-in Twitch profile beside the account in Settings ([#85](https://github.com/ohne-b/twitch-drops-miner/pull/85))
+
 ## [v2.0.1](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v2.0.1) — 2026-10-08
 
 - fix Twitch Activate and other external links opening in the desktop app's default browser
