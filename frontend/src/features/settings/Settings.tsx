@@ -1,4 +1,5 @@
-import { DesktopUpdateButton } from './DesktopUpdates';
+import { DesktopUpdates } from './DesktopUpdates';
+import UpdateCheck from './UpdateCheck';
 import { isDesktop } from '../../shared/lib/platform';
 import { DesktopSettings } from './Desktop';
 import { Icon } from '@mdi/react';
@@ -9,7 +10,6 @@ import {
   mdiLogout,
   mdiContentCopy,
   mdiCheck,
-  mdiUpdate,
   mdiAccountOutline,
   mdiShieldLockOutline,
   mdiLanConnect,
@@ -192,18 +192,13 @@ function ReleaseNotice({ disabled }: { disabled: boolean }) {
   const releaseUrl = available ? safeUrl(release.download_url) : undefined;
   return (
     <div className="space-y-3 text-[13px]">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-muted">Drops Miner{release && ` · ${release.current_version}`}</p>
-        <IconButton
-          path={mdiUpdate}
-          label={t(busy ? 'checking_updates' : 'check_updates')}
-          className={busy ? '[&>svg]:animate-spin motion-reduce:[&>svg]:animate-none' : ''}
-          aria-busy={busy}
-          disabled={disabled || busy}
-          onClick={() => void check()}
-        />
-      </div>
-      <div>
+      <UpdateCheck
+        version={release?.current_version}
+        checking={busy}
+        current={!busy && release?.check_succeeded && !available}
+        disabled={disabled}
+        onCheck={() => void check()}
+      >
         {busy ? (
           <p role="status" className="text-muted">
             {t('checking_updates')}
@@ -213,28 +208,30 @@ function ReleaseNotice({ disabled }: { disabled: boolean }) {
             {t('update_check_failed')}
           </p>
         ) : available ? (
-          <Notice>
-            <div>
-              <p>{t('update_available', { version: release.latest_version ?? '' })}</p>
-              <p className="mt-1 text-muted">{t('update_manually')}</p>
-              {releaseUrl && (
-                <a
-                  className="text-link mt-2 inline-block"
-                  href={releaseUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {t('release_notes')}
-                </a>
-              )}
-            </div>
-          </Notice>
+          <p role="status" className="text-muted">
+            {t('update_available', { version: release.latest_version ?? '' })}
+          </p>
         ) : (
           <p role="status" className="text-muted">
             {t('up_to_date')}
           </p>
         )}
-      </div>
+      </UpdateCheck>
+      {available && !busy && (
+        <div className="space-y-2">
+          <p className="text-muted">{t('update_manually')}</p>
+          {releaseUrl && (
+            <a
+              className="text-link inline-block"
+              href={releaseUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t('release_notes')}
+            </a>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -452,7 +449,7 @@ function SettingsContent({ settings, auth }: { settings: SettingsData; auth: Aut
         <Access hidden={section !== 'access'} initial={auth} disabled={dirty || !connected} />
       )}
       <Section hidden={section !== 'maintenance'} id="maintenance">
-        {isDesktop() ? <DesktopUpdateButton /> : <ReleaseNotice disabled={!connected} />}
+        {isDesktop() ? <DesktopUpdates /> : <ReleaseNotice disabled={!connected} />}
         <div className="flex flex-wrap gap-2">
           <Button
             disabled={!connected || command.busy}
@@ -467,25 +464,26 @@ function SettingsContent({ settings, auth }: { settings: SettingsData; auth: Aut
             {t('gui.settings.clear_all_cache')}
           </Button>
         </div>
-        <details>
-          <summary className="text-[13px] text-muted">{t('advanced')}</summary>
-          <Button
-            className="mt-3"
-            disabled={!connected || command.busy}
-            onClick={() =>
-              setConfirmation({
-                title: t('shutdown'),
-                text: t('shutdown_help'),
-                action: () => request('/api/close', {}),
-              })
-            }
-          >
-            {t('shutdown')}
-          </Button>
-        </details>
+        {!isDesktop() && (
+          <details>
+            <summary className="text-[13px] text-muted">{t('advanced')}</summary>
+            <Button
+              className="mt-3"
+              disabled={!connected || command.busy}
+              onClick={() =>
+                setConfirmation({
+                  title: t('shutdown'),
+                  text: t('shutdown_help'),
+                  action: () => request('/api/close', {}),
+                })
+              }
+            >
+              {t('shutdown')}
+            </Button>
+          </details>
+        )}
         <ActionResult action={command} />
         <div className="space-y-2 pt-2 text-[13px] text-muted">
-          <p>{t('gui.help.about_text')}</p>
           <p>
             {t('help_link_accounts')}{' '}
             <a
