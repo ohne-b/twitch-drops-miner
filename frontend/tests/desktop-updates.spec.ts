@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { mdiDownload, mdiFolderOutline } from '@mdi/js';
 import fixture from './fixture.json' with { type: 'json' };
 import type { UpdateStatus } from '../src/features/settings/DesktopUpdates';
 
@@ -63,6 +64,7 @@ test.beforeEach(async ({ page }) => {
               event?: string;
               handler?: number;
               action?: string;
+              folder?: string;
               request?: { kind: string };
             } = {},
           ) => {
@@ -78,7 +80,21 @@ test.beforeEach(async ({ page }) => {
             }
             if (command === 'state_open') return { type: 'snapshot', value: snapshot };
             if (command === 'state_next') return new Promise(() => {});
-            if (command === 'desktop_settings') return { version: '2.0.1', tray_available: true };
+            if (command === 'desktop_settings')
+              return {
+                version: '2.0.1',
+                tray_available: true,
+                autostart: false,
+                start_minimized: false,
+                close_to_tray: false,
+                keep_awake: false,
+                keep_awake_failed: false,
+                notifications: false,
+              };
+            if (command === 'open_app_folder') {
+              control.calls.push(`folder:${args.folder}`);
+              return;
+            }
             if (command === 'restart_app') {
               control.calls.push(command);
               return;
@@ -120,7 +136,7 @@ for (const width of [1280, 390]) {
     const updates = page.getByRole('region', { name: 'App updates' });
     const check = updates.getByRole('button', { name: 'Check for updates', exact: true });
     await expect(updates.getByTitle('Installed version: 2.0.1')).toHaveText('v2.0.1');
-    await expect(updates.getByRole('status')).toHaveText("You're on the latest version.");
+    await expect(updates.getByRole('status')).toHaveText("You're up to date.");
     await expect(page.locator('#maintenance details')).toHaveCount(0);
     await expect(page.locator('#maintenance')).not.toContainText(
       'This application automatically mines',
@@ -129,7 +145,7 @@ for (const width of [1280, 390]) {
     await check.focus();
     await check.press('Enter');
     await expect(updates.getByRole('button', { name: 'Checking for updates…' })).toBeDisabled();
-    await expect(updates.getByRole('status')).toHaveText('Checking for updates...');
+    await expect(updates.getByRole('status')).toHaveText('Checking for updates…');
     await updates.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(check).toBeEnabled();
     await page.evaluate(() =>
@@ -141,7 +157,10 @@ for (const width of [1280, 390]) {
       'https://github.com/ohne-b/twitch-drops-miner/releases/tag/v2.0.2',
     );
     await page.screenshot({ path: `../artifacts/desktop-updates-available-${width}.png` });
-    await updates.getByRole('button', { name: 'Download update', exact: true }).click();
+    await expect(
+      updates.getByRole('button', { name: 'Update', exact: true }).locator('path'),
+    ).toHaveAttribute('d', mdiDownload);
+    await updates.getByRole('button', { name: 'Update', exact: true }).click();
     await expect(check).toBeDisabled();
     await page.getByRole('link', { name: 'Mining', exact: true }).click();
     await page.getByRole('link', { name: 'Update v2.0.2', exact: true }).click();
@@ -150,8 +169,8 @@ for (const width of [1280, 390]) {
     await expect(updates.locator('[role="progressbar"], progress')).toHaveCount(0);
     await page.screenshot({ path: `../artifacts/desktop-updates-downloading-${width}.png` });
     await updates.getByRole('button', { name: 'Cancel', exact: true }).click();
-    await expect(updates.getByRole('button', { name: 'Download update' })).toBeEnabled();
-    await updates.getByRole('button', { name: 'Download update' }).click();
+    await expect(updates.getByRole('button', { name: 'Update', exact: true })).toBeEnabled();
+    await updates.getByRole('button', { name: 'Update', exact: true }).click();
     await page.evaluate(() => {
       window.updateFixture.publish({ phase: 'ready' });
       window.updateFixture.emit('desktop-update', {
@@ -199,12 +218,12 @@ test('tray checks and update failures retain inline recovery', async ({ page }) 
   await expect(updates.getByRole('alert')).toHaveText('Could not complete that action. Try again.');
   await check.click();
   await page.evaluate(() => window.updateFixture.publish({ phase: 'current' }));
-  await expect(updates.getByRole('status')).toHaveText("You're on the latest version.");
+  await expect(updates.getByRole('status')).toHaveText("You're up to date.");
   await page.evaluate(() =>
     window.updateFixture.publish({ phase: 'failed', version: '2.0.2', error: 'download_failed' }),
   );
   await expect(updates.getByRole('alert')).toContainText('Try downloading again.');
-  await expect(updates.getByRole('button', { name: 'Download update' })).toBeEnabled();
+  await expect(updates.getByRole('button', { name: 'Update', exact: true })).toBeEnabled();
   await page.evaluate(() =>
     window.updateFixture.publish({ error: 'install_failed', restart_required: true }),
   );
@@ -218,4 +237,28 @@ test('tray checks and update failures retain inline recovery', async ({ page }) 
   expect(await page.evaluate(() => window.updateFixture.calls)).toEqual(calls);
   await updates.getByRole('button', { name: 'Restart app' }).click();
   expect(await page.evaluate(() => window.updateFixture.calls.at(-1))).toBe('restart_app');
+});
+
+test('compact desktop folder actions retain accessible names and native destinations', async ({
+  page,
+}) => {
+  await page.getByRole('link', { name: 'Desktop', exact: true }).click();
+  for (const [label, folder] of [
+    ['Data', 'data'],
+    ['Logs', 'logs'],
+  ] as const) {
+    const button = page.getByRole('button', {
+      name: `Open ${folder === 'data' ? 'data' : 'log'} folder`,
+      exact: true,
+    });
+    await expect(button).toHaveText(label);
+    await expect(button.locator('path')).toHaveAttribute('d', mdiFolderOutline);
+    await button.focus();
+    await button.press('Enter');
+    await expect
+      .poll(() => page.evaluate(() => window.updateFixture.calls.at(-1)))
+      .toBe(`folder:${folder}`);
+  }
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.screenshot({ path: '../artifacts/desktop-folder-actions.png' });
 });

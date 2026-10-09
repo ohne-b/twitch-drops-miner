@@ -82,7 +82,7 @@
     await invoke('plugin:event|emit', { event: 'desktop-update-open', payload: null });
     const maintenance = () => document.getElementById('maintenance');
     await wait(() => maintenance() && !maintenance().hidden, 'tray updates did not open Maintenance');
-    await wait(() => maintenance().textContent.includes("You're on the latest version."), 'offline updater status not rendered');
+    await wait(() => maintenance().textContent.includes("You're up to date."), 'offline updater status not rendered');
     await wait(async () => (await invoke('desktop_update')).revision > checked.revision, 'opening updates did not check again');
     if (document.querySelector('dialog[open]') || maintenance().querySelector('details')) {
       throw new Error('desktop updates expose a dialog or server shutdown controls');

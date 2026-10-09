@@ -9,6 +9,8 @@ import {
 } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { mdiDownload } from '@mdi/js';
+import { Icon } from '@mdi/react';
 import { Link, useNavigate } from 'react-router';
 import { useT } from '../../shared/lib/i18n';
 import { isDesktop } from '../../shared/lib/platform';
@@ -184,6 +186,7 @@ export function DesktopUpdates() {
           ) : status.phase === 'available' ||
             (status.phase === 'failed' && status.error === 'download_failed') ? (
             <Button primary onClick={() => void action('download')}>
+              <Icon path={mdiDownload} className="mdi-icon" />
               {t('gui.desktop.download')}
             </Button>
           ) : null}

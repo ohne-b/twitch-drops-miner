@@ -117,6 +117,8 @@ embed it and run without a build tool/runtime companion. Production builds never
   Checking/current states do not add a sidebar link. Navigation never installs automatically.
   Desktop Maintenance omits the server's Advanced actions / Shut down miner controls; native
   Quit remains in the tray. Omit the redundant application-description sentence in both wrappers.
+  Desktop folder shortcuts use Data / Logs with folder icons and descriptive accessible names.
+  Label the download action Update with the MDI Download icon; retain explicit verified install.
 - Ship Windows x64 NSIS, universal macOS DMG plus the updater app archive, and Linux x64
   AppImage/DEB. No MSI or portable Windows distribution. Keep one backward-compatible
   `latest.json` for server and desktop. Platform-specific updater entries choose the right
@@ -541,6 +543,7 @@ embed it and run without a build tool/runtime companion. Production builds never
   Desktop and server share a compact installed-version badge (`vVERSION`) beside the update
   check and inline result, with actions or manual-update guidance below. Use the badge's muted
   accent only after a successful current-version check; errors never appear up to date.
+  Desktop and server use the same checking, current, available and check-failure wording.
   Check for updates uses the fixed-size MDI Update icon button, with a checking label/tooltip,
   busy state and spinning icon during requests (respect reduced motion); let inline results wrap
   below the controls when space is limited.

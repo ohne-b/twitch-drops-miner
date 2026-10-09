@@ -337,7 +337,7 @@ test('Maintenance shows a release notice and notes link without installing anyth
   );
   await page.goto('/settings#maintenance');
   const maintenance = page.locator('#maintenance');
-  await expect(maintenance.getByText('New version available: 0.2.0')).toBeVisible();
+  await expect(maintenance.getByText('Version 0.2.0 is available.')).toBeVisible();
   await expect(maintenance.getByTitle('Installed version: 0.1.0')).toHaveText('v0.1.0');
   await expect(maintenance.locator('summary')).toHaveText('Advanced actions');
   await expect(maintenance).not.toContainText('This application automatically mines');
@@ -347,7 +347,7 @@ test('Maintenance shows a release notice and notes link without installing anyth
   );
   await expect(maintenance.getByRole('button', { name: /^(Install|Update now)/ })).toHaveCount(0);
   await maintenance.getByRole('button', { name: 'Check for updates' }).click();
-  await expect(maintenance.getByText('New version available: 0.2.0')).toBeVisible();
+  await expect(maintenance.getByText('Version 0.2.0 is available.')).toBeVisible();
   expect(writes).toEqual([]);
   await page.screenshot({ path: '../artifacts/server-updates-available.png' });
   await page.setViewportSize({ width: 375, height: 720 });
@@ -372,9 +372,7 @@ test('failed release checks stay distinct from up-to-date and can be retried', a
   );
   await page.goto('/settings#maintenance');
   const maintenance = page.locator('#maintenance');
-  await expect(
-    maintenance.getByText('Could not check for updates. Try again shortly.'),
-  ).toBeVisible();
+  await expect(maintenance.getByText('Could not check for updates. Try again.')).toBeVisible();
   await expect(maintenance.getByText("You're up to date.")).toHaveCount(0);
   successful = true;
   await maintenance.getByRole('button', { name: 'Check for updates' }).click();
