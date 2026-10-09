@@ -400,9 +400,13 @@ embed it and run without a build tool/runtime companion. Production builds never
   and the settings beside it stay fixed. In short windows the settings column scrolls independently
   to keep every field reachable, without scrolling the whole preferences panel or page.
   When error/reconnect notices leave too little height, allow the games column to scroll as
-  well; search results and selected games must never overlap or become unreachable.
-  Game search results appear below the search controls and above the selected games;
-  bound their height so long result lists remain reachable in short windows.
+  well; controls and selected games must remain reachable after dismissing search.
+  Game search uses an input-anchored native popover over the selected games, without moving
+  or resetting the list. Cap results at 320px and the available visual viewport; open above
+  when there is insufficient room below. Keep input focus with listbox/combobox semantics,
+  arrow-key navigation and Enter selection. Selection, Escape, outside click and leaving the
+  picker dismiss results; Escape preserves the query. Preserve manual-name entry and retry.
+  Webviews without Popover API use the same fixed-position dropdown with outside-click dismissal.
   Search Twitch's Helix category directory through the current Smart TV session with no
   added scopes. Use debounced, cancellable queries and a bounded generation-owned queue;
   keep search separate from campaign discovery and watch scheduling. Pending searches stay

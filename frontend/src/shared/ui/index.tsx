@@ -8,6 +8,7 @@ import {
   type ComponentProps,
   type ReactNode,
   type ReactElement,
+  type RefObject,
 } from 'react';
 import {
   mdiClose,
@@ -113,12 +114,17 @@ export function Search({
   value,
   onChange,
   label,
+  inputProps,
+  inputRef,
 }: {
   value: string;
   onChange: (value: string) => void;
   label: string;
+  inputProps?: Omit<ComponentProps<'input'>, 'value' | 'onChange' | 'type' | 'ref'>;
+  inputRef?: RefObject<HTMLInputElement | null>;
 }) {
-  const ref = useRef<HTMLInputElement>(null);
+  const ownRef = useRef<HTMLInputElement>(null);
+  const ref = inputRef ?? ownRef;
   const t = useT();
   return (
     <div className="relative min-w-0">
@@ -133,8 +139,10 @@ export function Search({
         value={value}
         className="ps-9 pe-10"
         onChange={(event) => onChange(event.target.value)}
+        {...inputProps}
         onKeyDown={(event) => {
-          if (event.key === 'Escape') onChange('');
+          inputProps?.onKeyDown?.(event);
+          if (!event.defaultPrevented && event.key === 'Escape') onChange('');
         }}
       />
       {value && (

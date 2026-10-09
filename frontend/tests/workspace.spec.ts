@@ -80,14 +80,15 @@ for (const width of [1440, 390, 320]) {
     await expect(page.getByRole('heading', { name: 'Mining preferences' })).toBeVisible();
     await expect(page.getByRole('combobox', { name: 'Mining priority' })).toBeEnabled();
     await expect(page.getByRole('heading', { name: 'Now mining' })).toHaveCount(0);
-    const search = page.getByRole('searchbox', { name: 'Search games...' });
+    const search = page.getByRole('combobox', { name: 'Search games...' });
+    const games = page.getByRole('region', { name: 'Game priorities', exact: true });
+    const gamesTop = (await games.boundingBox())!.y;
     await search.fill('Elder');
-    const results = page.getByRole('region', { name: 'Search games...' });
-    await expect(results.getByRole('button', { name: 'The Elder Scrolls Online' })).toBeVisible();
+    const results = page.getByRole('listbox', { name: 'Search games...' });
+    await expect(results.getByRole('option', { name: 'The Elder Scrolls Online' })).toBeVisible();
     const bounds = (await results.boundingBox())!;
-    expect(bounds.y + bounds.height).toBeLessThan(
-      (await page.getByRole('region', { name: 'Game priorities', exact: true }).boundingBox())!.y,
-    );
+    expect(bounds.y).toBeGreaterThan((await search.boundingBox())!.y);
+    expect((await games.boundingBox())!.y).toBe(gamesTop);
     await search.fill('');
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     await page.screenshot({
@@ -136,7 +137,7 @@ test('only the game list scrolls while desktop preferences controls stay in plac
     await page.goto('/?edit=priorities');
     const panel = page.getByRole('region', { name: 'Mining preferences', exact: true });
     const list = page.getByRole('region', { name: 'Game priorities', exact: true });
-    const search = page.getByRole('searchbox', { name: 'Search games...' });
+    const search = page.getByRole('combobox', { name: 'Search games...' });
     const rewards = page
       .getByRole('group', { name: 'Also mine from other games', exact: true })
       .getByRole('checkbox', { name: 'Badges' });
@@ -202,19 +203,24 @@ test('only the game list scrolls while desktop preferences controls stay in plac
     expect(await panel.evaluate((element) => element.scrollTop)).toBe(0);
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
     await page.screenshot({ path: `../artifacts/preferences-list-scroll-${viewport.width}.png` });
+    const listBeforeSearch = await list.boundingBox();
+    const scrollBeforeSearch = await list.evaluate((element) => element.scrollTop);
     await search.fill('e');
-    const results = page.getByRole('region', { name: 'Search games...' });
-    const match = results.getByRole('button', { name: 'Sea of Thieves', exact: true });
+    const results = page.getByRole('listbox', { name: 'Search games...' });
+    const match = results.getByRole('option', { name: 'Sea of Thieves', exact: true });
     await expect(match).toBeInViewport({ ratio: 0.99 });
     const resultBounds = (await results.boundingBox())!;
     expect(resultBounds.y).toBeGreaterThan(searchTop);
-    expect(resultBounds.y + resultBounds.height).toBeLessThan((await list.boundingBox())!.y);
+    expect(resultBounds.y + resultBounds.height).toBeLessThanOrEqual(viewport.height - 8);
+    expect(await list.boundingBox()).toEqual(listBeforeSearch);
+    expect(await list.evaluate((element) => element.scrollTop)).toBe(scrollBeforeSearch);
     const firstMatchHandle = list.getByRole('button', { name: /^Reorder/ }).first();
     await firstMatchHandle.focus();
+    await expect(results).toBeHidden();
     await expect(firstMatchHandle).toBeInViewport({ ratio: 0.99 });
     await page.screenshot({ path: `../artifacts/preferences-search-${viewport.width}.png` });
     await page.getByRole('button', { name: 'Add Game', exact: true }).click();
-    await expect(results.getByRole('alert')).toContainText('Multiple games found');
+    await expect(page.getByRole('alert')).toContainText('Choose a game from the results.');
     await match.scrollIntoViewIfNeeded();
     await expect(match).toBeInViewport({ ratio: 0.99 });
     await match.click();
@@ -253,14 +259,13 @@ test('short preferences with save conflicts and reconnects keep controls reachab
     .getByRole('checkbox', { name: 'Badges' })
     .check();
   await expect(page.getByRole('alert')).toBeVisible();
-  await page.getByRole('searchbox', { name: 'Search games...' }).fill('e');
-  const results = page.getByRole('region', { name: 'Search games...' });
+  await page.getByRole('combobox', { name: 'Search games...' }).fill('e');
+  const results = page.getByRole('listbox', { name: 'Search games...' });
   const resultBounds = (await results.boundingBox())!;
-  expect(resultBounds.y + resultBounds.height).toBeLessThan(
-    (await page.getByRole('region', { name: 'Game priorities', exact: true }).boundingBox())!.y,
-  );
-  const match = results.getByRole('button', { name: 'Sea of Thieves', exact: true });
-  await match.focus();
+  expect(resultBounds.y).toBeGreaterThanOrEqual(8);
+  expect(resultBounds.y + resultBounds.height).toBeLessThanOrEqual(352);
+  const match = results.getByRole('option', { name: 'Sea of Thieves', exact: true });
+  await match.scrollIntoViewIfNeeded();
   await expect(match).toBeInViewport({ ratio: 0.99 });
   const last = page.getByRole('button', { name: 'Reorder Game 30', exact: true });
   await last.focus();
@@ -276,7 +281,9 @@ test('short preferences with save conflicts and reconnects keep controls reachab
     const column = page.getByRole('group', { name: 'Game priorities', exact: true });
     await column.focus();
     await column.press('End');
-    await expect.poll(() => column.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    await expect(page.getByRole('listbox')).toBeHidden();
+    await last.scrollIntoViewIfNeeded();
+    await expect(last).toBeInViewport({ ratio: 0.99 });
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
     expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(360);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
