@@ -450,8 +450,8 @@ test('Mining lists have modest gutters, inset separators and full phone touch ta
     .getByRole('checkbox', { name: 'Badges', exact: true })
     .locator('..');
   expect((await check.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-  await page.getByRole('searchbox', { name: 'Search games...' }).fill('Elder');
-  const result = page.getByRole('region', { name: 'Search games...' }).getByRole('button').first();
+  await page.getByRole('combobox', { name: 'Search games...' }).fill('Elder');
+  const result = page.getByRole('listbox', { name: 'Search games...' }).getByRole('option').first();
   expect((await result.boundingBox())!.height).toBeGreaterThanOrEqual(44);
 });
 

@@ -1313,7 +1313,7 @@ test('discovery stays visible without mining until Mine is explicitly selected',
 });
 test('game priorities show icons instead of editable numbers', async ({ page, request }) => {
   await page.goto('/?edit=priorities');
-  await page.getByRole('searchbox', { name: 'Search games...' }).fill('The Elder Scrolls Online');
+  await page.getByRole('combobox', { name: 'Search games...' }).fill('The Elder Scrolls Online');
   await page.getByRole('button', { name: 'Add Game', exact: true }).click();
   await expect
     .poll(async () => (await (await request.get('/api/settings')).json()).games_to_watch)
@@ -1352,7 +1352,7 @@ test('Twitch logout leaves the dashboard available and shows the next login', as
 
 test('manual game confirmation supports Escape and safe literal names', async ({ page }) => {
   await page.goto('/?edit=priorities');
-  await page.getByRole('searchbox', { name: 'Search games...' }).fill('<script>new game</script>');
+  await page.getByRole('combobox', { name: 'Search games...' }).fill('<script>new game</script>');
   await page.getByRole('button', { name: 'Add Game', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.keyboard.press('Escape');
@@ -1612,7 +1612,7 @@ test('pages and confirmation dialogs meet automated accessibility checks', async
     expect(results.violations, `${route}: ${JSON.stringify(results.violations)}`).toEqual([]);
   }
   await page.goto('/?edit=priorities');
-  await page.getByRole('searchbox', { name: 'Search games...' }).fill('Custom game');
+  await page.getByRole('combobox', { name: 'Search games...' }).fill('Custom game');
   await page.getByRole('button', { name: 'Add Game', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
@@ -1698,7 +1698,7 @@ test('manual game confirmation appends to the latest settings from another devic
   request,
 }) => {
   await page.goto('/?edit=priorities');
-  await page.getByRole('searchbox', { name: 'Search games...' }).fill('Manual name');
+  await page.getByRole('combobox', { name: 'Search games...' }).fill('Manual name');
   await page.getByRole('button', { name: 'Add Game', exact: true }).click();
   const settings = await (await request.get('/api/settings')).json();
   await request.post('/api/settings', {
@@ -2507,7 +2507,7 @@ test('search clear circles stay inside every search field on desktop and phone',
     ]) {
       await page.goto(url);
       const search = url.includes('edit=')
-        ? page.getByRole('searchbox', { name: 'Search games...' })
+        ? page.getByRole('combobox', { name: 'Search games...' })
         : page.getByRole('searchbox');
       await search.fill('example');
       const clear = page.getByRole('button', { name: 'Clear search', exact: true });
