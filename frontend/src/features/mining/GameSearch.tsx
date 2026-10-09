@@ -39,6 +39,33 @@ export default function GameSearch({
   const activeIndex =
     active?.query === value ? options.findIndex((game) => game.name === active.name) : -1;
 
+  function position() {
+    const rect = input.current!.getBoundingClientRect();
+    const viewport = window.visualViewport;
+    const top = (viewport?.offsetTop ?? 0) + 8;
+    const bottom = (viewport?.offsetTop ?? 0) + (viewport?.height ?? innerHeight) - 8;
+    if (rect.bottom <= top || rect.top >= bottom) {
+      setOpen(false);
+      setActive(null);
+      return;
+    }
+    const below = Math.max(0, bottom - rect.bottom - 4);
+    const above = Math.max(0, rect.top - top - 4);
+    const upward = below < 160 && above > below;
+    Object.assign(popup.current!.style, {
+      left: `${rect.left}px`,
+      width: `${rect.width}px`,
+      maxHeight: `${Math.min(320, upward ? above : below)}px`,
+      top: `${upward ? rect.top - 4 : rect.bottom + 4}px`,
+      transform: upward ? 'translateY(-100%)' : '',
+    });
+  }
+
+  useLayoutEffect(() => {
+    // Save-status banners can move the field without resizing it.
+    if (visible) position();
+  });
+
   useLayoutEffect(() => {
     const element = popup.current!;
     const anchor = input.current!;
@@ -50,30 +77,12 @@ export default function GameSearch({
       }
       return;
     }
-    function position() {
-      const rect = anchor.getBoundingClientRect();
-      const viewport = window.visualViewport;
-      const top = (viewport?.offsetTop ?? 0) + 8;
-      const bottom = (viewport?.offsetTop ?? 0) + (viewport?.height ?? innerHeight) - 8;
-      if (rect.bottom <= top || rect.top >= bottom) {
-        setOpen(false);
-        return;
-      }
-      const below = Math.max(0, bottom - rect.bottom - 4);
-      const above = Math.max(0, rect.top - top - 4);
-      const upward = below < 160 && above > below;
-      Object.assign(element.style, {
-        left: `${rect.left}px`,
-        width: `${rect.width}px`,
-        maxHeight: `${Math.min(320, upward ? above : below)}px`,
-        top: `${upward ? rect.top - 4 : rect.bottom + 4}px`,
-        transform: upward ? 'translateY(-100%)' : '',
-      });
-    }
-    position();
     element.showPopover?.({ source: anchor });
     function dismiss(event: PointerEvent) {
-      if (!picker.current?.contains(event.target as Node)) setOpen(false);
+      if (!picker.current?.contains(event.target as Node)) {
+        setOpen(false);
+        setActive(null);
+      }
     }
     if (!nativePopover) document.addEventListener('pointerdown', dismiss);
     const observer = new ResizeObserver(position);
@@ -178,6 +187,7 @@ export default function GameSearch({
         hidden={!nativePopover && !visible}
         data-fallback-open={!nativePopover && visible ? true : undefined}
         className="game-search-popover"
+        onClick={() => input.current?.focus({ preventScroll: true })}
         onBeforeToggle={(event) => {
           if (event.newState === 'closed' && visible) {
             setOpen(false);

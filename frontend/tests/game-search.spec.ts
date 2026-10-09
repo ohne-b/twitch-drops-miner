@@ -138,6 +138,50 @@ test('dismissed pending searches stay closed when the result arrives', async ({ 
   await expect(page.getByRole('option', { name: stardew.name })).toBeVisible();
 });
 
+test('suggestions follow the field when an autosave error shifts the page', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  let finish!: () => void;
+  let saving = false;
+  const gate = new Promise<void>((resolve) => (finish = resolve));
+  await page.route('**/api/settings', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    saving = true;
+    await gate;
+    await route.fulfill({ status: 409, json: { detail: 'settings_conflict' } });
+  });
+  await page.route('**/api/games', (route) =>
+    route.fulfill({ json: route.request().postDataJSON().search ? [stardew] : [] }),
+  );
+  await page.goto('/?edit=priorities');
+  const search = page.getByRole('combobox', { name: 'Search games' });
+  let before = 0;
+  try {
+    await page
+      .getByRole('group', { name: 'Also mine from other games' })
+      .getByLabel('Badges')
+      .check();
+    await expect.poll(() => saving).toBe(true);
+    await search.fill('stardew');
+    await expect(page.getByRole('option', { name: stardew.name })).toBeVisible();
+    before = (await search.boundingBox())!.y;
+  } finally {
+    finish();
+  }
+  await expect(page.getByRole('alert')).toBeVisible();
+  await expect
+    .poll(async () => {
+      const field = (await search.boundingBox())!;
+      const popup = (await page.locator('.game-search-popover').boundingBox())!;
+      return field.y > before && popup.y === field.y + field.height + 4;
+    })
+    .toBe(true);
+  await search.press('ArrowDown');
+  await expect(page.getByRole('option', { name: stardew.name })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+});
+
 test.describe('touch game selection', () => {
   test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
   test('a tap selects a game and closes suggestions', async ({ page }) => {
@@ -289,8 +333,11 @@ test('changed queries ignore stale results and failed searches can retry or add 
   ).toBeVisible();
   await page.unroute('**/api/games');
   await page.route('**/api/games', (route) => route.fulfill({ json: [stardew] }));
-  await page.getByRole('button', { name: 'Try again', exact: true }).click();
+  const retry = page.getByRole('button', { name: 'Try again', exact: true });
+  await retry.focus();
+  await retry.press('Enter');
   await expect(page.getByRole('option', { name: 'Stardew Valley', exact: true })).toBeVisible();
+  await expect(search).toBeFocused();
 });
 
 test('early campaign selections get covers and Enter accepts Twitch word matches', async ({
