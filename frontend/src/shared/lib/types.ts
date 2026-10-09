@@ -120,6 +120,7 @@ export interface AccountBadge {
   image_url: string | null;
 }
 export interface AccountProfile {
+  login?: string;
   display_name: string;
   avatar_url: string | null;
   color: string | null;

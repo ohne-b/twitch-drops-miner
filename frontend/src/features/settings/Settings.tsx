@@ -322,12 +322,26 @@ function SettingsContent({ settings, auth }: { settings: SettingsData; auth: Aut
             <p className="text-soft">{plainText(data?.login.status ?? '')}</p>
           )}
           {data?.login.user_id && (
-            <IconButton
-              path={mdiLogout}
-              label={t('twitch_logout')}
-              disabled={!connected || logoutAction.busy}
-              onClick={() => void logoutAction.run(() => request('/api/twitch/logout', {}))}
-            />
+            <>
+              {data.login.profile?.login && (
+                <a
+                  className="icon-button"
+                  href={`https://www.twitch.tv/${encodeURIComponent(data.login.profile.login)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={t('open_twitch_profile')}
+                  title={t('open_twitch_profile')}
+                >
+                  <Icon path={mdiOpenInNew} className="mdi-icon" />
+                </a>
+              )}
+              <IconButton
+                path={mdiLogout}
+                label={t('twitch_logout')}
+                disabled={!connected || logoutAction.busy}
+                onClick={() => void logoutAction.run(() => request('/api/twitch/logout', {}))}
+              />
+            </>
           )}
         </div>
         <ActionResult action={logoutAction} />

@@ -6,6 +6,7 @@ import type { AccountProfile } from '../src/shared/lib/types';
 const headers = { 'X-TDM-Request': '1' };
 const image = 'https://static-cdn.jtvnw.net/profile-fixture.png';
 const profile: AccountProfile = {
+  login: 'northwind_login',
   display_name: 'Northwind',
   avatar_url: image,
   color: '#008000',
@@ -83,7 +84,29 @@ for (const viewport of [
     await expect(page.locator('.account-card')).toHaveCount(0);
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(settings).not.toContainText('Global badges');
-    await expect(settings.locator('time, dl, a, [popover]')).toHaveCount(0);
+    await expect(settings.locator('time, dl, [popover]')).toHaveCount(0);
+    const profileLink = settings.getByRole('link', { name: 'Open Twitch profile', exact: true });
+    await expect(profileLink).toHaveAttribute('href', 'https://www.twitch.tv/northwind_login');
+    await expect(profileLink).toHaveAttribute('target', '_blank');
+    await expect(profileLink).toHaveAttribute('rel', 'noreferrer');
+    const logout = settings.getByRole('button', { name: 'Log out of Twitch', exact: true });
+    const linkBox = (await profileLink.boundingBox())!;
+    const logoutBox = (await logout.boundingBox())!;
+    expect(linkBox.y).toBe(logoutBox.y);
+    expect(linkBox.height).toBe(logoutBox.height);
+    expect(linkBox.x + linkBox.width).toBeLessThanOrEqual(logoutBox.x);
+    if (viewport.width < 768) expect(linkBox.height).toBeGreaterThanOrEqual(44);
+    if (viewport.width === 1440) {
+      await page
+        .context()
+        .route('https://www.twitch.tv/northwind_login', (route) =>
+          route.fulfill({ contentType: 'text/html', body: '<title>Profile fixture</title>' }),
+        );
+      await profileLink.focus();
+      const [popup] = await Promise.all([page.waitForEvent('popup'), profileLink.press('Enter')]);
+      await expect(popup).toHaveURL('https://www.twitch.tv/northwind_login');
+      await popup.close();
+    }
     const badges = settings.getByRole('region', { name: 'Badges', exact: true });
     await expect(badges.getByRole('button')).toHaveCount(26);
     const equipped = badges.getByRole('button', { name: 'Event badge (equipped)', exact: true });
@@ -126,6 +149,8 @@ test('account settings handle missing and empty badge collections, broken art, a
   await expect(settings.locator('img')).toHaveCount(0);
   await badges.getByRole('button').click();
   await expect(badges.getByRole('status')).toContainText('Event badge');
+  await publish({ ...fixture.login, profile: { ...profile, login: undefined } });
+  await expect(settings.getByRole('link', { name: 'Open Twitch profile' })).toHaveCount(0);
   await publish({ status: 'Logged in', user_id: 99 });
   await expect(settings.getByText('Northwind')).toHaveCount(0);
   await expect(badges.getByRole('status')).toHaveCount(0);
@@ -133,12 +158,23 @@ test('account settings handle missing and empty badge collections, broken art, a
   await publish({
     status: 'Logged in',
     user_id: 99,
-    profile: { ...profile, display_name: 'Other account', badges: [], available_badges: [] },
+    profile: {
+      ...profile,
+      login: 'other_account',
+      display_name: 'Other account',
+      badges: [],
+      available_badges: [],
+    },
   });
+  await expect(settings.getByRole('link', { name: 'Open Twitch profile' })).toHaveAttribute(
+    'href',
+    'https://www.twitch.tv/other_account',
+  );
   await expect(settings).toContainText('No badges available.');
   await expect(settings).not.toContainText('Full badge collection unavailable.');
   await page.getByRole('button', { name: 'Log out of Twitch', exact: true }).click();
   await expect(settings.locator('.account-identity')).toHaveCount(0);
+  await expect(settings.getByRole('link', { name: 'Open Twitch profile' })).toHaveCount(0);
   await expect(badges).toHaveCount(0);
   await expect(page.locator('.account-trigger')).toHaveCount(0);
 });
