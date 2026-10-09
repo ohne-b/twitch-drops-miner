@@ -367,12 +367,7 @@ function SettingsContent({ settings, auth }: { settings: SettingsData; auth: Aut
               </a>
               <Button
                 disabled={!connected || oauthAction.busy}
-                onClick={() =>
-                  void oauthAction.run(
-                    () => request('/api/oauth/confirm', {}),
-                    t('authorization_waiting'),
-                  )
-                }
+                onClick={() => void oauthAction.run(() => request('/api/oauth/confirm', {}))}
               >
                 {t('gui.login.oauth_confirm')}
               </Button>
