@@ -1,5 +1,10 @@
 # Changelog
 
+## [v2.0.3](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v2.0.3) — 2026-10-09
+
+- show game search results in a taller dropdown over the selected games, with keyboard navigation and responsive positioning ([#89](https://github.com/ohne-b/twitch-drops-miner/pull/89))
+- remove the duplicate waiting message after confirming Twitch device login ([#88](https://github.com/ohne-b/twitch-drops-miner/pull/88))
+
 ## [v2.0.2](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v2.0.2) — 2026-10-09
 
 - show the installed version and update checks inline in Settings > Maintenance on desktop and server
