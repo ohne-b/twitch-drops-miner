@@ -390,7 +390,8 @@
 }
 .activity-row {
   display: flex;
-  align-items: start;
+  align-items: center;
+  min-height: 69px;
   gap: 14px;
   margin-inline: 16px;
   padding: 16px 0;
@@ -496,6 +497,7 @@
   }
   .activity-row {
     gap: 10px;
+    min-height: 73px;
     margin-inline: 12px;
     padding: 14px 0;
     flex-wrap: wrap;

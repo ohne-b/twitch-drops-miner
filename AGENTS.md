@@ -534,6 +534,8 @@ embed it and run without a build tool/runtime companion. Production builds never
   successful operation recovers its failures; unrelated messages never imply recovery.
   Keep category filtering, but omit the This session heading suffix and per-event category tags.
   Inset row separators to align with the content instead of touching the panel edges.
+  Center Activity row contents and reserve the same minimum height with or without details
+  actions; wrapped messages and recovery text may grow. Retain full-size phone action targets.
   Fit the list to the remaining viewport on desktop and phone; keep notices and controls
   reachable in short windows. Distinguish an empty event buffer from no filter matches.
   Count adjacent repeats in Activity while suppressing duplicate server log lines.
