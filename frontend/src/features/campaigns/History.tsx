@@ -142,7 +142,7 @@ export default function History({
   selected,
 }: {
   groups: HistoryCampaign[];
-  onOpen: (id: string) => void;
+  onOpen: (id: string, trigger: string) => void;
   selected: string | null;
 }) {
   const t = useT();
@@ -158,7 +158,7 @@ export default function History({
           imageFit={group.metadata?.game_box_art_url ? 'cover' : 'contain'}
           time={dateTime(group.entries[0]?.claimed_at ?? '')}
           count={t('recorded_claims', { count: group.entries.length })}
-          onOpen={() => onOpen(group.id)}
+          onOpen={(trigger) => onOpen(group.id, trigger)}
           selected={selected === group.id}
         />
       ))}

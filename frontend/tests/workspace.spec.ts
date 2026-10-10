@@ -694,6 +694,33 @@ test('History details stay claims-only while loading, retry errors and clear rec
   await expect(detail.locator('.reward-detail')).toHaveCount(0);
 });
 
+test('detail focus returns to the actual opener when pointer activation leaves focus elsewhere', async ({
+  page,
+  request,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await request.post('/__test/event', {
+    headers,
+    data: {
+      event: 'inventory_batch_update',
+      data: {
+        campaigns: [
+          fixture.campaigns[0]!,
+          { ...fixture.campaigns[0]!, id: 'other', name: 'Other campaign' },
+        ],
+      },
+    },
+  });
+  await page.goto('/campaigns');
+  for (const opener of ['#campaign-detail-other', '#campaign-open-other']) {
+    await page.locator('#campaign-open-campaign-1').focus();
+    await page.locator(opener).dispatchEvent('click');
+    await expect(page.getByRole('heading', { name: 'Other campaign', exact: true })).toBeFocused();
+    await page.getByRole('button', { name: 'Close details' }).click();
+    await expect(page.locator(opener)).toBeFocused();
+  }
+});
+
 test('Available excludes expired campaigns from totals, pagination and game choices', async ({
   page,
   request,

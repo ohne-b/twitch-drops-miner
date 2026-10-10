@@ -181,7 +181,7 @@ export default function Campaigns() {
     );
     autosave.change('inventory_filters', (previous) => ({ ...previous, ...touched }));
   }
-  function openCampaign(id: string) {
+  function openCampaign(id: string, trigger: string) {
     returnPosition.current = {
       top: results.current?.scrollTop ?? 0,
       width: results.current?.clientWidth ?? 0,
@@ -198,7 +198,7 @@ export default function Campaigns() {
         state: {
           ...location.state,
           campaignDetail: location.state?.campaignDetail || !detailId,
-          campaignTrigger: document.activeElement?.id,
+          campaignTrigger: trigger,
         },
       },
     );
@@ -442,7 +442,7 @@ export default function Campaigns() {
                   <Campaign
                     key={campaign.id}
                     campaign={campaign}
-                    onOpen={() => openCampaign(campaign.id)}
+                    onOpen={(trigger) => openCampaign(campaign.id, trigger)}
                     selected={detailId === campaign.id}
                     action={
                       !campaign.finished &&

@@ -12,7 +12,7 @@ export function Campaign({
 }: {
   campaign: CampaignData;
   action?: ReactNode;
-  onOpen: () => void;
+  onOpen: (trigger: string) => void;
   selected: boolean;
 }) {
   const t = useT();
@@ -59,7 +59,7 @@ export function CampaignSummary({
   count: string;
   countLabel?: string;
   action?: ReactNode;
-  onOpen: () => void;
+  onOpen: (trigger: string) => void;
   selected: boolean;
 }) {
   const t = useT();
@@ -68,7 +68,7 @@ export function CampaignSummary({
       <button
         type="button"
         id={`campaign-open-${id}`}
-        onClick={onOpen}
+        onClick={(event) => onOpen(event.currentTarget.id)}
         className="campaign-open"
         aria-label={t('inspect_campaign', { campaign: name })}
         title={t('campaign_details')}
@@ -97,7 +97,7 @@ export function CampaignSummary({
           path={mdiDockRight}
           label={t('campaign_details')}
           className="campaign-detail-icon"
-          onClick={onOpen}
+          onClick={(event) => onOpen(event.currentTarget.id)}
           aria-current={selected ? 'true' : undefined}
           aria-controls={selected ? 'campaign-details' : undefined}
         />
