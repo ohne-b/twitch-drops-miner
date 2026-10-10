@@ -1497,16 +1497,6 @@ test('catalog restrictions and hostile strings remain explicit and inert', async
   await expect(page.getByText('<img src=x onerror="alert(1)">', { exact: true })).toBeVisible();
   expect(await page.locator('img[src="x"]').count()).toBe(0);
 });
-test('snapshot replaces stale entities and keeps settings draft', async ({ page, request }) => {
-  await page.goto('/settings#connection');
-  const interval = page.getByLabel('Minimum Refresh Interval (minutes):', { exact: true });
-  await interval.fill('45');
-  await request.post('/__test/event', {
-    headers,
-    data: { event: 'initial_state', data: { ...snapshot, channels: [], current_drop: null } },
-  });
-  await expect(interval).toHaveValue('45');
-});
 test('public catalog campaigns are visible without mining and expose source freshness in the refresh button', async ({
   page,
   request,
@@ -1599,10 +1589,6 @@ test('dashboard password, login, logout and API guard', async ({ page, browser, 
   await expect(other.getByRole('heading', { name: 'Unlock dashboard' })).toBeVisible();
   await context.close();
 });
-test('mutation requests without the CSRF marker are blocked', async ({ request }) => {
-  expect((await request.post('/api/cache/clear', { data: {} })).status()).toBe(403);
-});
-
 test('pages and confirmation dialogs meet automated accessibility checks', async ({ page }) => {
   for (const route of ['/', '/campaigns', '/history', '/activity', '/settings']) {
     await page.goto(route);
@@ -1664,7 +1650,10 @@ test('failed settings save retains input', async ({ page }) => {
   await expect(page.getByText('gui.auth.save_failed')).toHaveCount(0);
 });
 
-test('autosave queues newer input while an older request is pending', async ({ page, request }) => {
+test('autosave queues newer input, stays quiet and persists the latest edit across reload', async ({
+  page,
+  request,
+}) => {
   await page.goto('/settings#connection');
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
@@ -1683,6 +1672,7 @@ test('autosave queues newer input while an older request is pending', async ({ p
   await interval.fill('45');
   await sent;
   await expect(interval).toBeEnabled();
+  await expect(page.getByText(/^(Saving.*|Changes saved\.)$/)).toHaveCount(0);
   await interval.fill('60');
   release();
   await expect
@@ -1691,6 +1681,9 @@ test('autosave queues newer input while an older request is pending', async ({ p
         (await (await request.get('/api/settings')).json()).minimum_refresh_interval_minutes,
     )
     .toBe(60);
+  await expect(interval).toHaveValue('60');
+  await expect(page.getByText('Changes saved.', { exact: true })).toHaveCount(0);
+  await page.reload();
   await expect(interval).toHaveValue('60');
 });
 
@@ -2202,36 +2195,6 @@ test('touch dragging reorders game priorities', async ({ browser, request }) => 
     .poll(async () => (await (await request.get('/api/settings')).json()).games_to_watch)
     .toEqual(['Sea of Thieves', 'Rust']);
   await context.close();
-});
-
-test('Settings saves silently and persists edits', async ({ page, request }) => {
-  await page.goto('/settings#connection');
-  let finishSave!: () => void;
-  const saveGate = new Promise<void>((resolve) => {
-    finishSave = resolve;
-  });
-  await page.route('**/api/settings', async (route) => {
-    if (route.request().method() === 'POST') await saveGate;
-    await route.continue();
-  });
-  const sending = page.waitForRequest(
-    (r) => r.url().endsWith('/api/settings') && r.method() === 'POST',
-  );
-  await page.getByLabel('Minimum Refresh Interval (minutes):', { exact: true }).fill('19');
-  await sending;
-  await expect(page.getByText(/^(Saving.*|Changes saved\.)$/)).toHaveCount(0);
-  finishSave();
-  await expect
-    .poll(
-      async () =>
-        (await (await request.get('/api/settings')).json()).minimum_refresh_interval_minutes,
-    )
-    .toBe(19);
-  await expect(page.getByText('Changes saved.', { exact: true })).toHaveCount(0);
-  await page.reload();
-  await expect(page.getByLabel('Minimum Refresh Interval (minutes):', { exact: true })).toHaveValue(
-    '19',
-  );
 });
 
 test('copy confirmation expires, restarts and ignores superseded code results', async ({

@@ -2421,39 +2421,55 @@ async fn journal_must_be_durable_before_remote_claim_and_failed_claims_are_not_h
 
 #[tokio::test]
 async fn progress_stays_confirmed_only_with_account_evidence_and_stalls_at_fifteen_estimates() {
-    let server = MockServer::start().await;
-    let (_dir, mut miner, _intent, mut pool) = miner(&server).await;
-    let settings = select(&mut miner).await;
-    let confirmed = miner.campaigns[0].drops[0].confirmed_at;
-    for _ in 0..MAX_ESTIMATED_MINUTES {
+    for report in [None, Some(("unknown-drop", 12)), Some(("claimed-drop", 60))] {
+        let server = MockServer::start().await;
+        let (_dir, mut miner, _intent, mut pool) = miner(&server).await;
+        if report == Some(("claimed-drop", 60)) {
+            let mut claimed = miner.campaigns[0].drops[0].clone();
+            claimed.id = "claimed-drop".into();
+            claimed.mark_claimed(Utc::now());
+            miner.campaigns[0].drops.insert(0, claimed);
+        }
+        let target = miner.campaigns[0].drops.len() - 1;
+        let settings = select(&mut miner).await;
+        let confirmed = miner.campaigns[0].drops[target].confirmed_at;
+        for estimate in 1..=15 {
+            miner
+                .complete(
+                    Job::Poll {
+                        requested_at: Instant::now(),
+                        channel: 10,
+                        result: Ok(report.map(|(id, minutes)| (id.into(), minutes))),
+                    },
+                    &pool,
+                )
+                .await
+                .unwrap();
+            let drop = &miner.campaigns[0].drops[target];
+            assert_eq!(drop.estimated_minutes, estimate, "report={report:?}");
+            assert_eq!(drop.confirmed_minutes, 12, "report={report:?}");
+            assert_eq!(drop.confirmed_at, confirmed, "report={report:?}");
+            assert!(!drop.claimed, "report={report:?}");
+            miner.reselect(&settings).await;
+            assert_eq!(
+                miner.watching,
+                (estimate < 15).then_some(10),
+                "report={report:?}, estimate={estimate}"
+            );
+        }
         miner
-            .complete(
-                Job::Poll {
-                    requested_at: Instant::now(),
-                    channel: 10,
-                    result: Ok(None),
-                },
-                &pool,
-            )
+            .event(Event::Progress {
+                id: "drop-one".into(),
+                minutes: 28,
+            })
             .await
             .unwrap();
+        assert_eq!(miner.campaigns[0].drops[target].estimated_minutes, 0);
+        assert_eq!(miner.campaigns[0].drops[target].confirmed_minutes, 28);
+        miner.reselect(&settings).await;
+        assert_eq!(miner.watching, Some(10), "report={report:?}");
+        pool.close().await;
     }
-    assert_eq!(miner.campaigns[0].drops[0].estimated_minutes, 15);
-    assert_eq!(miner.campaigns[0].drops[0].confirmed_minutes, 12);
-    assert_eq!(miner.campaigns[0].drops[0].confirmed_at, confirmed);
-    miner.reselect(&settings).await;
-    assert!(miner.watching.is_none());
-    miner
-        .event(Event::Progress {
-            id: "drop-one".into(),
-            minutes: 28,
-        })
-        .await
-        .unwrap();
-    assert_eq!(miner.campaigns[0].drops[0].estimated_minutes, 0);
-    miner.reselect(&settings).await;
-    assert_eq!(miner.watching, Some(10));
-    pool.close().await;
 }
 
 #[tokio::test]
@@ -3844,8 +3860,15 @@ async fn claimed_reward_stays_complete_after_delayed_progress_event() {
 }
 
 #[tokio::test]
-async fn estimate_ceiling_schedules_recovery() {
+async fn estimate_ceiling_fetches_inventory_and_resumes_watching() {
     let server = MockServer::start().await;
+    gql_mock(&server, |query| {
+        assert_eq!(query["operationName"], "Inventory");
+        json!({"data":{"currentUser":{"inventory":{
+            "dropCampaignsInProgress":[campaign_json("one")], "gameEventDrops":[]
+        }}}})
+    })
+    .await;
     let (_dir, mut miner, _intent, mut pool) = miner(&server).await;
     let settings = select(&mut miner).await;
     for _ in 0..MAX_ESTIMATED_MINUTES {
@@ -3862,18 +3885,27 @@ async fn estimate_ceiling_schedules_recovery() {
             .unwrap();
     }
     miner.reselect(&settings).await;
+    assert!(miner.watching.is_none());
     miner.schedule(&settings).await;
-    let recovering = miner.refresh
-        || miner.channels_dirty
-        || miner.busy.contains(&JobKind::Inventory)
-        || miner.busy.contains(&JobKind::Channels);
-    miner.client.http.cancel.cancel();
-    while miner.jobs.join_next().await.is_some() {}
-    pool.close().await;
-    assert!(
-        recovering,
-        "stalled reward has no recovery scheduled until the ordinary periodic refresh"
+    finish_job(&mut miner, &pool).await;
+    assert_eq!(
+        server
+            .received_requests()
+            .await
+            .unwrap()
+            .iter()
+            .filter(|request| request.url.path() == "/gql")
+            .count(),
+        1,
+        "stall recovery must fetch account inventory before the periodic refresh"
     );
+    let drop = &miner.campaigns[0].drops[0];
+    assert_eq!(drop.estimated_minutes, 0);
+    assert_eq!(drop.confirmed_minutes, 12);
+    assert!(!drop.claimed);
+    miner.reselect(&settings).await;
+    assert_eq!(miner.watching, Some(10));
+    pool.close().await;
 }
 
 #[tokio::test]
@@ -3914,35 +3946,6 @@ async fn shutdown_before_queued_logout_still_removes_credentials() {
         Session::load(dir.path()).unwrap().is_none(),
         "queued logout was dropped after shutdown; result={result:?}"
     );
-}
-
-#[tokio::test]
-async fn unknown_current_drop_still_triggers_stall_detection() {
-    let server = MockServer::start().await;
-    let (_dir, mut miner, _intent, mut pool) = miner(&server).await;
-    let settings = select(&mut miner).await;
-    for _ in 0..MAX_ESTIMATED_MINUTES {
-        miner
-            .complete(
-                Job::Poll {
-                    requested_at: Instant::now(),
-                    channel: 10,
-                    result: Ok(Some(("unknown-drop".into(), 12))),
-                },
-                &pool,
-            )
-            .await
-            .unwrap();
-    }
-    miner.reselect(&settings).await;
-    let estimated = miner.campaigns[0].drops[0].estimated_minutes;
-    let watching = miner.watching;
-    pool.close().await;
-    assert_eq!(
-        estimated, 15,
-        "unknown CurrentDrop is treated as handled confirmation"
-    );
-    assert!(watching.is_none());
 }
 
 #[tokio::test]
@@ -4219,39 +4222,6 @@ async fn viewer_event_cannot_discard_fresh_category_and_drop_eligibility() {
         watching.is_none(),
         "miner kept watching a channel that switched out of the eligible category"
     );
-}
-
-#[tokio::test]
-async fn known_claimed_current_drop_does_not_block_stall_detection() {
-    let server = MockServer::start().await;
-    let (_dir, mut miner, _intent, mut pool) = miner(&server).await;
-    let mut next = miner.campaigns[0].drops[0].clone();
-    next.id = "next-reward".into();
-    miner.campaigns[0].drops[0].mark_claimed(Utc::now());
-    miner.campaigns[0].drops.push(next);
-    let settings = select(&mut miner).await;
-    for _ in 0..MAX_ESTIMATED_MINUTES {
-        miner
-            .complete(
-                Job::Poll {
-                    requested_at: Instant::now(),
-                    channel: 10,
-                    result: Ok(Some(("drop-one".into(), 60))),
-                },
-                &pool,
-            )
-            .await
-            .unwrap();
-    }
-    miner.reselect(&settings).await;
-    let estimated = miner.campaigns[0].drops[1].estimated_minutes;
-    let watching = miner.watching;
-    pool.close().await;
-    assert_eq!(
-        estimated, 15,
-        "a stale claimed CurrentDrop suppressed fallback for the eligible next reward"
-    );
-    assert!(watching.is_none());
 }
 
 #[tokio::test]
