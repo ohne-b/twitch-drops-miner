@@ -38,6 +38,7 @@ use crate::{
 const WATCH_INTERVAL: Duration = Duration::from_secs(59);
 const PROGRESS_DELAY: Duration = Duration::from_secs(20);
 const CHANNEL_DELAY: Duration = Duration::from_secs(2);
+const FAILED_CHANNEL_COOLDOWN: Duration = Duration::from_secs(600);
 
 #[cfg(test)]
 mod tests;
@@ -81,6 +82,7 @@ struct Resume {
     seen: Intent,
     user_id: Option<u64>,
     disputed_campaigns: Vec<Campaign>,
+    avoided: HashMap<u64, Instant>,
 }
 
 pub struct Miner {
@@ -195,6 +197,8 @@ struct Mining {
     next_transition: Option<chrono::DateTime<Utc>>,
     pending_claims: Vec<PendingClaim>,
     rejected_account_ids: HashSet<String>,
+    // Streams whose watches kept failing; automatic selection prefers any other until then.
+    avoided: HashMap<u64, Instant>,
 }
 impl Mining {
     fn restore(&mut self, saved: &Resume) {
@@ -206,6 +210,7 @@ impl Mining {
             }
         }
         self.manual = saved.manual;
+        self.avoided = saved.avoided.clone();
         self.seen = saved.seen.clone();
         self.lookup = saved.lookup.clone();
         self.manual_pending = saved.lookup.as_ref().map(|(login, _)| login.clone());
@@ -244,6 +249,7 @@ impl Mining {
                 .as_ref()
                 .map(|login| (login.clone(), self.seen.manual_revision)),
             seen: self.seen.clone(),
+            avoided: self.avoided.clone(),
         }
     }
     fn new(
@@ -300,6 +306,7 @@ impl Mining {
             next_transition: None,
             pending_claims: vec![],
             rejected_account_ids: HashSet::new(),
+            avoided: HashMap::new(),
         }
     }
     fn spawn(&mut self, kind: JobKind, future: impl Future<Output = Job> + Send + 'static) {
@@ -389,6 +396,7 @@ impl Mining {
             self.last_progress = None;
             self.watch_failures = 0;
             self.manual = None;
+            self.avoided.clear();
             self.lookup = None;
             self.manual_pending = None;
             self.manual_error = None;
@@ -941,6 +949,10 @@ impl Mining {
                             failures = self.watch_failures,
                             "Repeated watch failures; renewing Twitch connections"
                         );
+                        if self.manual.is_none() {
+                            self.avoided
+                                .insert(channel.identity.id, now + FAILED_CHANNEL_COOLDOWN);
+                        }
                         return Err(error);
                     }
                     Some(error)
