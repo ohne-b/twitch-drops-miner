@@ -173,7 +173,7 @@ export function DesktopUpdates() {
               t(`gui.desktop.update_${status.phase}`, { version: status.version ?? '' })}
         </p>
       </UpdateCheck>
-      {(status?.version || status?.phase === 'checking') && (
+      {status?.version && (
         <div className="flex flex-wrap items-center gap-3">
           {status.restart_required ? (
             <Button primary onClick={() => void action('restart')}>
@@ -190,7 +190,7 @@ export function DesktopUpdates() {
               {t('gui.desktop.download')}
             </Button>
           ) : null}
-          {(status.phase === 'downloading' || status.phase === 'checking') && (
+          {status.phase === 'downloading' && (
             <Button onClick={() => void action('cancel')}>{t('cancel')}</Button>
           )}
           {status.version && (

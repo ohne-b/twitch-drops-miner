@@ -15,6 +15,49 @@ for (const [locale, date] of [
 ]) {
   test.describe(`24-hour time in ${locale}`, () => {
     test.use({ locale, timezoneId: 'Europe/Berlin' });
+    test('campaign cards use short local dates while details retain the year', async ({
+      page,
+      request,
+    }) => {
+      const campaign = {
+        ...fixture.campaigns[0]!,
+        starts_at: '2026-10-03T22:05:00Z',
+        ends_at: '2026-10-04T21:58:00Z',
+      };
+      await request.post('/__test/event', {
+        headers,
+        data: {
+          event: 'inventory_batch_update',
+          data: { campaigns: [campaign] },
+        },
+      });
+      await page.goto('/campaigns');
+      const row = page.locator('.campaign-summary');
+      await expect(row.locator('.campaign-info > :last-child')).toHaveText(
+        locale === 'en-US' ? 'Ends Oct 4, 23:58' : 'Ends 4. Okt., 23:58',
+      );
+      await row.getByRole('button', { name: 'Campaign details', exact: true }).click();
+      const detail = page.getByRole('complementary', { name: 'Campaign details' });
+      await expect(
+        detail.getByText(`${date}, 00:05 — ${date}, 23:58`, { exact: true }),
+      ).toBeVisible();
+      await page.getByRole('button', { name: 'Close details' }).click();
+      await expect(
+        row.getByRole('button', { name: 'Campaign details', exact: true }),
+      ).toBeFocused();
+      await request.post('/__test/event', {
+        headers,
+        data: {
+          event: 'inventory_batch_update',
+          data: { campaigns: [{ ...campaign, active: false, upcoming: true }] },
+        },
+      });
+      await page.getByRole('button', { name: 'Filters', exact: true }).click();
+      await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
+      await expect(row.locator('.campaign-info > :last-child')).toHaveText(
+        locale === 'en-US' ? 'Starts Oct 4, 00:05' : 'Starts 4. Okt., 00:05',
+      );
+    });
     test('preserves local dates and timezone at midnight, noon and night', async ({
       page,
       request,
@@ -651,6 +694,76 @@ test('History details stay claims-only while loading, retry errors and clear rec
   await expect(detail.locator('.reward-detail')).toHaveCount(0);
 });
 
+test('detail focus returns to the actual opener when pointer activation leaves focus elsewhere', async ({
+  page,
+  request,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await request.post('/__test/event', {
+    headers,
+    data: {
+      event: 'inventory_batch_update',
+      data: {
+        campaigns: [
+          fixture.campaigns[0]!,
+          { ...fixture.campaigns[0]!, id: 'other', name: 'Other campaign' },
+        ],
+      },
+    },
+  });
+  await page.goto('/campaigns');
+  for (const opener of ['#campaign-detail-other', '#campaign-open-other']) {
+    await page.locator('#campaign-open-campaign-1').focus();
+    await page.locator(opener).dispatchEvent('click');
+    await expect(page.getByRole('heading', { name: 'Other campaign', exact: true })).toBeFocused();
+    await page.getByRole('button', { name: 'Close details' }).click();
+    await expect(page.locator(opener)).toBeFocused();
+  }
+});
+
+test('Available excludes expired campaigns from totals, pagination and game choices', async ({
+  page,
+  request,
+}) => {
+  const base = fixture.campaigns[0]!;
+  const expired = Array.from({ length: 30 }, (_, index) => ({
+    ...base,
+    id: `expired-${index}`,
+    name: `Expired ${index}`,
+    game_name: 'Expired game',
+    active: false,
+    expired: true,
+  }));
+  await request.post('/__test/event', {
+    headers,
+    data: {
+      event: 'inventory_batch_update',
+      data: { campaigns: [base, ...expired] },
+    },
+  });
+  await page.goto('/campaigns?show_expired=1&show_active=0&show_upcoming=0');
+  await expect(page.locator('.campaign-summary')).toHaveCount(1);
+  await expect(page.locator('.campaign-refresh')).toContainText('1 campaigns');
+  await expect(page.getByRole('navigation', { name: 'Campaign pages' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Filters', exact: true }).click();
+  await expect(page.getByRole('checkbox', { name: 'Expired', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('checkbox', { name: 'Expired game', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
+  await expect(page.locator('.campaign-summary')).toHaveCount(1);
+  await expect(page).not.toHaveURL(/show_expired/);
+  await request.post('/__test/event', {
+    headers,
+    data: {
+      event: 'inventory_batch_update',
+      data: { campaigns: expired },
+    },
+  });
+  await expect(page.getByText('No available campaigns.', { exact: true })).toBeVisible();
+  await page.goto('/campaigns?campaign=expired-0');
+  await expect(page.getByRole('heading', { name: 'Expired 0', exact: true })).toBeVisible();
+  await expect(page.locator('.campaign-summary')).toHaveCount(0);
+});
+
 test('campaign grid aligns wrapped cards and gives narrow cards a separate action row', async ({
   page,
   request,
@@ -723,7 +836,7 @@ test('campaign grid aligns wrapped cards and gives narrow cards a separate actio
   }
 });
 
-test('Available and History share card geometry and inset list dividers', async ({
+test('campaign cards retain shared artwork and dividers with compact mobile actions', async ({
   page,
   request,
 }) => {
@@ -731,7 +844,11 @@ test('Available and History share card geometry and inset list dividers', async 
   const campaigns = Array.from({ length: 3 }, (_, index) => ({
     ...fixture.campaigns[0]!,
     id: `summary-${index}`,
-    name: `Summary ${index + 1}`,
+    name:
+      index === 2
+        ? 'Summary 3 with a long campaign title that wraps on phones'
+        : `Summary ${index + 1}`,
+    game_name: index === 2 ? 'GameNameWithoutBreaks'.repeat(3) : fixture.campaigns[0]!.game_name,
     claimed_drops: 1,
   }));
   await request.post('/__test/event', {
@@ -765,10 +882,11 @@ test('Available and History share card geometry and inset list dividers', async 
         const open = page.getByRole('button', { name: 'Open Summary 1', exact: true });
         await expect(open).toBeVisible();
         measurements.push(
-          await open.evaluate((element) => {
+          await cards.first().evaluate((card) => {
+            const element = card.querySelector('.campaign-open')!;
             const art = element.children[0]!;
             const info = element.children[1]!;
-            const count = element.children[2]!;
+            const count = card.querySelector('.campaign-count')!;
             return {
               artWidth: art.getBoundingClientRect().width,
               artHeight: art.getBoundingClientRect().height,
@@ -776,7 +894,7 @@ test('Available and History share card geometry and inset list dividers', async 
               gap: getComputedStyle(element).gap,
               gameMargin: getComputedStyle(info.children[1]!).marginTop,
               dateSize: getComputedStyle(info.children[2]!).fontSize,
-              countColor: getComputedStyle(count.children[0]!).color,
+              countColor: getComputedStyle(count.lastElementChild!).color,
               height: element.getBoundingClientRect().height,
               infoWidth: info.getBoundingClientRect().width,
             };
@@ -784,17 +902,41 @@ test('Available and History share card geometry and inset list dividers', async 
         );
         if (width < 768) {
           const info = (await open.locator('.campaign-info').boundingBox())!;
-          const count = (await open.locator('.campaign-count').boundingBox())!;
-          const detail = (await open.locator('.campaign-detail-icon').boundingBox())!;
-          expect(info.width).toBeGreaterThan(180);
-          expect((await open.locator('.campaign-title').boundingBox())!.height).toBeLessThan(30);
-          expect(count.y).toBeGreaterThan(info.y + info.height);
-          expect(detail.y).toBeGreaterThan(info.y + info.height);
-          if (!history) {
+          const count = (await cards.first().locator('.campaign-count').boundingBox())!;
+          const detail = (await cards.first().locator('.campaign-detail-icon').boundingBox())!;
+          if (history) {
+            expect(info.width).toBeGreaterThan(180);
+            expect(count.y).toBeGreaterThan(info.y + info.height);
+            expect(detail.y).toBeGreaterThan(info.y + info.height);
+          } else {
+            const art = (await open.locator(':scope > :first-child').boundingBox())!;
             const action = (await cards.first().locator('.campaign-action').boundingBox())!;
-            expect(action.x).toBeGreaterThan(detail.x + detail.width);
-            expect(count.x + count.width).toBeLessThan(detail.x);
-            expect(action.y + action.height / 2).toBe(detail.y + detail.height / 2);
+            expect(info.width).toBeGreaterThan(100);
+            expect(art.y + art.height / 2).toBeCloseTo(info.y + info.height / 2, 0);
+            expect(detail.x).toBeGreaterThan(info.x + info.width);
+            expect(action.x).toBeGreaterThanOrEqual(detail.x + detail.width);
+            expect(action.y).toBe(detail.y);
+            expect(detail.width).toBe(44);
+            expect(detail.height).toBe(44);
+            expect(action.height).toBe(44);
+            expect(detail.y).toBeLessThan(info.y + info.height);
+            expect(count.y + count.height).toBeLessThanOrEqual(detail.y);
+            await expect(cards.first().locator('.campaign-count')).toHaveAttribute(
+              'title',
+              '1 of 2 rewards claimed',
+            );
+            await expect(cards.first()).not.toContainText('Active');
+            for (const card of await cards.all()) {
+              const text = (await card.locator('.campaign-info').boundingBox())!;
+              const cover = (await card.locator('.campaign-open > :first-child').boundingBox())!;
+              expect(cover.y + cover.height / 2).toBeCloseTo(text.y + text.height / 2, 0);
+              expect(
+                await card.evaluate((element) => element.scrollWidth <= element.clientWidth),
+              ).toBe(true);
+            }
+            expect((await new AxeBuilder({ page }).include('main').analyze()).violations).toEqual(
+              [],
+            );
           }
         }
         if (view === 'list') {
@@ -843,9 +985,16 @@ test('Available and History share card geometry and inset list dividers', async 
       ] = measurements as [(typeof measurements)[number], (typeof measurements)[number]];
       expect(available.artWidth).toBe(48);
       expect(available.artHeight).toBe(48);
-      expect(history).toEqual(available);
-      if (width === 1440) expect(historyHeight).toBe(availableHeight);
-      else expect(historyWidth).toBe(availableWidth);
+      expect(history.artWidth).toBe(available.artWidth);
+      expect(history.artHeight).toBe(available.artHeight);
+      expect(history.countColor).toBe(available.countColor);
+      if (width === 1440) {
+        expect(history).toEqual(available);
+        expect(historyHeight).toBe(availableHeight);
+      } else {
+        expect(availableHeight).toBeLessThan(130);
+        expect(historyWidth).toBeGreaterThan(availableWidth);
+      }
     }
   }
 });
@@ -886,8 +1035,8 @@ test('campaign panes fill the height below full-width controls and keep row hove
     const searchBounds = (await search.boundingBox())!;
     await first.hover();
     await expect(first).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-    await expect(first.locator('.campaign-detail-icon')).toHaveCSS('width', '28px');
-    await expect(first.locator('.campaign-detail-icon')).toHaveCSS(
+    await expect(first.locator('..').locator('.campaign-detail-icon')).toHaveCSS('width', '28px');
+    await expect(first.locator('..').locator('.campaign-detail-icon')).toHaveCSS(
       'background-color',
       'rgb(51, 51, 51)',
     );
@@ -901,6 +1050,15 @@ test('campaign panes fill the height below full-width controls and keep row hove
     expect(await search.boundingBox()).toEqual(searchBounds);
     expect(bounds.x + bounds.width).toBeCloseTo(toolbar.x + toolbar.width, 0);
     expect(bounds.y).toBe((await list.boundingBox())!.y);
+    const columns = (await page.locator('.campaign-columns').boundingBox())!;
+    const browser = (await page.locator('.campaign-browser').boundingBox())!;
+    expect(browser.width).toBeCloseTo(bounds.width, 0);
+    expect(browser.width * 2 + 12).toBeCloseTo(columns.width, 0);
+    await expect(list).toHaveCSS('padding-inline-end', '1px');
+    const card = (await first.locator('..').boundingBox())!;
+    const visibleGap = bounds.x - card.x - card.width;
+    expect(visibleGap).toBeGreaterThanOrEqual(12);
+    expect(visibleGap).toBeLessThanOrEqual(20);
     expect(bounds.y).toBe(toolbar.y + toolbar.height + 20);
     expect(bounds.y + bounds.height).toBe(viewport.height - 12);
     const pagination = (await page
@@ -966,7 +1124,7 @@ test('campaign panes fill the height below full-width controls and keep row hove
   const history = page.getByRole('button', { name: 'Open Autumn expedition', exact: true });
   await history.hover();
   await expect(history).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-  await expect(history.locator('.campaign-detail-icon')).toHaveCSS('width', '28px');
+  await expect(history.locator('..').locator('.campaign-detail-icon')).toHaveCSS('width', '28px');
   await history.click();
   const historyBounds = (await page
     .getByRole('complementary', { name: 'Campaign details' })

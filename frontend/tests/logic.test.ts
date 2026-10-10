@@ -130,6 +130,22 @@ describe('boundary behavior', () => {
       ),
     ).toBe(false);
   });
+  it('excludes expired campaigns even with legacy saved or shared filters', () => {
+    const campaign = snapshot.campaigns[0]!;
+    for (const show_expired of [true, false]) {
+      const filters = {
+        ...snapshot.settings.inventory_filters,
+        show_active: false,
+        show_upcoming: false,
+        show_expired,
+      };
+      expect(matchesCampaign({ ...campaign, expired: true }, filters, '')).toBe(false);
+      expect(matchesCampaign(campaign, filters, '')).toBe(true);
+      expect(matchesCampaign({ ...campaign, active: false, upcoming: true }, filters, '')).toBe(
+        true,
+      );
+    }
+  });
 });
 
 it('keeps claim history independent of completion, preserving metadata-free entries and deterministic sorting', () => {

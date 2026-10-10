@@ -34,7 +34,7 @@ import {
 import { Campaign } from './Campaign';
 import History, { useHistory, groupHistory, matchesHistory, historyOrder } from './History';
 export function matchesCampaign(campaign: CampaignData, filters: Filters, search: string): boolean {
-  if (campaign.finished) return false;
+  if (campaign.finished || campaign.expired) return false;
   if (
     search &&
     !`${campaign.name} ${campaign.game_name} ${campaign.drops.map((drop) => drop.name).join(' ')}`
@@ -42,14 +42,10 @@ export function matchesCampaign(campaign: CampaignData, filters: Filters, search
       .includes(search.toLocaleLowerCase())
   )
     return false;
-  const selected = filters.show_active || filters.show_upcoming || filters.show_expired;
+  const selected = filters.show_active || filters.show_upcoming;
   if (
     selected &&
-    !(
-      (filters.show_active && campaign.active) ||
-      (filters.show_upcoming && campaign.upcoming) ||
-      (filters.show_expired && campaign.expired)
-    )
+    !((filters.show_active && campaign.active) || (filters.show_upcoming && campaign.upcoming))
   )
     return false;
   if (filters.show_only_not_linked && campaign.linked !== false) return false;
@@ -155,10 +151,9 @@ export default function Campaigns() {
 
   const sort = campaignSorts.find((value) => value === params.get('sort')) ?? 'default';
   const groups = groupHistory(history.entries, data.campaigns);
-  const total = historyTab
-    ? groups.length
-    : data.campaigns.filter((campaign) => !campaign.finished).length;
-  const campaigns = data.campaigns
+  const available = data.campaigns.filter((campaign) => !campaign.finished && !campaign.expired);
+  const total = historyTab ? groups.length : available.length;
+  const campaigns = available
     .filter((campaign) => matchesCampaign(campaign, filters, search))
     .sort((a, b) => campaignOrder(a, b, sort));
   const historical = groups
@@ -186,7 +181,7 @@ export default function Campaigns() {
     );
     autosave.change('inventory_filters', (previous) => ({ ...previous, ...touched }));
   }
-  function openCampaign(id: string) {
+  function openCampaign(id: string, trigger: string) {
     returnPosition.current = {
       top: results.current?.scrollTop ?? 0,
       width: results.current?.clientWidth ?? 0,
@@ -200,7 +195,11 @@ export default function Campaigns() {
       { pathname: location.pathname, search: next.toString() },
       {
         replace: !!detailId,
-        state: { ...location.state, campaignDetail: location.state?.campaignDetail || !detailId },
+        state: {
+          ...location.state,
+          campaignDetail: location.state?.campaignDetail || !detailId,
+          campaignTrigger: trigger,
+        },
       },
     );
   }
@@ -214,7 +213,7 @@ export default function Campaigns() {
   };
   const games = [
     ...new Set([
-      ...data.campaigns.map((campaign) => campaign.game_name),
+      ...(historyTab ? data.campaigns : available).map((campaign) => campaign.game_name),
       ...(historyTab ? history.entries.map((entry) => entry.game) : []),
       ...filters.game_name_search,
     ]),
@@ -222,7 +221,6 @@ export default function Campaigns() {
   const filterOptions: [keyof Omit<Filters, 'game_name_search'>, string][] = [
     ['show_active', 'active'],
     ['show_upcoming', 'upcoming'],
-    ['show_expired', 'expired'],
     ['show_only_not_linked', 'not_linked'],
     ['show_benefit_badge', 'badge'],
     ['show_benefit_emote', 'emote'],
@@ -393,7 +391,6 @@ export default function Campaigns() {
                         ...filters,
                         show_active: true,
                         show_upcoming: true,
-                        show_expired: true,
                         show_finished: true,
                         show_only_not_linked: false,
                         game_name_search: [],
@@ -445,7 +442,7 @@ export default function Campaigns() {
                   <Campaign
                     key={campaign.id}
                     campaign={campaign}
-                    onOpen={() => openCampaign(campaign.id)}
+                    onOpen={(trigger) => openCampaign(campaign.id, trigger)}
                     selected={detailId === campaign.id}
                     action={
                       !campaign.finished &&
@@ -491,7 +488,7 @@ export default function Campaigns() {
                 )
               : !campaigns.length && (
                   <Empty
-                    title={t(data.campaigns.length ? 'no_matches' : 'gui.inventory.no_campaigns')}
+                    title={t(available.length ? 'no_matches' : 'no_available_campaigns')}
                     detail={t('campaign_empty_help')}
                   />
                 )}

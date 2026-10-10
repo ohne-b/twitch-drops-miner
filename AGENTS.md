@@ -114,7 +114,9 @@ embed it and run without a build tool/runtime companion. Production builds never
   version sits beside the icon-only update check and inline status. Tray update checks open
   the same section; never open a separate update dialog. Keep download/cancel, verified install
   and restart recovery inline, using Tauri's updater without a custom download progress bar.
-  Checking/current states do not add a sidebar link. Navigation never installs automatically.
+  Checking/current states do not add a sidebar link. Show Cancel only during downloads;
+  checks use the busy icon and inline status without an extra action row.
+  Navigation never installs automatically.
   Desktop Maintenance omits the server's Advanced actions / Shut down miner controls; native
   Quit remains in the tray. Omit the redundant application-description sentence in both wrappers.
   Desktop folder shortcuts use Data / Logs with folder icons and descriptive accessible names.
@@ -492,10 +494,18 @@ embed it and run without a build tool/runtime companion. Production builds never
   Ending Soonest (end ascending), Most Drops (total descending), and A-Z (campaign name).
   Default retains progress-first ordering; ties use that same deterministic order. Sort is
   URL state preserved by searches, filter resets and tab changes, never a mining setting.
+  Available excludes expired and completed campaigns from results, counts and game choices;
+  retain selected game filters so they can be cleared. There is no Expired filter, and legacy
+  saved/query flags cannot restore expired results. Keep backend records and pending claims
+  intact, and retain confirmed claims in History. Summary dates omit the year and use Starts/Ends
+  without a colon; campaign details retain full dates. Show claimed/total counts without an
+  Active status, with an accessible claimed-reward description and tooltip.
 - Campaign summaries open one detail panel, alongside the list on wide screens and as a full
   page on smaller screens. Lock page scrolling while the full-page detail is open and contain
   its body scrolling; release the lock on close, navigation or return to the desktop layout.
   At desktop widths tabs, search and filters stay full width above the list and detail columns.
+  Split those columns equally, using a 12px layout gap plus the results scrollbar and its
+  1px card clearance, keeping the visible spacing close to the normal 16px grid gap.
   Both columns fill the remaining height with a compact 12px bottom margin; details keep the
   same height for short and long campaigns, with a fixed header and separately scrollable body.
   Scroll campaign results independently with a small scrollbar gutter; allow the controls area
@@ -508,8 +518,11 @@ embed it and run without a build tool/runtime companion. Production builds never
   same shared summary component and collection layout for Available and History: 48px artwork,
   matching text spacing/count typography and card borders, with inset separators between list rows.
   Stretch grid cards to equal row heights without clipping names. Use each summary's width
-  to place counts and actions below the identity in narrow cards/rows, keeping artwork/text
-  aligned at the top and footer actions aligned at the bottom. Preserve phone hit targets.
+  to place counts and actions below the identity in narrow desktop cards/rows, with footer
+  actions aligned at the bottom. On phones, Available keeps a compact claimed/total count
+  above the side-by-side Details/Mine icons beside the identity, without a separate footer.
+  Center the cover beside the title, game and date; allow long names to wrap and preserve
+  44px phone action targets. Closing details restores the opening title or icon's focus.
   Keep History's recorded claims/date and Available's live status/mining action distinct.
   Preserve search, filters, layout, sorting, page, scroll and trigger
   focus when closing. Keep the selected campaign visible when opening narrows the results or

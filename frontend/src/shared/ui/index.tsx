@@ -371,9 +371,10 @@ export function Dialog({
     </dialog>
   );
 }
-export const dateTime = (value: string) =>
+export const dateTime = (value: string, compact = false) =>
   new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
+    ...(compact
+      ? ({ month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' } as const)
+      : ({ dateStyle: 'medium', timeStyle: 'short' } as const)),
     hourCycle: 'h23',
   }).format(new Date(value));
