@@ -217,20 +217,10 @@ function ReleaseNotice({ disabled }: { disabled: boolean }) {
           </p>
         )}
       </UpdateCheck>
-      {available && !busy && (
-        <div className="space-y-2">
-          <p className="text-muted">{t('update_manually')}</p>
-          {releaseUrl && (
-            <a
-              className="text-link inline-block"
-              href={releaseUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {t('release_notes')}
-            </a>
-          )}
-        </div>
+      {available && !busy && releaseUrl && (
+        <a className="text-link inline-block" href={releaseUrl} target="_blank" rel="noreferrer">
+          {t('release_notes')}
+        </a>
       )}
     </div>
   );

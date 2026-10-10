@@ -271,7 +271,6 @@
             "checking_updates": "Checking for updates…",
             "update_check_failed": "Could not check for updates. Try again.",
             "update_available": "Version {version} is available.",
-            "update_manually": "Install updates from your terminal. Your data and settings stay in place.",
             "release_notes": "Release notes",
             "up_to_date": "You're up to date.",
             "mining_preferences": "Mining preferences",
