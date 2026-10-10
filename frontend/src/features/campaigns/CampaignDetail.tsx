@@ -30,6 +30,7 @@ export function CampaignDetail({
   const navigate = useNavigate();
   const heading = useRef<HTMLHeadingElement>(null);
   const id = params.get('campaign') ?? '';
+  const triggerId = location.state?.campaignTrigger || `campaign-open-${id}`;
   const dropId = params.get('drop');
   const selectedLiveDrop = !!campaign?.drops.some((drop) => drop.id === dropId);
   const selectedHistoryDrop = !campaign && !!history?.entries.some((entry) => entry.id === dropId);
@@ -50,9 +51,9 @@ export function CampaignDetail({
     heading.current?.focus({ preventScroll: true });
     return () => {
       window.scrollTo(0, top);
-      document.getElementById(`campaign-open-${id}`)?.focus({ preventScroll: true });
+      document.getElementById(triggerId)?.focus({ preventScroll: true });
     };
-  }, [id]);
+  }, [id, triggerId]);
   useEffect(() => {
     if (dropAnchor) document.getElementById(dropAnchor)?.scrollIntoView({ block: 'nearest' });
   }, [dropAnchor]);

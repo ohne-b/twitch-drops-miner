@@ -492,6 +492,12 @@ embed it and run without a build tool/runtime companion. Production builds never
   Ending Soonest (end ascending), Most Drops (total descending), and A-Z (campaign name).
   Default retains progress-first ordering; ties use that same deterministic order. Sort is
   URL state preserved by searches, filter resets and tab changes, never a mining setting.
+  Available excludes expired and completed campaigns from results, counts and game choices;
+  retain selected game filters so they can be cleared. There is no Expired filter, and legacy
+  saved/query flags cannot restore expired results. Keep backend records and pending claims
+  intact, and retain confirmed claims in History. Summary dates omit the year and use Starts/Ends
+  without a colon; campaign details retain full dates. Show claimed/total counts without an
+  Active status, with an accessible claimed-reward description and tooltip.
 - Campaign summaries open one detail panel, alongside the list on wide screens and as a full
   page on smaller screens. Lock page scrolling while the full-page detail is open and contain
   its body scrolling; release the lock on close, navigation or return to the desktop layout.
@@ -508,8 +514,11 @@ embed it and run without a build tool/runtime companion. Production builds never
   same shared summary component and collection layout for Available and History: 48px artwork,
   matching text spacing/count typography and card borders, with inset separators between list rows.
   Stretch grid cards to equal row heights without clipping names. Use each summary's width
-  to place counts and actions below the identity in narrow cards/rows, keeping artwork/text
-  aligned at the top and footer actions aligned at the bottom. Preserve phone hit targets.
+  to place counts and actions below the identity in narrow desktop cards/rows, with footer
+  actions aligned at the bottom. On phones, Available keeps a compact claimed/total count
+  above the side-by-side Details/Mine icons beside the identity, without a separate footer.
+  Center the cover beside the title, game and date; allow long names to wrap and preserve
+  44px phone action targets. Closing details restores the opening title or icon's focus.
   Keep History's recorded claims/date and Available's live status/mining action distinct.
   Preserve search, filters, layout, sorting, page, scroll and trigger
   focus when closing. Keep the selected campaign visible when opening narrows the results or

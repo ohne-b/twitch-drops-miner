@@ -3,7 +3,6 @@ import type { Filters } from '../../shared/lib/types';
 const flags: (keyof Omit<Filters, 'game_name_search'>)[] = [
   'show_active',
   'show_upcoming',
-  'show_expired',
   'show_finished',
   'show_only_not_linked',
   'show_benefit_badge',
@@ -25,6 +24,7 @@ export function displayFilters(params: URLSearchParams, saved: Filters): Filters
 
 export function writeFilters(params: URLSearchParams, filters: Filters): URLSearchParams {
   const next = new URLSearchParams(params);
+  next.delete('show_expired');
   for (const flag of flags) next.set(flag, filters[flag] ? '1' : '0');
   next.delete('game');
   for (const game of filters.game_name_search.length ? filters.game_name_search : [''])
