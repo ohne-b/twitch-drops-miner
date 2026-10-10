@@ -431,6 +431,7 @@ async fn csrf_origin_and_secret_safe_validation_apply_before_mutation() {
     let test = TestApp::new("https://drops.example.com");
     for path in [
         "/api/reload",
+        "/api/cache/clear",
         "/api/auth/settings",
         "/api/auth/login",
         "/api/oauth/confirm",
