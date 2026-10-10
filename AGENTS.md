@@ -114,7 +114,9 @@ embed it and run without a build tool/runtime companion. Production builds never
   version sits beside the icon-only update check and inline status. Tray update checks open
   the same section; never open a separate update dialog. Keep download/cancel, verified install
   and restart recovery inline, using Tauri's updater without a custom download progress bar.
-  Checking/current states do not add a sidebar link. Navigation never installs automatically.
+  Checking/current states do not add a sidebar link. Show Cancel only during downloads;
+  checks use the busy icon and inline status without an extra action row.
+  Navigation never installs automatically.
   Desktop Maintenance omits the server's Advanced actions / Shut down miner controls; native
   Quit remains in the tray. Omit the redundant application-description sentence in both wrappers.
   Desktop folder shortcuts use Data / Logs with folder icons and descriptive accessible names.

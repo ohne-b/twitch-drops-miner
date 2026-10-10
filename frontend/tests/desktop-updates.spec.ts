@@ -146,12 +146,12 @@ for (const width of [1280, 390]) {
     await check.press('Enter');
     await expect(updates.getByRole('button', { name: 'Checking for updates…' })).toBeDisabled();
     await expect(updates.getByRole('status')).toHaveText('Checking for updates…');
-    await updates.getByRole('button', { name: 'Cancel', exact: true }).click();
-    await expect(check).toBeEnabled();
+    await expect(updates.getByRole('button', { name: 'Cancel', exact: true })).toHaveCount(0);
     await page.evaluate(() =>
       window.updateFixture.publish({ phase: 'available', version: '2.0.2' }),
     );
     await expect(updates.getByRole('status')).toHaveText('Version 2.0.2 is available.');
+    await expect(check).toBeEnabled();
     await expect(updates.getByRole('link', { name: 'Release notes' })).toHaveAttribute(
       'href',
       'https://github.com/ohne-b/twitch-drops-miner/releases/tag/v2.0.2',
@@ -186,7 +186,6 @@ for (const width of [1280, 390]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
     expect(await page.evaluate(() => window.updateFixture.calls)).toEqual([
       'check',
-      'cancel',
       'download',
       'cancel',
       'download',
