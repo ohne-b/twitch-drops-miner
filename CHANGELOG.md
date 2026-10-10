@@ -1,5 +1,12 @@
 # Changelog
 
+## [v2.0.4](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v2.0.4) — 2026-10-10
+
+- hide expired campaigns from Available and remove the Expired filter, while keeping History and pending claims intact
+- compact mobile campaign cards with centered artwork, short dates and reward counts beside the action buttons
+- give the desktop campaign list and details equal width with a tighter gap, and restore focus to the button that opened details
+- remove Cancel during desktop update checks; downloads can still be cancelled
+
 ## [v2.0.3](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v2.0.3) — 2026-10-09
 
 - show game search results in a taller dropdown over the selected games, with keyboard navigation and responsive positioning ([#89](https://github.com/ohne-b/twitch-drops-miner/pull/89))
