@@ -72,7 +72,7 @@ it('merges only edited nested settings and retains edits made during an in-fligh
 });
 it('round-trips shared campaign filters without losing search, sorting or detail links', () => {
   const params = new URLSearchParams(
-    'q=rust&sort=ending&view=list&campaign=one&drop=reward&page=3',
+    'q=rust&sort=ending&view=list&campaign=one&drop=reward&page=3&show_expired=1',
   );
   const filters = {
     ...snapshot.settings.inventory_filters,
@@ -81,6 +81,8 @@ it('round-trips shared campaign filters without losing search, sorting or detail
   };
   const shared = writeFilters(params, filters);
   expect(shared.has('page')).toBe(false);
+  expect(shared.has('show_expired')).toBe(false);
+  expect(displayFilters(params, filters).show_expired).toBe(filters.show_expired);
   for (const key of ['q', 'sort', 'view', 'campaign', 'drop'])
     expect(shared.get(key)).toBe(params.get(key));
   expect(

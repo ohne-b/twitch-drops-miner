@@ -1192,7 +1192,8 @@ test('History contains recorded claims independently of campaign completion and 
   await expect(page.getByText('Ignored campaign', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Filters', exact: true }).click();
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
-  await expect(page.getByText('Expired campaign', { exact: true })).toBeVisible();
+  await expect(page.getByText('Expired campaign', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('checkbox', { name: 'Expired', exact: true })).toHaveCount(0);
   await page.route('**/api/history', async (route) =>
     route.fulfill({
       json: {
@@ -2065,14 +2066,15 @@ test('empty selection asks for an explicit mining choice', async ({ page, reques
   await expect(page.getByText('Choose the games you want to mine.')).toHaveCount(0);
 });
 
-test('phone campaign rows retain status and claimed counts', async ({ page, request }) => {
+test('phone campaign rows retain claimed counts and independent mining actions', async ({
+  page,
+  request,
+}) => {
   await page.setViewportSize({ width: 360, height: 800 });
   await request.post('/api/settings', { headers, data: { games_to_watch: [] } });
   await page.goto('/campaigns');
-  await expect(
-    page.getByRole('button', { name: 'Open Autumn expedition', exact: true }),
-  ).toContainText('0 / 2');
-  await expect(page.getByText('Active', { exact: true })).toBeVisible();
+  await expect(page.locator('.campaign-count')).toContainText('0/2');
+  await expect(page.getByText('Active', { exact: true })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: '../artifacts/campaigns-phone.png', fullPage: true });
   await page.getByRole('button', { name: 'Mine Rust', exact: true }).click();
