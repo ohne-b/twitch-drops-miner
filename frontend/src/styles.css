@@ -165,7 +165,7 @@
 .campaign-columns {
   display: grid;
   min-height: 0;
-  gap: 24px;
+  gap: 12px;
 }
 .campaign-tools,
 .campaign-browser {
@@ -228,7 +228,7 @@
   }
 }
 .campaign-workspace.with-detail .campaign-columns {
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 42%);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .campaign-summary {
   container-type: inline-size;
@@ -383,7 +383,7 @@
     min-height: 80px;
   }
   .campaign-results {
-    padding-inline-end: 8px;
+    padding-inline-end: 1px;
     overflow-y: auto;
     scrollbar-gutter: stable;
     overscroll-behavior-y: contain;

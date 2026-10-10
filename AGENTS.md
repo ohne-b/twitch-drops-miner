@@ -502,6 +502,8 @@ embed it and run without a build tool/runtime companion. Production builds never
   page on smaller screens. Lock page scrolling while the full-page detail is open and contain
   its body scrolling; release the lock on close, navigation or return to the desktop layout.
   At desktop widths tabs, search and filters stay full width above the list and detail columns.
+  Split those columns equally, using a 12px layout gap plus the results scrollbar and its
+  1px card clearance, keeping the visible spacing close to the normal 16px grid gap.
   Both columns fill the remaining height with a compact 12px bottom margin; details keep the
   same height for short and long campaigns, with a fixed header and separately scrollable body.
   Scroll campaign results independently with a small scrollbar gutter; allow the controls area

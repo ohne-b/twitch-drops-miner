@@ -1050,6 +1050,15 @@ test('campaign panes fill the height below full-width controls and keep row hove
     expect(await search.boundingBox()).toEqual(searchBounds);
     expect(bounds.x + bounds.width).toBeCloseTo(toolbar.x + toolbar.width, 0);
     expect(bounds.y).toBe((await list.boundingBox())!.y);
+    const columns = (await page.locator('.campaign-columns').boundingBox())!;
+    const browser = (await page.locator('.campaign-browser').boundingBox())!;
+    expect(browser.width).toBeCloseTo(bounds.width, 0);
+    expect(browser.width * 2 + 12).toBeCloseTo(columns.width, 0);
+    await expect(list).toHaveCSS('padding-inline-end', '1px');
+    const card = (await first.locator('..').boundingBox())!;
+    const visibleGap = bounds.x - card.x - card.width;
+    expect(visibleGap).toBeGreaterThanOrEqual(12);
+    expect(visibleGap).toBeLessThanOrEqual(20);
     expect(bounds.y).toBe(toolbar.y + toolbar.height + 20);
     expect(bounds.y + bounds.height).toBe(viewport.height - 12);
     const pagination = (await page
