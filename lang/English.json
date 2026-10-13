@@ -220,6 +220,7 @@
             "campaign_reward_types": "Reward types",
             "campaign_empty_help": "Check the filters and Twitch account status, or refresh the inventory.",
             "link_account": "Connect game account",
+            "connect": "Connect",
             "details": "Details on Twitch",
             "game": "Game",
             "games": "Games",
