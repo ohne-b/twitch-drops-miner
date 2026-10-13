@@ -645,6 +645,9 @@ embed it and run without a build tool/runtime companion. Production builds never
   Telegram credentials never appear in responses; no server-dashboard installer/updater.
 - Campaign details contain rewards and account/campaign links, with no streamer lists or status
   lookups. Streamer browsing and manual Watch actions belong in Mining's existing Channels panel.
+  Omit per-reward progress confirmation timestamps. Rewards with the backend's watch-complete
+  status show that status without a progress bar or minute count; keep unfinished/unknown
+  progress and actual claim timestamps. Watch completion never implies a claim.
 - Campaigns starts with Settings-style Available/History icon tabs and the campaign count
   immediately left of refresh on the right. Show matching/total counts when filtering either tab;
   otherwise show the total. Match Last confirmed's
