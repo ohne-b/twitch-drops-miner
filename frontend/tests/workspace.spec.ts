@@ -1079,10 +1079,10 @@ test('campaign panes fill the height below full-width controls and keep row hove
       .getByRole('group', { name: 'Filters', exact: true })
       .boundingBox())!;
     const filteredBounds = (await detail.boundingBox())!;
-    expect(filters.x).toBe(toolbar.x);
-    expect(filters.width).toBeCloseTo(toolbar.width, 0);
+    expect(filters.x).toBeGreaterThanOrEqual(toolbar.x);
+    expect(filters.width).toBeLessThanOrEqual(320);
     expect(filteredBounds.y).toBe((await list.boundingBox())!.y);
-    expect(filteredBounds.y).toBeGreaterThan(bounds.y);
+    expect(filteredBounds).toEqual(bounds);
     expect(filteredBounds.y + filteredBounds.height).toBe(viewport.height - 12);
     await expect(
       detail.getByRole('heading', { name: 'Campaign 01', exact: true }),
@@ -1200,6 +1200,17 @@ for (const view of ['grid', 'list']) {
     page,
     request,
   }) => {
+    if (view === 'list')
+      await page.addInitScript(() => {
+        Object.defineProperty(HTMLElement.prototype, 'showPopover', {
+          value: undefined,
+          configurable: true,
+        });
+        Object.defineProperty(HTMLElement.prototype, 'hidePopover', {
+          value: undefined,
+          configurable: true,
+        });
+      });
     const campaigns = Array.from({ length: 30 }, (_, index) => ({
       ...fixture.campaigns[0]!,
       id: `long-${index}`,
@@ -1237,7 +1248,7 @@ for (const view of ['grid', 'list']) {
     await expect(next).toBeFocused();
     await expect(next).toBeInViewport({ ratio: 0.99 });
     await page.setViewportSize({ width: 1280, height: 360 });
-    await page.getByRole('button', { name: 'Filters', exact: true }).click();
+    await page.getByRole('button', { name: /^Games/ }).click();
     await page.context().setOffline(true);
     try {
       await request.post('/__test/reconnect', { headers, data: {} });
@@ -1246,6 +1257,16 @@ for (const view of ['grid', 'list']) {
       await games.focus();
       await games.press('End');
       await expect.poll(() => games.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+      const filters = page.getByRole('button', { name: 'Filters', exact: true });
+      await filters.click();
+      await filters.press('Tab');
+      const options = page
+        .getByRole('group', { name: 'Filters', exact: true })
+        .locator('[tabindex="0"]');
+      await expect(options).toBeFocused();
+      await options.press('End');
+      await expect.poll(() => options.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+      await expect(options.getByRole('checkbox', { name: 'Other', exact: true })).toBeInViewport();
       expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
       expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(360);
     } finally {
