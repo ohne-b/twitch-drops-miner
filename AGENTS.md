@@ -167,6 +167,10 @@ embed it and run without a build tool/runtime companion. Production builds never
   Literal ignore substrings cascade through dependents while retaining shared prerequisites.
   Zero-minute subscription rewards are omitted from Campaigns/Up next; expired drops leave
   the queue without hiding upcoming or sequential rewards. Ignore/skip is never completion.
+  Up next omits rewards whose confirmed watch time is complete, even before a claim; estimates
+  cannot remove them. This display rule never claims rewards, unlocks prerequisites or stops
+  background claim/reconciliation work. Campaign details retain their real claim state and
+  the existing game-account connection action.
 - Active campaigns with existing progress appear first. Campaign completion requires all watch rewards
   claimed; expiry alone never qualifies. Persistent completion archives are display-only,
   survive cache clears, and can be invalidated by newer contradictory account evidence or
@@ -584,8 +588,14 @@ embed it and run without a build tool/runtime companion. Production builds never
   and Campaigns/History list view put the border on the scroll container, not the moving rows.
   Cap these lists at 440px on smaller screens; retain their remaining-height desktop layout.
   Campaign grid cards keep their existing layout. Channels, Up next and game-priority rows
-  retain inset separators and modest 4px scrollbar padding. Up next shows a shared date once only when reward windows
-  match by instant and their upcoming state agrees; retain distinct per-drop dates.
+  retain inset separators and modest 4px scrollbar padding. Up next groups collapse independently,
+  with reward counts and the nearest deadline visible when collapsed. Expand the first game
+  initially and whenever a different game becomes first; retain manual choices while it stays
+  first and across campaign navigation. Keep this UI state in memory, keyed by game identity
+  and scoped to the account and runtime instance, pruning removed games. Do not change saved
+  priorities or move keyboard focus. Show a shared date once beside the campaign name when
+  space permits, including a single reward; wrap on narrow screens. Share dates only when
+  reward windows match by instant and their upcoming state agrees; retain distinct per-drop dates.
   Channel views may fill missing game artwork from catalog records with the exact same game
   ID. Never change stream identity/eligibility or add network requests for this fallback.
   Channels paginates 25 rows with header chevrons. Search covers the full list and resets the page;
