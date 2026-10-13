@@ -588,14 +588,19 @@ embed it and run without a build tool/runtime companion. Production builds never
   and Campaigns/History list view put the border on the scroll container, not the moving rows.
   Cap these lists at 440px on smaller screens; retain their remaining-height desktop layout.
   Campaign grid cards keep their existing layout. Channels, Up next and game-priority rows
-  retain inset separators and modest 4px scrollbar padding. Up next groups collapse independently,
-  with reward counts and the nearest deadline visible when collapsed. Expand the first game
-  initially and whenever a different game becomes first; retain manual choices while it stays
-  first and across campaign navigation. Keep this UI state in memory, keyed by game identity
-  and scoped to the account and runtime instance, pruning removed games. Do not change saved
-  priorities or move keyboard focus. Show a shared date once beside the campaign name when
-  space permits, including a single reward; wrap on narrow screens. Share dates only when
-  reward windows match by instant and their upcoming state agrees; retain distinct per-drop dates.
+  retain inset separators and modest 4px scrollbar padding. Up next groups collapse independently.
+  Compact game headers show artwork, name, reward count and a chevron; keep saved order and
+  nearest deadline in the header tooltip and accessible description. Pin each game's header
+  within its own group while scrolling, with bounded name wrapping and scroll padding for keyboard
+  focus. Use a responsive reward grid without nested cards, retaining one column on phones.
+  Keep priority explanations in the campaign link tooltip and full campaign details, without
+  repeating the deadline below it. Expand the first game initially and whenever a different game
+  becomes first; retain manual choices while it stays first and across campaign navigation.
+  Keep this UI state in memory, keyed by game identity and scoped to the account and runtime
+  instance, pruning removed games. Do not change saved priorities or move keyboard focus.
+  Show a shared date once beside the campaign name when space permits, including a single reward;
+  wrap on narrow screens. Share dates only when reward windows match by instant and their
+  upcoming state agrees; retain distinct per-drop dates.
   Channel views may fill missing game artwork from catalog records with the exact same game
   ID. Never change stream identity/eligibility or add network requests for this fallback.
   Channels paginates 25 rows with header chevrons. Search covers the full list and resets the page;
