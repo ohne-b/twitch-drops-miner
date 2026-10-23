@@ -62,11 +62,7 @@ export function MinerProvider({
     request,
     accountId ?? 'none',
   );
-  const countdown = useProgressCountdown(
-    state.data,
-    state.hydrated,
-    !!(autosave.draft?.mining_paused || state.data?.settings.mining_paused),
-  );
+  const countdown = useProgressCountdown(state.data, state.hydrated);
   useEffect(() => {
     if (state.resync) transport.current?.resync();
   }, [state.resync]);

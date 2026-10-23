@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { confirmedPercent, updateCountdown, type Countdown } from '../shared/lib/progress';
 import type { Snapshot } from '../shared/lib/types';
 
-export function useProgressCountdown(data: Snapshot | null, connected: boolean, paused: boolean) {
+export function useProgressCountdown(data: Snapshot | null, connected: boolean) {
   const [previous, setPrevious] = useState<Countdown | null>(null);
   const progress = data?.current_drop;
   const key = JSON.stringify([
@@ -18,7 +18,7 @@ export function useProgressCountdown(data: Snapshot | null, connected: boolean, 
     progress && confirmedPercent(progress) !== null ? progress.remaining_seconds : null,
     !!(
       connected &&
-      !paused &&
+      !data?.settings.mining_paused &&
       data?.login.user_id &&
       !data.manual_mode.active &&
       data.mining?.state === 'watching' &&

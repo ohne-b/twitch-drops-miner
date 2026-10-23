@@ -603,7 +603,8 @@ embed it and run without a build tool/runtime companion. Production builds never
   The optional HH:MM:SS countdown is explicitly estimated and never changes progress or claims.
   Use the core's remaining seconds and watch eligibility for the current reward; unknown
   progress shows --:--:--. Only confirmed, eligible automatic rewards may tick, never manual,
-  disputed, completed or prerequisite-blocked rewards. Freeze on pause/disconnect; preserve
+  disputed, completed or prerequisite-blocked rewards. Follow acknowledged settings and worker
+  state, never an unsaved pause draft. Freeze on pause/disconnect; preserve
   the clock across navigation and reset for new accounts, server instances, rewards or progress
   corrections. Interpolate at most 59 seconds beyond a core estimate, including background tabs;
   subsequent minutes require core updates. Other rewards show static confirmed remaining time.
