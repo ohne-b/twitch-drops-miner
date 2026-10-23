@@ -94,6 +94,8 @@ pub struct Settings {
     pub mining_paused: bool,
     pub auto_claim_drops: bool,
     pub show_progress_percentage: bool,
+    pub show_progress_time: bool,
+    pub show_progress_countdown: bool,
     pub progress_time_format: ProgressTimeFormat,
     pub mining_priority_mode: MiningPriorityMode,
     pub auto_mine_badges: bool,
@@ -115,6 +117,8 @@ impl Default for Settings {
             mining_paused: false,
             auto_claim_drops: true,
             show_progress_percentage: false,
+            show_progress_time: true,
+            show_progress_countdown: false,
             progress_time_format: ProgressTimeFormat::Minutes,
             mining_priority_mode: MiningPriorityMode::Manual,
             auto_mine_badges: false,
@@ -445,6 +449,38 @@ mod tests {
             old.patched(&json!({"show_progress_percentage":"true"}))
                 .is_err()
         );
+    }
+
+    #[test]
+    fn progress_display_options_migrate_and_round_trip_independently() {
+        let old = Settings::from_saved(json!({"show_progress_percentage":true})).unwrap();
+        assert!(old.show_progress_time);
+        assert!(!old.show_progress_countdown);
+        assert!(old.show_progress_percentage);
+        for percentage in [false, true] {
+            for time in [false, true] {
+                for countdown in [false, true] {
+                    let settings = old
+                        .patched(&json!({
+                            "show_progress_percentage": percentage,
+                            "show_progress_time": time,
+                            "show_progress_countdown": countdown,
+                        }))
+                        .unwrap()
+                        .patched(&json!({"mining_paused":true}))
+                        .unwrap();
+                    let restored =
+                        Settings::from_saved(serde_json::to_value(settings).unwrap()).unwrap();
+                    assert_eq!(restored.show_progress_percentage, percentage);
+                    assert_eq!(restored.show_progress_time, time);
+                    assert_eq!(restored.show_progress_countdown, countdown);
+                }
+            }
+        }
+        for field in ["show_progress_time", "show_progress_countdown"] {
+            assert!(old.patched(&json!({field:"true"})).is_err());
+            assert!(Settings::from_saved(json!({field:1})).is_err());
+        }
     }
 
     #[test]

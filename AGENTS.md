@@ -588,8 +588,11 @@ embed it and run without a build tool/runtime companion. Production builds never
   Mining preferences also contains the global Automatically claim drops checkbox, using shared
   autosave and reconnect handling. Its info popover explains manual claiming on Twitch, claim
   expiry, prerequisites, outstanding claims on re-enable and already-started requests.
-  Show progress percentage defaults off and uses the same saved settings in both wrappers.
-  When enabled, Now mining appends the confirmed percentage in parentheses beside minutes.
+  Progress display has independent percentage, watched/required time and countdown checkboxes
+  in Mining preferences; any combination, including all off, is valid. Defaults remain time on,
+  percentage and countdown off; preserve existing saved choices. Use one readout in Now mining
+  and unfinished campaign details, leaving progress bars and window/tray titles independent.
+  When time is visible, append the confirmed percentage in parentheses; otherwise show it alone.
   Share rounding with the window/tray title: truncate to one decimal place, omit trailing
   .0, and never round incomplete progress up to 100%. Omit percentages for unknown progress
   or invalid watch requirements; do not interpolate between confirmed updates.
@@ -597,6 +600,15 @@ embed it and run without a build tool/runtime companion. Production builds never
   to Minutes. Hours and minutes uses compact durations such as 5h 30m / 6h in Now mining
   and campaign details, including unknown-progress zero values. Share formatting across both
   wrappers, preserve numeric progress/claims, and exclude it from mining-preference copying.
+  The optional HH:MM:SS countdown is explicitly estimated and never changes progress or claims.
+  Use the core's remaining seconds and watch eligibility for the current reward; unknown
+  progress shows --:--:--. Only confirmed, eligible automatic rewards may tick, never manual,
+  disputed, completed or prerequisite-blocked rewards. Follow acknowledged settings and worker
+  state, never an unsaved pause draft. Freeze on pause/disconnect; preserve
+  the clock across navigation and reset for new accounts, server instances, rewards or progress
+  corrections. Interpolate at most 59 seconds beyond a core estimate, including background tabs;
+  subsequent minutes require core updates. Other rewards show static confirmed remaining time.
+  Keep countdown help in the existing info popover and all display preferences out of copying.
   Render strings as React text, validate external links/artwork, expand Twitch image placeholders.
   No injected HTML or CDN scripts. Art provides safe missing/broken-image fallbacks.
   Reward thumbnails contain their artwork; game covers retain cover sizing. Phone checkbox

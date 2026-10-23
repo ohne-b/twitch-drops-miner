@@ -277,17 +277,34 @@ export default function MiningPreferences() {
                   />
                   <HelpButton label={t('auto_claim_drops')} text={t('auto_claim_drops_help')} />
                 </div>
-                <Check
-                  label={t('show_progress_percentage')}
-                  checked={draft.show_progress_percentage}
-                  disabled={!connected}
-                  onChange={(value) => change('show_progress_percentage', value)}
-                />
+                <fieldset disabled={!connected} className="space-y-2">
+                  <legend className="flex items-center gap-1 text-[13px] font-medium">
+                    {t('progress_display')}
+                    <HelpButton label={t('progress_display')} text={t('progress_countdown_help')} />
+                  </legend>
+                  <div className="flex flex-wrap gap-x-6">
+                    <Check
+                      label={t('show_progress_percentage')}
+                      checked={draft.show_progress_percentage}
+                      onChange={(value) => change('show_progress_percentage', value)}
+                    />
+                    <Check
+                      label={t('show_progress_time')}
+                      checked={draft.show_progress_time ?? true}
+                      onChange={(value) => change('show_progress_time', value)}
+                    />
+                    <Check
+                      label={t('show_progress_countdown')}
+                      checked={draft.show_progress_countdown ?? false}
+                      onChange={(value) => change('show_progress_countdown', value)}
+                    />
+                  </div>
+                </fieldset>
                 <Field label={t('progress_time_format')}>
                   <select
                     className="field"
                     value={draft.progress_time_format}
-                    disabled={!connected}
+                    disabled={!connected || draft.show_progress_time === false}
                     onChange={(event) =>
                       change(
                         'progress_time_format',

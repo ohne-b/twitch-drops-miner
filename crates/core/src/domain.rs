@@ -844,6 +844,7 @@ impl Campaign {
             required_minutes: drop.required_minutes,
             progress: drop.progress(),
             remaining_seconds: drop.remaining_minutes().saturating_mul(60),
+            countdown_running: false,
         }
     }
 

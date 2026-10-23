@@ -182,7 +182,24 @@ impl Mining {
                     })
                 })
         };
-        let progress = active.map(|(c, d)| c.progress(d)).or(paused_progress);
+        let progress = active
+            .map(|(campaign, drop)| {
+                let mut progress = campaign.progress(drop);
+                progress.countdown_running = self.manual.is_none()
+                    && !drop.progress_disputed
+                    && drop.confirmed_at.is_some()
+                    && self.watch_channel(settings).is_some_and(|channel| {
+                        campaign.can_watch(channel, settings, now)
+                            && self.progress_eligible(&drop.id, channel.identity.id, settings)
+                    });
+                progress
+            })
+            .or_else(|| {
+                paused_progress.map(|mut progress| {
+                    progress.countdown_running = false;
+                    progress
+                })
+            });
         use crate::dto::{MiningState, MiningStatus};
         let mining = MiningStatus {
             state: if settings.mining_paused {

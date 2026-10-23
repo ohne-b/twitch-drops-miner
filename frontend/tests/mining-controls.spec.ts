@@ -36,21 +36,37 @@ for (const width of [1440, 390, 320]) {
   });
 }
 
-test('failed pause saves keep the running state visible and can be retried', async ({ page }) => {
-  await page.goto('/');
-  await page.route('**/api/accounts/primary/settings', async (route) => {
-    if (route.request().method() === 'POST')
-      await route.fulfill({ status: 500, json: { error: 'request_failed' } });
-    else await route.continue();
+for (const status of [409, 500])
+  test(`failed pause saves (${status}) keep mining and the countdown running until retry succeeds`, async ({
+    page,
+    request,
+  }) => {
+    await request.post('/api/settings', { headers, data: { show_progress_countdown: true } });
+    await page.clock.install();
+    await page.goto('/');
+    await page.route('**/api/accounts/primary/settings', async (route) => {
+      if (route.request().method() === 'POST')
+        await route.fulfill({ status, json: { error: 'request_failed' } });
+      else await route.continue();
+    });
+    await page.getByRole('button', { name: 'Pause mining', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Try again', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Now mining', exact: true })).toBeVisible();
+    await expect(page).toHaveTitle('70% Rust - Drops Miner');
+    expect((await (await request.get('/api/settings')).json()).mining_paused).toBe(false);
+    const countdown = page
+      .locator('section[aria-labelledby="mining-heading"]')
+      .getByText(/~\d+:\d{2}:\d{2} left/);
+    const before = await countdown.textContent();
+    await page.clock.runFor(5000);
+    await expect(countdown).not.toHaveText(before!);
+    await page.unroute('**/api/accounts/primary/settings');
+    await page.getByRole('button', { name: 'Try again', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Paused', exact: true })).toBeVisible();
+    const frozen = await countdown.textContent();
+    await page.clock.runFor(5000);
+    await expect(countdown).toHaveText(frozen!);
   });
-  await page.getByRole('button', { name: 'Pause mining', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Try again', exact: true })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Now mining', exact: true })).toBeVisible();
-  await expect(page).toHaveTitle('70% Rust - Drops Miner');
-  await page.unroute('**/api/accounts/primary/settings');
-  await page.getByRole('button', { name: 'Try again', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Paused', exact: true })).toBeVisible();
-});
 
 test('resume waits for the worker state without flashing a paused subtitle or idle title', async ({
   page,
