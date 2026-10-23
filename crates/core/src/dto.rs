@@ -221,6 +221,8 @@ pub struct Progress {
     pub required_minutes: u32,
     pub progress: f64,
     pub remaining_seconds: u32,
+    #[serde(default)]
+    pub countdown_running: bool,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

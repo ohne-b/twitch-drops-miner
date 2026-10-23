@@ -412,6 +412,57 @@ async fn pause_keeps_acknowledged_segments_but_retries_the_interrupted_request()
 }
 
 #[tokio::test]
+async fn countdown_only_runs_for_known_eligible_automatic_progress() {
+    let server = MockServer::start().await;
+    let (_dir, mut miner, _intent, mut pool) = miner(&server).await;
+    let settings = select(&mut miner).await;
+    let id = miner.campaigns[0].drops[0].id.clone();
+    miner.confirm(&id, 13, &settings);
+    miner.publish(&settings).await.unwrap();
+    assert!(
+        miner
+            .app
+            .snapshot
+            .read()
+            .await
+            .current_drop
+            .as_ref()
+            .unwrap()
+            .countdown_running
+    );
+    let campaign = miner.campaigns[0].clone();
+    for case in 0..7 {
+        miner.campaigns[0] = campaign.clone();
+        let drop = &mut miner.campaigns[0].drops[0];
+        match case {
+            0 => drop.progress_disputed = true,
+            1 => drop.confirmed_at = None,
+            2 => drop.confirmed_minutes = drop.required_minutes,
+            3 => drop.estimated_minutes = MAX_ESTIMATED_MINUTES,
+            4 => drop.prerequisites.push("unclaimed".into()),
+            5 => miner.manual = Some(ManualSelection::new(10, None)),
+            _ => {
+                miner.manual = None;
+                miner.channels[0].broadcast_id = None;
+            }
+        }
+        miner.publish(&settings).await.unwrap();
+        assert!(
+            !miner
+                .app
+                .snapshot
+                .read()
+                .await
+                .current_drop
+                .as_ref()
+                .is_some_and(|progress| progress.countdown_running),
+            "case {case}"
+        );
+    }
+    pool.close().await;
+}
+
+#[tokio::test]
 async fn pause_stops_automatic_and_manual_watches_and_fences_late_results() {
     for manual in [false, true] {
         let server = MockServer::start().await;
@@ -431,8 +482,10 @@ async fn pause_stops_automatic_and_manual_watches_and_fences_late_results() {
         let id = miner.campaigns[0].drops[0].id.clone();
         miner.confirm(&id, 13, &settings);
         miner.publish(&settings).await.unwrap();
-        let progress = miner.app.snapshot.read().await.current_drop.clone();
+        let mut progress = miner.app.snapshot.read().await.current_drop.clone();
         assert!(progress.is_some());
+        assert_eq!(progress.as_ref().unwrap().countdown_running, !manual);
+        progress.as_mut().unwrap().countdown_running = false;
         let requested_at = Instant::now();
         let channel = miner.channels[0].clone();
         miner.spawn(JobKind::Watch, std::future::pending());

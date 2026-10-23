@@ -96,6 +96,8 @@ export interface Settings {
   mining_paused: boolean;
   auto_claim_drops: boolean;
   show_progress_percentage: boolean;
+  show_progress_time: boolean;
+  show_progress_countdown: boolean;
   progress_time_format: 'minutes' | 'hours_minutes';
   mining_priority_mode: 'manual' | 'short_events' | 'ending_soonest';
   auto_mine_badges: boolean;
@@ -146,6 +148,7 @@ export interface Progress {
   required_minutes: number;
   progress: number;
   remaining_seconds: number;
+  countdown_running?: boolean;
 }
 export interface WantedGame {
   game_key?: string;

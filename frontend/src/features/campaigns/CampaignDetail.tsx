@@ -8,7 +8,7 @@ import type { Campaign } from '../../shared/lib/types';
 import type { HistoryCampaign } from './History';
 import { safeUrl } from '../../shared/lib/api';
 import { useT } from '../../shared/lib/i18n';
-import { formatProgressTime } from '../../shared/lib/progress';
+import { ProgressReadout } from '../../shared/ui/ProgressReadout';
 import { Art, Empty, IconButton, Notice, ProgressBar, dateTime } from '../../shared/ui/index';
 
 export function CampaignDetail({
@@ -28,7 +28,7 @@ export function CampaignDetail({
 }) {
   const campaign = historyOnly ? undefined : liveCampaign;
   const priority = campaign && !campaign.finished && !campaign.expired ? campaign.priority : null;
-  const { data, connected, autosave } = useMiner();
+  const { data, connected } = useMiner();
   const mining =
     connected &&
     data?.login.user_id &&
@@ -246,18 +246,12 @@ export function CampaignDetail({
                           label={drop.name}
                           description={drop.confirmed_at ? undefined : t('progress_unknown')}
                         />
-                        <p
-                          className="muted tabular-nums"
-                          title={drop.confirmed_at ? undefined : t('progress_unknown')}
-                          aria-description={drop.confirmed_at ? undefined : t('progress_unknown')}
-                        >
-                          {formatProgressTime(
-                            drop.confirmed_at ? (drop.confirmed_minutes ?? 0) : 0,
-                            drop.required_minutes,
-                            (autosave.draft ?? data?.settings)?.progress_time_format,
-                            t,
-                          )}
-                        </p>
+                        <ProgressReadout
+                          progress={drop}
+                          campaignId={campaign.id}
+                          dropId={drop.id}
+                          className="muted"
+                        />
                       </div>
                     )}
                     {(Date.parse(drop.effective_starts_at ?? drop.starts_at) !==

@@ -18,7 +18,7 @@ import {
 import { InventoryRefreshButton } from '../../shared/ui/InventoryRefreshButton';
 import { useMiner } from '../../app/MinerProvider';
 import { useT } from '../../shared/lib/i18n';
-import { confirmedPercent, formatProgressTime } from '../../shared/lib/progress';
+import { ProgressReadout } from '../../shared/ui/ProgressReadout';
 import {
   Art,
   IconButton,
@@ -61,9 +61,6 @@ export default function Mining({ upNext }: { upNext: ReturnType<typeof useUpNext
   if (!data) return <Empty title={t('loading')} />;
   if (edit) return <MiningPreferences />;
   const progress = data.current_drop;
-  const percent = (autosave.draft ?? data.settings).show_progress_percentage
-    ? confirmedPercent(progress)
-    : null;
   const resuming = !data.settings.mining_paused && data.mining?.state === 'paused';
   const paused = data.settings.mining_paused || resuming;
   const pauseBusy = autosave.pending || autosave.busy || resuming;
@@ -193,21 +190,12 @@ export default function Mining({ upNext }: { upNext: ReturnType<typeof useUpNext
                 label={progress.drop_name}
                 description={progress.confirmed_at ? undefined : t('progress_unknown')}
               />
-              <div className="mt-2 flex flex-wrap justify-between gap-2 text-[13px]">
-                <span
-                  className="tabular-nums"
-                  title={progress.confirmed_at ? undefined : t('progress_unknown')}
-                  aria-description={progress.confirmed_at ? undefined : t('progress_unknown')}
-                >
-                  {formatProgressTime(
-                    progress.confirmed_at ? (progress.confirmed_minutes ?? 0) : 0,
-                    progress.required_minutes,
-                    (autosave.draft ?? data.settings).progress_time_format,
-                    t,
-                  )}
-                  {percent !== null && ` (${percent}%)`}
-                </span>
-              </div>
+              <ProgressReadout
+                progress={progress}
+                campaignId={progress.campaign_id}
+                dropId={progress.drop_id}
+                className="mt-2"
+              />
             </div>
           </>
         ) : paused ? (

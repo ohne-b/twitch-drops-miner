@@ -116,6 +116,8 @@
     "mining_paused": false,
     "auto_claim_drops": true,
     "show_progress_percentage": false,
+    "show_progress_time": true,
+    "show_progress_countdown": false,
     "progress_time_format": "minutes",
     "game_metadata": [],
     "revision": "fixture",
@@ -161,7 +163,8 @@
     "confirmed_at": "2026-09-26T00:20:00Z",
     "required_minutes": 60,
     "progress": 0.8,
-    "remaining_seconds": 30
+    "remaining_seconds": 720,
+    "countdown_running": true
   },
   "wanted_items": [
     {

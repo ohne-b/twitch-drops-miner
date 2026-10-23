@@ -31,3 +31,42 @@ export function confirmedPercent(
     return null;
   return Math.floor(Math.min(1000, Math.max(0, (minutes * 1000) / progress.required_minutes))) / 10;
 }
+
+export interface Countdown {
+  key: string;
+  sourceSeconds: number;
+  seconds: number;
+  startedAt: number | null;
+}
+
+export function countdownSeconds(countdown: Countdown, now: number): number {
+  const elapsed =
+    countdown.startedAt === null ? 0 : Math.max(0, (now - countdown.startedAt) / 1000);
+  // Interpolate only within one minute; further progress must come from the miner.
+  return Math.ceil(Math.max(0, countdown.sourceSeconds - 59, countdown.seconds - elapsed));
+}
+
+export function updateCountdown(
+  previous: Countdown | null,
+  key: string,
+  seconds: number | null,
+  running: boolean,
+  now: number,
+): Countdown | null {
+  if (seconds === null || !Number.isFinite(seconds) || seconds < 0) return null;
+  if (!previous || previous.key !== key || previous.sourceSeconds !== seconds)
+    return { key, sourceSeconds: seconds, seconds, startedAt: running ? now : null };
+  if (running === (previous.startedAt !== null)) return previous;
+  return {
+    ...previous,
+    seconds: countdownSeconds(previous, now),
+    startedAt: running ? now : null,
+  };
+}
+
+export function formatCountdown(seconds: number): string {
+  const whole = Math.max(0, Math.ceil(seconds));
+  return [Math.floor(whole / 3600), Math.floor((whole % 3600) / 60), whole % 60]
+    .map((part) => String(part).padStart(2, '0'))
+    .join(':');
+}

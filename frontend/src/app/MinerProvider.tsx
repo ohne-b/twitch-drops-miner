@@ -13,6 +13,7 @@ import type { Snapshot } from '../shared/lib/types';
 import { connectBrowser, type Subscription } from './transport';
 import { I18n } from '../shared/lib/i18n';
 import { useAutosave } from './useAutosave';
+import { useProgressCountdown } from './useProgressCountdown';
 import { initialState, reducer } from './reducer';
 
 export function upsert<T extends { id: string | number }>(items: T[], item: T): T[] {
@@ -28,6 +29,7 @@ const Context = createContext<{
   incompatible: boolean;
   historyRevision: number;
   autosave: ReturnType<typeof useAutosave>;
+  countdown: ReturnType<typeof useProgressCountdown>;
 }>({
   request: accountRequest(null),
   accountId: null,
@@ -36,6 +38,7 @@ const Context = createContext<{
   incompatible: false,
   historyRevision: 0,
   autosave: null as unknown as ReturnType<typeof useAutosave>,
+  countdown: null,
 });
 
 export function MinerProvider({
@@ -58,6 +61,11 @@ export function MinerProvider({
     },
     request,
     accountId ?? 'none',
+  );
+  const countdown = useProgressCountdown(
+    state.data,
+    state.hydrated,
+    !!(autosave.draft?.mining_paused || state.data?.settings.mining_paused),
   );
   useEffect(() => {
     if (state.resync) transport.current?.resync();
@@ -96,6 +104,7 @@ export function MinerProvider({
         incompatible: state.incompatible,
         historyRevision: state.data?.history_clear_revision ?? 0,
         autosave,
+        countdown,
       }}
     >
       <I18n>{children}</I18n>

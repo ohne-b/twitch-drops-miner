@@ -71,6 +71,7 @@ mod tests {
             required_minutes: 20,
             progress: 5.0,
             remaining_seconds: 1140,
+            countdown_running: false,
         });
         let mut next = previous.clone();
         next.channels[0].viewers = Some(42);

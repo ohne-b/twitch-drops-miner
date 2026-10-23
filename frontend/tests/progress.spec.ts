@@ -60,7 +60,7 @@ for (const width of [1440, 390]) {
     const reward = page
       .getByRole('complementary', { name: 'Campaign details' })
       .locator('#drop-reward-1');
-    await expect(reward.getByText('5h 30m / 6h', { exact: true })).toBeVisible();
+    await expect(reward.getByText('5h 30m / 6h (91.6%)', { exact: true })).toBeVisible();
     await expect(reward.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '330');
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     Object.assign(campaigns[0]!.drops[0]!, { confirmed_at: null });

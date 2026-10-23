@@ -274,6 +274,7 @@ async fn commands_save_only_the_requested_setting_and_use_confirmed_progress() {
             required_minutes: 100,
             progress: 0.99,
             remaining_seconds: 60,
+            countdown_running: false,
         });
     }
     let worker = tokio::spawn(async move {
