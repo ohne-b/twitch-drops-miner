@@ -722,3 +722,52 @@ test('account actions and expanded profile stay compact on phone and desktop', a
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   }
 });
+
+for (const width of [390, 1280]) {
+  test(`catalog key stays private across saves and account switches at ${width}px`, async ({
+    page,
+    request,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await seed(request);
+    await page.goto('/settings#connection');
+    const key = page.getByLabel('Sunkwi API key', { exact: true });
+    const save = page.getByRole('button', { name: 'Save', exact: true });
+    await key.fill('test-browser-catalog-key');
+    await expect(key).toHaveAttribute('type', 'password');
+    await switchTo(page, 'Account 2');
+    await expect(key).toHaveValue('test-browser-catalog-key');
+    await save.click();
+    await expect(save).toBeDisabled();
+    await expect(key).toHaveValue('');
+    await expect(key).toHaveAttribute('placeholder', 'Key saved');
+    const stored = await (await request.get('/api/connection')).json();
+    expect(stored.catalog_api_key_configured).toBe(true);
+    expect(JSON.stringify(stored)).not.toContain('test-browser-catalog-key');
+    expect(stored.values).not.toHaveProperty('catalog_api_key');
+    await page.getByLabel('Inventory refresh interval (minutes)', { exact: true }).fill('17');
+    await save.click();
+    await expect(save).toBeDisabled();
+    await page.reload();
+    await expect(key).toHaveAttribute('placeholder', 'Key saved');
+    await page
+      .getByRole('button', { name: 'Inventory refresh interval (minutes) help', exact: true })
+      .click();
+    await expect(page.getByRole('note')).toContainText(
+      'The public catalog follows its own rate limit.',
+    );
+    await page.keyboard.press('Escape');
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    );
+    await page.screenshot({ path: `../artifacts/catalog-connection-${width}.png` });
+    await page.getByRole('button', { name: 'Remove Sunkwi API key', exact: true }).click();
+    await expect(key).toHaveAttribute('placeholder', 'Key will be removed on save');
+    await save.click();
+    await expect(save).toBeDisabled();
+    expect((await (await request.get('/api/connection')).json()).catalog_api_key_configured).toBe(
+      false,
+    );
+  });
+}

@@ -1609,9 +1609,7 @@ test('catalog restrictions and hostile strings remain explicit and inert', async
   });
   await expect(page.getByRole('alert')).toHaveCount(0);
   await page.getByRole('link', { name: 'Campaigns', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText(
-    'Campaign data is incomplete or the public catalog is unavailable or stale',
-  );
+  await expect(page.getByRole('alert')).toHaveCount(0);
   await request.post('/__test/event', {
     headers,
     data: { event: 'console_output', data: { message: '<img src=x onerror="alert(1)">' } },
@@ -2235,7 +2233,7 @@ test('autosave keeps text editing stable and blocks invalid values', async ({ pa
     .getByRole('link', { name: 'Settings', exact: true })
     .click();
   await page.getByRole('link', { name: 'Connection', exact: true }).click();
-  const interval = page.getByLabel('Minimum Refresh Interval (minutes):', { exact: true });
+  const interval = page.getByLabel('Inventory refresh interval (minutes)', { exact: true });
   await interval.fill('');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   expect(await interval.evaluate((input: HTMLInputElement) => input.validity.valid)).toBe(false);

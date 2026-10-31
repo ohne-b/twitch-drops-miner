@@ -25,12 +25,12 @@ mod tests {
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_delay(Duration::from_millis(100))
-                    .set_body_json(serde_json::json!({"public":true})),
+                    .set_body_json(serde_json::json!({"public":true,"lastUpdatedAt":chrono::Utc::now().to_rfc3339(),"data":[]})),
             )
             .expect(1)
             .mount(&server)
             .await;
-        let shared = SharedNetwork::new(CancellationToken::new());
+        let shared = SharedNetwork::new(CancellationToken::new(), None);
         let mut reads = vec![];
         for index in 0..20 {
             let mut http = super::super::tests::http(&server);
@@ -58,6 +58,167 @@ mod tests {
             assert!(!request.headers.contains_key("Cookie"));
             assert!(!request.headers.contains_key("X-Device-Id"));
         }
+        shared.shutdown().await;
+    }
+
+    async fn advance(seconds: u64) {
+        tokio::time::pause();
+        tokio::time::advance(Duration::from_secs(seconds)).await;
+        tokio::time::resume();
+    }
+
+    #[tokio::test]
+    async fn catalog_cooldowns_share_successes_failures_and_connection_changes() {
+        for key in [None, Some("test-catalog-key".to_owned())] {
+            let server = MockServer::start().await;
+            let payload =
+                serde_json::json!({"lastUpdatedAt":chrono::Utc::now().to_rfc3339(), "data":[]});
+            Mock::given(method("GET"))
+                .and(path("/catalog"))
+                .respond_with(ResponseTemplate::new(200).set_body_json(&payload))
+                .expect(1)
+                .mount(&server)
+                .await;
+            let shared = SharedNetwork::new(CancellationToken::new(), key.clone());
+            let mut http = super::super::tests::http(&server);
+            http.shared = Some(shared.clone());
+            let first = http.catalog().await.unwrap();
+            let request = &server.received_requests().await.unwrap()[0];
+            assert_eq!(
+                request
+                    .headers
+                    .get("x-api-key")
+                    .map(|v| v.to_str().unwrap()),
+                key.as_deref()
+            );
+            assert!(!request.headers.contains_key("Authorization"));
+            assert!(!request.headers.contains_key("Cookie"));
+            let interval = catalog::interval(key.as_deref()).as_secs();
+            advance(interval - 1).await;
+            shared.configure_catalog(key.clone()).await;
+            for _ in 0..20 {
+                assert!(Arc::ptr_eq(&first, &http.catalog().await.unwrap()));
+            }
+            server.verify().await;
+            server.reset().await;
+            Mock::given(method("GET"))
+                .and(path("/catalog"))
+                .respond_with(
+                    ResponseTemplate::new(429)
+                        .insert_header("RateLimit-Reset", "601")
+                        .insert_header("Retry-After", "600"),
+                )
+                .expect(1)
+                .mount(&server)
+                .await;
+            advance(2).await;
+            assert!(Arc::ptr_eq(&first, &http.catalog().await.unwrap()));
+            advance(600).await;
+            shared.configure_catalog(None).await;
+            assert!(Arc::ptr_eq(&first, &http.catalog().await.unwrap()));
+            server.verify().await;
+            server.reset().await;
+            Mock::given(method("GET"))
+                .and(path("/catalog"))
+                .respond_with(ResponseTemplate::new(503))
+                .expect(1)
+                .mount(&server)
+                .await;
+            advance(2).await;
+            assert!(Arc::ptr_eq(&first, &http.catalog().await.unwrap()));
+            assert!(http.catalog().await.is_ok());
+            shared.shutdown().await;
+        }
+    }
+
+    #[tokio::test]
+    async fn catalog_failure_without_cache_and_expired_cache_do_not_bypass_cooldown() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET"))
+            .and(path("/catalog"))
+            .respond_with(ResponseTemplate::new(401).insert_header("Retry-After", "3600"))
+            .expect(1)
+            .mount(&server)
+            .await;
+        let shared = SharedNetwork::new(CancellationToken::new(), Some("invalid-test-key".into()));
+        let mut http = super::super::tests::http(&server);
+        http.shared = Some(shared.clone());
+        assert_eq!(http.catalog().await.unwrap_err(), TwitchError::Status(401));
+        shared.configure_catalog(None).await;
+        advance(1801).await;
+        assert_eq!(http.catalog().await.unwrap_err(), TwitchError::Status(401));
+        let payload = Arc::new(
+            serde_json::json!({"lastUpdatedAt":chrono::Utc::now().to_rfc3339(),"data":[]}),
+        );
+        shared.catalog.lock().await.saved =
+            Some((Instant::now() - Duration::from_secs(1801), payload));
+        assert_eq!(http.catalog().await.unwrap_err(), TwitchError::Status(401));
+        shared.shutdown().await;
+    }
+
+    #[tokio::test]
+    async fn invalid_refresh_retains_valid_catalog_but_never_stale_data() {
+        let server = MockServer::start().await;
+        let payload =
+            serde_json::json!({"lastUpdatedAt":chrono::Utc::now().to_rfc3339(),"data":[]});
+        Mock::given(method("GET"))
+            .and(path("/catalog"))
+            .respond_with(ResponseTemplate::new(200).set_body_json(&payload))
+            .expect(1)
+            .mount(&server)
+            .await;
+        let shared = SharedNetwork::new(CancellationToken::new(), None);
+        let mut http = super::super::tests::http(&server);
+        http.shared = Some(shared.clone());
+        let first = http.catalog().await.unwrap();
+        server.reset().await;
+        Mock::given(method("GET"))
+            .and(path("/catalog"))
+            .respond_with(
+                ResponseTemplate::new(200).set_body_json(serde_json::json!({"data":null})),
+            )
+            .expect(1)
+            .mount(&server)
+            .await;
+        advance(301).await;
+        assert!(Arc::ptr_eq(&first, &http.catalog().await.unwrap()));
+        {
+            let mut state = shared.catalog.lock().await;
+            let stale = serde_json::json!({"lastUpdatedAt":(chrono::Utc::now() - chrono::Duration::minutes(31)).to_rfc3339(),"data":[]});
+            state.saved = Some((Instant::now(), Arc::new(stale)));
+        }
+        assert_eq!(
+            http.catalog().await.unwrap_err(),
+            TwitchError::InvalidResponse
+        );
+        shared.shutdown().await;
+    }
+
+    #[tokio::test]
+    async fn changing_connection_cancels_old_fetch_without_clearing_cooldown() {
+        let server = MockServer::start().await;
+        Mock::given(method("GET")).and(path("/catalog"))
+            .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_secs(5))
+                .set_body_json(serde_json::json!({"lastUpdatedAt":chrono::Utc::now().to_rfc3339(),"data":[]})))
+            .expect(1).mount(&server).await;
+        let shared = SharedNetwork::new(CancellationToken::new(), None);
+        let mut http = super::super::tests::http(&server);
+        http.shared = Some(shared.clone());
+        let reader = http.clone();
+        let pending = tokio::spawn(async move { reader.catalog().await });
+        tokio::time::timeout(Duration::from_secs(1), async {
+            while server.received_requests().await.unwrap().is_empty() {
+                tokio::time::sleep(Duration::from_millis(5)).await;
+            }
+        })
+        .await
+        .unwrap();
+        shared.configure_catalog(Some("new-test-key".into())).await;
+        assert_eq!(pending.await.unwrap().unwrap_err(), TwitchError::Cancelled);
+        assert!(http.catalog().await.is_err());
+        assert!(shared.catalog.lock().await.saved.is_none());
+        advance(299).await;
+        assert!(http.catalog().await.is_err());
         shared.shutdown().await;
     }
 
@@ -101,7 +262,7 @@ mod tests {
             .expect(20)
             .mount(&server)
             .await;
-        let shared = SharedNetwork::new(CancellationToken::new());
+        let shared = SharedNetwork::new(CancellationToken::new(), None);
         let cancel = CancellationToken::new();
         let mut held = vec![];
         for _ in 0..4 {
@@ -198,8 +359,23 @@ impl Lane {
 type CatalogResult = Result<Arc<Value>, TwitchError>;
 #[derive(Default)]
 struct CatalogState {
-    saved: Option<(Instant, CatalogResult)>,
+    saved: Option<(Instant, Arc<Value>)>,
+    next_fetch: Option<Instant>,
+    error: Option<TwitchError>,
+    api_key: Option<String>,
     pending: Option<(CancellationToken, watch::Receiver<Option<CatalogResult>>)>,
+}
+
+impl CatalogState {
+    fn cached(&self) -> CatalogResult {
+        if let Some((saved_at, value)) = &self.saved
+            && saved_at.elapsed() <= Duration::from_secs(30 * 60)
+            && catalog::fresh(value)
+        {
+            return Ok(value.clone());
+        }
+        Err(self.error.unwrap_or(TwitchError::InvalidResponse))
+    }
 }
 
 /// Only scheduling and public catalog bytes are shared, never an authenticated client.
@@ -212,11 +388,14 @@ pub(crate) struct SharedNetwork {
 }
 
 impl SharedNetwork {
-    pub fn new(cancel: CancellationToken) -> Arc<Self> {
+    pub fn new(cancel: CancellationToken, api_key: Option<String>) -> Arc<Self> {
         Arc::new(Self {
             realtime: Lane::new(8, 8),
             discovery: Lane::new(4, 4),
-            catalog: Mutex::new(CatalogState::default()),
+            catalog: Mutex::new(CatalogState {
+                api_key,
+                ..CatalogState::default()
+            }),
             cancel,
             tasks: TaskTracker::new(),
         })
@@ -254,12 +433,12 @@ impl SharedNetwork {
     }
 
     pub async fn catalog(self: &Arc<Self>, http: &TwitchHttp) -> CatalogResult {
+        if self.cancel.is_cancelled() || http.cancel.is_cancelled() {
+            return Err(TwitchError::Cancelled);
+        }
         let mut state = self.catalog.lock().await;
-        if let Some((at, result)) = &state.saved {
-            let age = if result.is_ok() { 30 } else { 5 };
-            if at.elapsed() < Duration::from_secs(age) {
-                return result.clone();
-            }
+        if state.pending.is_none() && state.next_fetch.is_some_and(|at| at > Instant::now()) {
+            return state.cached();
         }
         let mut pending = if let Some((_, pending)) = &state.pending {
             pending.clone()
@@ -270,13 +449,31 @@ impl SharedNetwork {
             let mut reader = http.clone();
             reader.cancel = cancel.clone();
             let owned = self.clone();
+            let key = state.api_key.clone();
+            // Reserve before starting so a connection change/cancellation cannot
+            // bypass the bucket. It is shared by every account and manual refresh.
+            state.next_fetch = Some(Instant::now() + catalog::interval(key.as_deref()));
             self.tasks.spawn(async move {
-                let reply = reader.fetch_catalog().await.map(Arc::new);
+                let fetched = reader.fetch_catalog(key.as_deref()).await;
+                let reply = fetched.result.map(Arc::new);
                 let mut state = owned.catalog.lock().await;
-                if !cancel.is_cancelled() {
-                    state.saved = Some((Instant::now(), reply.clone()));
+                let next = Instant::now() + fetched.cooldown;
+                state.next_fetch = Some(state.next_fetch.map_or(next, |at| at.max(next)));
+                let reply = if !cancel.is_cancelled() {
+                    match reply {
+                        Ok(value) => {
+                            state.saved = Some((Instant::now(), value));
+                            state.error = None;
+                        }
+                        Err(error) => {
+                            state.error = Some(error);
+                        }
+                    }
                     state.pending = None;
-                }
+                    state.cached()
+                } else {
+                    Err(TwitchError::Cancelled)
+                };
                 result.send_replace(Some(reply));
             });
             pending
@@ -293,12 +490,12 @@ impl SharedNetwork {
         }
     }
 
-    pub async fn invalidate(&self) {
+    pub async fn configure_catalog(&self, api_key: Option<String>) {
         let mut state = self.catalog.lock().await;
         if let Some((cancel, _)) = state.pending.take() {
             cancel.cancel();
         }
-        state.saved = None;
+        state.api_key = api_key;
     }
 
     pub async fn shutdown(&self) {

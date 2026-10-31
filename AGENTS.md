@@ -175,7 +175,13 @@ embed it and run without a build tool/runtime companion. Production builds never
   but cannot change them. Persist validated legacy Connection values once on first load, preserving
   the original settings. Save shared values atomically before fanout; inject them on restart.
   Unreadable primary settings remain isolated when the shared configuration is available.
-  A shared public catalog cache coalesces downloads for 30 seconds (five seconds for failure),
+  A shared public catalog cache coalesces downloads for at least five minutes anonymously or
+  one minute with an optional installation-owned Sunkwi API key, including failures. Honor longer
+  RateLimit-Reset/Retry-After cooldowns without immediate retries, across accounts, refreshes and
+  Connection changes. Retain the last valid feed only within the existing freshness window.
+  Store the optional key in connection.json, never snapshots, logs or per-account settings;
+  expose only whether it is configured. Omitted keys preserve it; an explicit empty key clears it.
+  Send X-API-Key only on catalog requests. Inventory refresh timing remains separate,
   while account parsing and evidence stay separate. Shared HTTP scheduling reserves capacity
   for beacons, progress, playback tokens and claims separately from discovery. Never share
   authenticated clients, cookies, account inventory or claim evidence.
@@ -257,7 +263,7 @@ embed it and run without a build tool/runtime companion. Production builds never
   campaign scans. Inventory wins as whole records, including explicit unclaimed evidence;
   malformed account records must not fall back to public account assumptions. Public HTTP
   uses an isolated client with no Twitch credentials, cookies or identifiers, no redirects,
-  the configured proxy/timeouts, and bounded retries within 30 seconds. Cap bodies at 16 MiB
+  the configured proxy/timeouts, and one attempt bounded to 30 seconds. Cap bodies at 16 MiB
   and campaigns at 2000. Reject timestamps older than 30 minutes or over 5 minutes ahead.
   Strip public campaign/drop `self` records; preserve real ACLs, dependencies and timing.
   The public adapter normalizes an omitted `allow.channels` to an empty list only when
@@ -272,7 +278,8 @@ embed it and run without a build tool/runtime companion. Production builds never
   public replacement and award-only pending-claim recovery; confirmed durable receipts still recover.
   Keep known active/upcoming records on partial refresh; valid empty
   feeds are authoritative. A feed 401/403 never logs out Twitch; Twitch auth/cancellation
-  failures propagate. Coverage can vary, and restarts need the feed for non-inventory
+  failures propagate. Do not turn partial coverage or a normal cache cooldown into a blanket UI warning or a
+  failed inventory refresh; log actual public-request failures. Coverage can vary, and restarts need the feed for non-inventory
   campaigns. Never claim relogin/cache clearing repairs feed coverage. Unknown
   PubSub/CurrentDrop progress shares a coalesced, at-most-once-per-minute inventory refresh
   with confirmed watch completion and reported successors awaiting prerequisite claim evidence.
@@ -756,11 +763,12 @@ embed it and run without a build tool/runtime companion. Production builds never
 - Mining and Campaigns share inventory refresh feedback inside the button; Maintenance has no
   inventory refresh action. Track queued
   and running work through publication, coalesce requests, preserve state on reconnect and
-  ignore stale completion events. An acknowledgement is not completion. Keep request errors
-  and partial-catalog failures retryable without clearing previous results or adding notices.
+  ignore stale completion events. An acknowledgement is not completion. Keep failed inventory
+  requests retryable without clearing previous results or adding notices. A successful inventory
+  refresh with partial catalog coverage retains known campaigns and reports success without an error.
   Use the shared fixed-size icon button: refresh/spinner, brief success tick, or retryable error.
   Keep its position and size stable across states, respect reduced motion, and preserve accessible
-  state labels/live feedback plus tooltip and accessible error/catalog details.
+  state labels/live feedback, accessible request errors and the catalog source/update-time tooltip.
 - History lives in Campaigns in place of Finished; the old /history route redirects. Display
   recorded claims grouped by campaign (25 per page), independent of completion/catalog coverage.
   Share search, game filters, sorting and list/grid controls. History defaults to newest recorded

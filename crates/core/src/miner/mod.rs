@@ -897,15 +897,8 @@ impl Mining {
                         u64::from(settings.minimum_refresh_interval_minutes) * 60,
                     );
                 self.channels_dirty = true;
-                self.publish_snapshot(
-                    &settings,
-                    Some((
-                        refresh_sequence,
-                        (!self.status.available)
-                            .then(|| message("gui.redesign.campaigns_unavailable", &[])),
-                    )),
-                )
-                .await?;
+                self.publish_snapshot(&settings, Some((refresh_sequence, None)))
+                    .await?;
                 self.publish = false;
                 None
             }
