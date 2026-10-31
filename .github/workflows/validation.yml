@@ -189,8 +189,11 @@ jobs:
           ARCH: ${{ matrix.arch }}
         run: |
           skopeo --override-arch "$ARCH" copy "oci-archive:$RUNNER_TEMP/image.tar" docker-daemon:twitch-drops-miner:test
-          config=$(skopeo inspect --raw "oci-archive:$RUNNER_TEMP/image.tar" | jq -r .config.digest)
-          test "$(docker image inspect --format '{{.Id}}' twitch-drops-miner:test)" = "$config"
+          # Docker's image ID depends on its storage backend. Compare the actual
+          # config bytes (including layer diff IDs) from the archive and daemon.
+          skopeo --override-arch "$ARCH" inspect --raw --config "oci-archive:$RUNNER_TEMP/image.tar" > "$RUNNER_TEMP/exported-config.json"
+          skopeo --override-arch "$ARCH" inspect --raw --config docker-daemon:twitch-drops-miner:test > "$RUNNER_TEMP/loaded-config.json"
+          cmp "$RUNNER_TEMP/exported-config.json" "$RUNNER_TEMP/loaded-config.json"
       - name: Check runtime, ownership and health without network access
         env:
           PLATFORM: linux/${{ matrix.arch }}

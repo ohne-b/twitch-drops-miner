@@ -126,6 +126,11 @@ test('edge publishing is manual, validated-main-only and cannot advance release 
   assert.match(release, /node \.github\/scripts\/publish-images\.mjs "\$RELEASE_VERSION" "\$IMAGE_TAGS"/);
   assert.match(validation, /outputs: type=oci,dest=\$\{\{ runner.temp \}\}\/image.tar/);
   assert.match(validation, /skopeo --override-arch "\$ARCH" copy "oci-archive:\$RUNNER_TEMP\/image.tar" docker-daemon:twitch-drops-miner:test/);
+  const load = validation.split('- name: Load the exported image for testing')[1].split('- name: Check runtime')[0];
+  assert.match(load, /skopeo --override-arch "\$ARCH" inspect --raw --config "oci-archive:\$RUNNER_TEMP\/image.tar" > "\$RUNNER_TEMP\/exported-config.json"/);
+  assert.match(load, /skopeo --override-arch "\$ARCH" inspect --raw --config docker-daemon:twitch-drops-miner:test > "\$RUNNER_TEMP\/loaded-config.json"/);
+  assert.match(load, /cmp "\$RUNNER_TEMP\/exported-config.json" "\$RUNNER_TEMP\/loaded-config.json"/);
+  assert.doesNotMatch(load, /\{\{\.Id\}\}|continue-on-error|\|\| true/);
   assert.ok(validation.indexOf('Check runtime, ownership and health') < validation.indexOf('Retain the tested image'));
   assert.match(validation, /if: github.ref == 'refs\/heads\/main' && github.event_name != 'pull_request'/);
   assert.match(validation, /retention-days: 7/);
