@@ -193,7 +193,10 @@ impl AccountManager {
             }
         }
         let shutdown = CancellationToken::new();
-        let network = crate::twitch::shared::SharedNetwork::new(shutdown.child_token());
+        let network = crate::twitch::shared::SharedNetwork::new(
+            shutdown.child_token(),
+            connection.catalog_api_key.clone(),
+        );
         let manager = Arc::new(Self {
             primary,
             shutdown,
@@ -498,7 +501,11 @@ impl AccountManager {
 
     pub async fn connection(&self) -> serde_json::Value {
         let (values, revision) = &*self.connection.read().await;
-        serde_json::json!({"values":values,"revision":revision})
+        serde_json::json!({"values": {
+            "proxy": values.proxy,
+            "connection_quality": values.connection_quality,
+            "minimum_refresh_interval_minutes": values.minimum_refresh_interval_minutes,
+        }, "catalog_api_key_configured": values.catalog_api_key.is_some(), "revision":revision})
     }
 
     pub async fn shutdown(&self) {

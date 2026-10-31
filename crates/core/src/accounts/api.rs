@@ -292,13 +292,23 @@ impl AccountManager {
                 self.apply_targets(targets, preferences(&source, auto_claim))
                     .await
             }
-            Request::Connection { revision, values } => {
+            Request::Connection {
+                revision,
+                mut values,
+            } => {
                 if !values.valid() {
                     return Err(AppError::InvalidSettings);
                 }
                 if self.connection.read().await.1 != revision {
                     return Err(Error::Conflict.into());
                 }
+                // Older clients omit the key: retain it. An explicit empty value clears it.
+                if values.catalog_api_key.is_none() {
+                    values
+                        .catalog_api_key
+                        .clone_from(&self.connection.read().await.0.catalog_api_key);
+                }
+                values.catalog_api_key = values.catalog_api_key.filter(|key| !key.is_empty());
                 let next_revision = random_hex::<16>().map_err(|_| Error::Storage)?;
                 let path = self.primary.data.path.clone();
                 let saved = values.clone();
@@ -309,7 +319,9 @@ impl AccountManager {
                 *self.connection.write().await = (values.clone(), next_revision);
                 self.invalidate_login(None, "account_login_connection_changed")
                     .await;
-                self.network.invalidate().await;
+                self.network
+                    .configure_catalog(values.catalog_api_key.clone())
+                    .await;
                 let apps: Vec<_> = self
                     .entries
                     .read()

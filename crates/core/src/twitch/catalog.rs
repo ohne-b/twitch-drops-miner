@@ -6,7 +6,7 @@ use std::{
 use chrono::{DateTime, Utc};
 use serde_json::Value;
 
-use super::{RetryPolicy, TwitchError, TwitchHttp, diagnostics};
+use super::{TwitchError, TwitchHttp, diagnostics};
 use crate::domain::Campaign;
 
 const MAX_CAMPAIGNS: usize = 2000;
@@ -17,41 +17,107 @@ pub(super) struct Catalog {
     pub complete: bool,
 }
 
+pub(super) struct CatalogFetch {
+    pub result: Result<Value, TwitchError>,
+    pub cooldown: Duration,
+}
+
+pub(super) fn interval(key: Option<&str>) -> Duration {
+    Duration::from_secs(if key.is_some() { 60 } else { 300 })
+}
+
+pub(super) fn fresh(payload: &Value) -> bool {
+    payload["lastUpdatedAt"]
+        .as_str()
+        .and_then(|value| value.parse::<DateTime<Utc>>().ok())
+        .is_some_and(|updated| {
+            let now = Utc::now();
+            updated >= now - chrono::Duration::minutes(30)
+                && updated <= now + chrono::Duration::minutes(5)
+        })
+}
+
+fn cooldown(headers: &http::HeaderMap, minimum: Duration) -> Duration {
+    ["ratelimit-reset", "retry-after"]
+        .into_iter()
+        .fold(minimum, |delay, name| {
+            // Both documented headers are delta seconds, not Unix timestamps. Bound
+            // hostile values before adding to Instant; never retry a rejected request.
+            let seconds = headers
+                .get(name)
+                .and_then(|v| v.to_str().ok())
+                .and_then(|v| v.trim().parse::<u64>().ok())
+                .unwrap_or(0);
+            delay.max(Duration::from_secs(seconds.min(7 * 24 * 60 * 60)))
+        })
+}
+
 impl TwitchHttp {
     pub(super) async fn catalog(&self) -> Result<std::sync::Arc<Value>, TwitchError> {
         if let Some(shared) = &self.shared {
             shared.catalog(self).await
         } else {
-            self.fetch_catalog().await.map(std::sync::Arc::new)
+            self.fetch_catalog(None)
+                .await
+                .result
+                .map(std::sync::Arc::new)
         }
     }
+
     #[tracing::instrument(skip_all, fields(operation = "PublicCatalog"))]
-    pub(super) async fn fetch_catalog(&self) -> Result<Value, TwitchError> {
-        // One inventory job owns this request. Bound retries and body reads together.
-        tokio::time::timeout(Duration::from_secs(30), async {
-            let response = self
-                .execute_with(
-                    &self.catalog_client,
-                    self.catalog_client
-                        .get(self.endpoints.catalog.clone())
-                        .header("Accept", "application/json"),
-                    RetryPolicy::Replay,
-                )
-                .await?;
-            // A public-feed 401/403 is not a Twitch logout.
-            if !response.status().is_success() {
-                return Err(TwitchError::InvalidResponse);
+    pub(super) async fn fetch_catalog(&self, key: Option<&str>) -> CatalogFetch {
+        let mut delay = interval(key);
+        let result = tokio::time::timeout(Duration::from_secs(30), async {
+            let mut request = self
+                .catalog_client
+                .get(self.endpoints.catalog.clone())
+                .header("Accept", "application/json");
+            if let Some(key) = key {
+                let mut value =
+                    http::HeaderValue::from_str(key).map_err(|_| TwitchError::Configuration)?;
+                value.set_sensitive(true);
+                request = request.header("X-API-Key", value);
             }
-            diagnostics::json(response.body(), response.status().as_u16())
+            let request = request.build().map_err(|_| TwitchError::Configuration)?;
+            let capture = self.diagnostics.request(&request, None);
+            let started = tokio::time::Instant::now();
+            let response = tokio::select! { biased;
+                _ = self.cancel.cancelled() => return Err(TwitchError::Cancelled),
+                response = self.catalog_client.execute(request) => response.map_err(|error| {
+                    capture.network(&error, "send", 1, started.elapsed().as_millis());
+                    TwitchError::Network
+                })?,
+            };
+            // Record the server cooldown even if the body fails or is cancelled.
+            delay = cooldown(response.headers(), delay);
+            let status = response.status();
+            if !status.is_success() {
+                tracing::warn!(
+                    status = status.as_u16(),
+                    retry_after_seconds = delay.as_secs(),
+                    "Public catalog request failed; waiting before the next request"
+                );
+                return Err(TwitchError::Status(status.as_u16()));
+            }
+            let response = self.read_response(response, 1, &capture, started).await?;
+            let payload = diagnostics::json(response.body(), status.as_u16())?;
+            // Validate before replacing a usable cache. Account evidence is still
+            // applied separately by each inventory reader.
+            Catalog::parse(&payload, &HashMap::new(), Utc::now())?;
+            Ok(payload)
         })
         .await
-        .map_err(|_| {
+        .unwrap_or_else(|_| {
             tracing::warn!(
                 timeout_seconds = 30,
                 "Public catalog request exceeded total deadline"
             );
-            TwitchError::Network
-        })?
+            Err(TwitchError::Network)
+        });
+        CatalogFetch {
+            result,
+            cooldown: delay,
+        }
     }
 }
 
@@ -210,4 +276,29 @@ fn public_campaign(
         return None;
     }
     Some(campaign)
+}
+
+#[cfg(test)]
+mod rate_tests {
+    use super::*;
+
+    #[test]
+    fn cooldown_headers_are_delta_seconds_and_bounded() {
+        let mut headers = http::HeaderMap::new();
+        for value in ["invalid", "-1", "18446744073709551616", "0", "1"] {
+            headers.insert("ratelimit-reset", value.parse().unwrap());
+            assert_eq!(cooldown(&headers, interval(None)), Duration::from_secs(300));
+        }
+        headers.insert("ratelimit-reset", "3600".parse().unwrap());
+        headers.insert("retry-after", "7200".parse().unwrap());
+        assert_eq!(
+            cooldown(&headers, interval(None)),
+            Duration::from_secs(7200)
+        );
+        headers.insert("retry-after", u64::MAX.to_string().parse().unwrap());
+        assert_eq!(
+            cooldown(&headers, interval(None)),
+            Duration::from_secs(604800)
+        );
+    }
 }

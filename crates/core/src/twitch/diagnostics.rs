@@ -45,6 +45,7 @@ fn sensitive(key: &str) -> bool {
         "cookie",
         "authorization",
         "credential",
+        "apikey",
     ]
     .iter()
     .any(|part| key.contains(part))
@@ -576,7 +577,7 @@ mod tests {
                 .set_body_json(json!({
                     "errors": [{"message": "New Twitch failure: testtoken, request-cookie, server-cookie, device-secret, new-access, refresh-secret", "extensions": {"code": "NEW_FAILURE"}}],
                     "access_token": "new-access", "nested": {"refreshToken": "refresh-secret"},
-                    "device_code": "device-secret", "user_code": 123456, "numeric_echo": 123456, "minutes": 17,
+                    "device_code": "device-secret", "user_code": 123456, "numeric_echo": 123456, "minutes": 17, "echo": "private-catalog-key",
                     "url": "https://private-user:private-pass@host.invalid/path?token=private-query",
                     "nested_text": "response: {\\\"password\\\": \\\"hidden-pass\\\"}"
                 }))
@@ -589,6 +590,7 @@ mod tests {
                     .post(server.uri())
                     .header("Authorization", "OAuth testtoken")
                     .header("Cookie", "session=request-cookie")
+                    .header("X-API-Key", "private-catalog-key")
                     .form(&[("device_code", "device-secret")]),
                 RetryPolicy::Transport,
             )
@@ -615,6 +617,7 @@ mod tests {
         for secret in [
             "testtoken",
             "request-cookie",
+            "private-catalog-key",
             "server-cookie",
             "device-secret",
             "new-access",

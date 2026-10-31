@@ -1,19 +1,21 @@
 import type { ActionState } from '../../shared/ui';
 import { useEffect, useState } from 'react';
 import { Icon } from '@mdi/react';
-import { mdiContentSaveOutline, mdiReload } from '@mdi/js';
+import { mdiContentSaveOutline, mdiReload, mdiTrashCanOutline } from '@mdi/js';
 import { useAccounts, useSharedState } from '../../app/accounts';
 import { request } from '../../shared/lib/api';
 import { useT } from '../../shared/lib/i18n';
 import type { Result } from '../../shared/lib/types';
-import { ActionResult, Button, Field, Input, Notice, useAction } from '../../shared/ui';
+import { ActionResult, Button, Field, IconButton, Input, Notice, useAction } from '../../shared/ui';
 
 interface Values {
+  catalog_api_key?: string;
   proxy: string;
   connection_quality: number;
   minimum_refresh_interval_minutes: number;
 }
 interface Saved {
+  catalog_api_key_configured: boolean;
   revision: string;
   values: Values;
 }
@@ -92,7 +94,7 @@ export default function Connection() {
       }}
     >
       <fieldset disabled={!connected || command.busy} className="space-y-4">
-        <Field label={t('gui.settings.minimum_refresh')}>
+        <Field label={t('gui.settings.minimum_refresh')} detail={t('inventory_refresh_help')}>
           <Input
             type="number"
             min={1}
@@ -133,6 +135,33 @@ export default function Connection() {
               ))}
             </select>
           </Field>
+        </div>
+        <div className="grid grid-cols-[1fr_auto] items-end gap-2">
+          <Field label={t('catalog_api_key')} detail={t('catalog_api_key_help')}>
+            <Input
+              type="password"
+              autoComplete="off"
+              maxLength={512}
+              value={draft.catalog_api_key ?? ''}
+              placeholder={
+                draft.catalog_api_key === ''
+                  ? t('catalog_api_key_removed')
+                  : saved.catalog_api_key_configured
+                    ? t('catalog_api_key_saved')
+                    : ''
+              }
+              onChange={(event) => change('catalog_api_key', event.target.value || undefined)}
+            />
+          </Field>
+          <IconButton
+            path={mdiTrashCanOutline}
+            label={t('catalog_api_key_remove')}
+            disabled={
+              draft.catalog_api_key === '' ||
+              (!saved.catalog_api_key_configured && !draft.catalog_api_key)
+            }
+            onClick={() => change('catalog_api_key', '')}
+          />
         </div>
         <div className="flex flex-wrap gap-2">
           <Button primary type="submit" disabled={!dirty}>

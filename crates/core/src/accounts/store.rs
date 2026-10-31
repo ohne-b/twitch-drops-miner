@@ -129,17 +129,31 @@ impl Registry {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Connection {
+    #[serde(default)]
+    pub catalog_api_key: Option<String>,
     pub proxy: String,
     pub connection_quality: u8,
     pub minimum_refresh_interval_minutes: u32,
 }
 
+impl std::fmt::Debug for Connection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Connection")
+            .field(
+                "catalog_api_key_configured",
+                &self.catalog_api_key.is_some(),
+            )
+            .finish_non_exhaustive()
+    }
+}
+
 impl Connection {
     pub fn from_settings(settings: &Settings) -> Self {
         Self {
+            catalog_api_key: None,
             proxy: settings.proxy.clone(),
             connection_quality: settings.connection_quality,
             minimum_refresh_interval_minutes: settings.minimum_refresh_interval_minutes,
@@ -152,6 +166,9 @@ impl Connection {
     }
     pub fn valid(&self) -> bool {
         crate::config::validate_proxy(&self.proxy).is_ok()
+            && self.catalog_api_key.as_ref().is_none_or(|key| {
+                key.len() <= 512 && key.bytes().all(|byte| (33..=126).contains(&byte))
+            })
             && self.proxy.len() <= 4096
             && (1..=6).contains(&self.connection_quality)
             && (1..=1440).contains(&self.minimum_refresh_interval_minutes)

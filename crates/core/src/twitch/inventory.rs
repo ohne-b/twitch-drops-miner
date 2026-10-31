@@ -204,6 +204,50 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn cached_catalog_does_not_delay_account_inventory_or_send_its_key_to_twitch() {
+        let server = MockServer::start().await;
+        account(&server, json!([campaign_json("owned")])).await;
+        catalog(
+            &server,
+            ResponseTemplate::new(200).set_body_json(feed(vec![campaign_json("public")])),
+        )
+        .await;
+        let shared = crate::twitch::shared::SharedNetwork::new(
+            tokio_util::sync::CancellationToken::new(),
+            Some("test-public-key".into()),
+        );
+        for _ in 0..3 {
+            let mut http = http(&server);
+            http.shared = Some(shared.clone());
+            let inventory = TwitchClient::new(Arc::new(http), &session())
+                .inventory()
+                .await
+                .unwrap();
+            assert!(inventory.status.available);
+            assert_eq!(inventory.campaigns.len(), 2);
+        }
+        let requests = server.received_requests().await.unwrap();
+        assert_eq!(
+            requests
+                .iter()
+                .filter(|r| r.url.path() == "/catalog")
+                .count(),
+            1
+        );
+        assert_eq!(
+            requests.iter().filter(|r| r.url.path() == "/gql").count(),
+            3
+        );
+        for request in &requests {
+            assert_eq!(
+                request.headers.contains_key("x-api-key"),
+                request.url.path() == "/catalog"
+            );
+        }
+        shared.shutdown().await;
+    }
+
+    #[tokio::test]
     async fn public_catalog_and_account_inventory_are_isolated_and_discovery_never_selects_games() {
         let server = MockServer::start().await;
         account(&server, json!([campaign_json("owned")])).await;

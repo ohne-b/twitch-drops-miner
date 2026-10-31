@@ -300,6 +300,7 @@ async fn connection_is_global_revision_checked_and_injected_on_restart() {
         .unwrap()
         .to_owned();
     let values = Connection {
+        catalog_api_key: None,
         proxy: String::new(),
         connection_quality: 6,
         minimum_refresh_interval_minutes: 45,
@@ -670,4 +671,61 @@ async fn shutdown_closes_manager_write_acceptance_before_returning() {
             .await
             .is_err()
     );
+}
+
+#[tokio::test]
+async fn catalog_key_is_private_preserved_by_old_clients_and_explicitly_removable() {
+    let (directory, manager) = manager().await;
+    let mut values = Connection::from_settings(&*manager.primary.settings.read().await);
+    values.catalog_api_key = Some("test-private-catalog-key".into());
+    let revision = manager.connection().await["revision"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let result = manager
+        .request(Request::Connection {
+            revision,
+            values: values.clone(),
+        })
+        .await
+        .unwrap();
+    assert_eq!(result["catalog_api_key_configured"], true);
+    assert!(result["values"].get("catalog_api_key").is_none());
+    assert!(!result.to_string().contains("test-private-catalog-key"));
+    assert!(!format!("{values:?}").contains("test-private-catalog-key"));
+    values.catalog_api_key = None;
+    values.minimum_refresh_interval_minutes = 17;
+    manager
+        .request(Request::Connection {
+            revision: result["revision"].as_str().unwrap().to_owned(),
+            values,
+        })
+        .await
+        .unwrap();
+    manager.shutdown().await;
+    drop(manager);
+    let (manager, _) = AccountManager::open(directory.path().into()).unwrap();
+    assert_eq!(
+        manager.connection.read().await.0.catalog_api_key.as_deref(),
+        Some("test-private-catalog-key")
+    );
+    assert_eq!(
+        manager.connection().await["catalog_api_key_configured"],
+        true
+    );
+    let mut values = manager.connection.read().await.0.clone();
+    values.catalog_api_key = Some("bad\r\nheader".into());
+    assert!(!values.valid());
+    values.catalog_api_key = Some("".into());
+    let revision = manager.connection().await["revision"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let result = manager
+        .request(Request::Connection { revision, values })
+        .await
+        .unwrap();
+    assert_eq!(result["catalog_api_key_configured"], false);
+    assert_eq!(manager.connection.read().await.0.catalog_api_key, None);
+    manager.shutdown().await;
 }

@@ -279,13 +279,9 @@ impl Application {
             }
             "status.claimed_drop" => (Category::Claims, Severity::Info),
             code if code.starts_with("login.") => (Category::Account, Severity::Info),
-            "status.catalog_unavailable" => (Category::Inventory, Severity::Warning),
             _ => (Category::Mining, Severity::Info),
         };
-        let mut event = ActivityEvent::new(code, category, severity, args);
-        if code == "status.catalog_unavailable" {
-            event.args.insert("operation".into(), "inventory".into());
-        }
+        let event = ActivityEvent::new(code, category, severity, args);
         self.record_activity(event).await;
     }
 

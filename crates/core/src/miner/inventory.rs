@@ -82,11 +82,7 @@ impl Mining {
                 Utc::now() + chrono::Duration::hours(1),
             )
         }) {
-            if self.status.available {
-                "status.no_campaign"
-            } else {
-                "status.catalog_unavailable"
-            }
+            "status.no_campaign"
         } else {
             "status.no_channel"
         };

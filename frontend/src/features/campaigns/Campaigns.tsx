@@ -441,9 +441,6 @@ export default function Campaigns() {
             />
           </div>
         </header>
-        {!historyTab &&
-          data.inventory_status?.available === false &&
-          data.inventory_status.checked_at && <Notice error>{t('campaigns_unavailable')}</Notice>}
       </div>
       <div className="campaign-columns">
         <div className="campaign-browser min-w-0">
