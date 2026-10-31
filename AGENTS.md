@@ -763,11 +763,12 @@ embed it and run without a build tool/runtime companion. Production builds never
 - Mining and Campaigns share inventory refresh feedback inside the button; Maintenance has no
   inventory refresh action. Track queued
   and running work through publication, coalesce requests, preserve state on reconnect and
-  ignore stale completion events. An acknowledgement is not completion. Keep request errors
-  and partial-catalog failures retryable without clearing previous results or adding notices.
+  ignore stale completion events. An acknowledgement is not completion. Keep failed inventory
+  requests retryable without clearing previous results or adding notices. A successful inventory
+  refresh with partial catalog coverage retains known campaigns and reports success without an error.
   Use the shared fixed-size icon button: refresh/spinner, brief success tick, or retryable error.
   Keep its position and size stable across states, respect reduced motion, and preserve accessible
-  state labels/live feedback plus tooltip and accessible error/catalog details.
+  state labels/live feedback, accessible request errors and the catalog source/update-time tooltip.
 - History lives in Campaigns in place of Finished; the old /history route redirects. Display
   recorded claims grouped by campaign (25 per page), independent of completion/catalog coverage.
   Share search, game filters, sorting and list/grid controls. History defaults to newest recorded

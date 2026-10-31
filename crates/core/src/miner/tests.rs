@@ -1849,10 +1849,12 @@ async fn refresh_finishes_after_publication_and_partial_or_failed_requests_keep_
         )
         .await
         .unwrap();
-    assert_eq!(
-        miner.app.snapshot.read().await.inventory_refresh.state,
-        RefreshState::Failed
-    );
+    {
+        let state = miner.app.snapshot.read().await;
+        assert_eq!(state.inventory_refresh.state, RefreshState::Refreshed);
+        assert!(state.inventory_refresh.error.is_none());
+        assert!(!state.inventory_status.available);
+    }
     assert_eq!(
         miner.campaigns.len(),
         2,
