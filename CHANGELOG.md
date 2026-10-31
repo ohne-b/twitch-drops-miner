@@ -1,5 +1,10 @@
 # Changelog
 
+## [v2.5.0](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v2.5.0) — 2026-10-31
+
+- add customizable progress displays and an estimated countdown ([#140](https://github.com/ohne-b/twitch-drops-miner/pull/140))
+- improve catalog rate-limit handling and add optional Sunkwi API key support ([#142](https://github.com/ohne-b/twitch-drops-miner/pull/142))
+
 ## [v2.4.0](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v2.4.0) — 2026-10-18
 
 - mine with multiple Twitch accounts at once, each with separate mining preferences, progress and history ([#125](https://github.com/ohne-b/twitch-drops-miner/pull/125))
