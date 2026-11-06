@@ -258,7 +258,7 @@ embed it and run without a build tool/runtime companion. Production builds never
   claimed; expiry alone never qualifies. Persistent completion archives are display-only,
   survive cache clears, and can be invalidated by newer contradictory account evidence or
   changed rewards. Older claim-only history remains completion-unverified.
-- Fetch Twitch account Inventory and `https://twitch-drops-api.sunkwi.com/v2/drops` concurrently.
+- Fetch Twitch account Inventory and `https://drops.sunkwi.com/api/twitch/drops` concurrently.
   SunkwiBOT is the catalog source; remove Twitch catalog/detail operations and live-channel
   campaign scans. Inventory wins as whole records, including explicit unclaimed evidence;
   malformed account records must not fall back to public account assumptions. Public HTTP

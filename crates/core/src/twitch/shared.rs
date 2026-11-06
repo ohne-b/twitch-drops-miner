@@ -25,7 +25,7 @@ mod tests {
             .respond_with(
                 ResponseTemplate::new(200)
                     .set_delay(Duration::from_millis(100))
-                    .set_body_json(serde_json::json!({"public":true,"lastUpdatedAt":chrono::Utc::now().to_rfc3339(),"data":[]})),
+                    .set_body_json(serde_json::json!({"public":true,"refreshedAt":chrono::Utc::now().to_rfc3339(),"games":[]})),
             )
             .expect(1)
             .mount(&server)
@@ -72,7 +72,7 @@ mod tests {
         for key in [None, Some("test-catalog-key".to_owned())] {
             let server = MockServer::start().await;
             let payload =
-                serde_json::json!({"lastUpdatedAt":chrono::Utc::now().to_rfc3339(), "data":[]});
+                serde_json::json!({"refreshedAt":chrono::Utc::now().to_rfc3339(), "games":[]});
             Mock::given(method("GET"))
                 .and(path("/catalog"))
                 .respond_with(ResponseTemplate::new(200).set_body_json(&payload))
@@ -147,9 +147,8 @@ mod tests {
         shared.configure_catalog(None).await;
         advance(1801).await;
         assert_eq!(http.catalog().await.unwrap_err(), TwitchError::Status(401));
-        let payload = Arc::new(
-            serde_json::json!({"lastUpdatedAt":chrono::Utc::now().to_rfc3339(),"data":[]}),
-        );
+        let payload =
+            Arc::new(serde_json::json!({"refreshedAt":chrono::Utc::now().to_rfc3339(),"games":[]}));
         shared.catalog.lock().await.saved =
             Some((Instant::now() - Duration::from_secs(1801), payload));
         assert_eq!(http.catalog().await.unwrap_err(), TwitchError::Status(401));
@@ -159,8 +158,7 @@ mod tests {
     #[tokio::test]
     async fn invalid_refresh_retains_valid_catalog_but_never_stale_data() {
         let server = MockServer::start().await;
-        let payload =
-            serde_json::json!({"lastUpdatedAt":chrono::Utc::now().to_rfc3339(),"data":[]});
+        let payload = serde_json::json!({"refreshedAt":chrono::Utc::now().to_rfc3339(),"games":[]});
         Mock::given(method("GET"))
             .and(path("/catalog"))
             .respond_with(ResponseTemplate::new(200).set_body_json(&payload))
@@ -175,7 +173,7 @@ mod tests {
         Mock::given(method("GET"))
             .and(path("/catalog"))
             .respond_with(
-                ResponseTemplate::new(200).set_body_json(serde_json::json!({"data":null})),
+                ResponseTemplate::new(200).set_body_json(serde_json::json!({"games":null})),
             )
             .expect(1)
             .mount(&server)
@@ -184,7 +182,7 @@ mod tests {
         assert!(Arc::ptr_eq(&first, &http.catalog().await.unwrap()));
         {
             let mut state = shared.catalog.lock().await;
-            let stale = serde_json::json!({"lastUpdatedAt":(chrono::Utc::now() - chrono::Duration::minutes(31)).to_rfc3339(),"data":[]});
+            let stale = serde_json::json!({"refreshedAt":(chrono::Utc::now() - chrono::Duration::minutes(31)).to_rfc3339(),"games":[]});
             state.saved = Some((Instant::now(), Arc::new(stale)));
         }
         assert_eq!(
@@ -199,7 +197,7 @@ mod tests {
         let server = MockServer::start().await;
         Mock::given(method("GET")).and(path("/catalog"))
             .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_secs(5))
-                .set_body_json(serde_json::json!({"lastUpdatedAt":chrono::Utc::now().to_rfc3339(),"data":[]})))
+                .set_body_json(serde_json::json!({"refreshedAt":chrono::Utc::now().to_rfc3339(),"games":[]})))
             .expect(1).mount(&server).await;
         let shared = SharedNetwork::new(CancellationToken::new(), None);
         let mut http = super::super::tests::http(&server);

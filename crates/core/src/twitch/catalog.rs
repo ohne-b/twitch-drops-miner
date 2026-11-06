@@ -27,7 +27,7 @@ pub(super) fn interval(key: Option<&str>) -> Duration {
 }
 
 pub(super) fn fresh(payload: &Value) -> bool {
-    payload["lastUpdatedAt"]
+    payload["refreshedAt"]
         .as_str()
         .and_then(|value| value.parse::<DateTime<Utc>>().ok())
         .is_some_and(|updated| {
@@ -128,14 +128,14 @@ impl Catalog {
         now: DateTime<Utc>,
     ) -> Result<Self, TwitchError> {
         let payload = payload.borrow();
-        let updated_at: DateTime<Utc> = payload["lastUpdatedAt"]
+        let updated_at: DateTime<Utc> = payload["refreshedAt"]
             .as_str()
             .and_then(|v| v.parse().ok())
             .ok_or_else(|| {
                 diagnostics::invalid(
                     "PublicCatalog",
-                    "lastUpdatedAt must be an RFC3339 timestamp",
-                    payload.get("lastUpdatedAt"),
+                    "refreshedAt must be an RFC3339 timestamp",
+                    payload.get("refreshedAt"),
                 )
             })?;
         if updated_at < now - chrono::Duration::minutes(30)
@@ -148,11 +148,11 @@ impl Catalog {
             );
             return Err(TwitchError::InvalidResponse);
         }
-        let groups = payload["data"].as_array().ok_or_else(|| {
+        let groups = payload["games"].as_array().ok_or_else(|| {
             diagnostics::invalid(
                 "PublicCatalog",
-                "data must be an array",
-                payload.get("data"),
+                "games must be an array",
+                payload.get("games"),
             )
         })?;
         if groups.len() > MAX_CAMPAIGNS {

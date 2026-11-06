@@ -1031,8 +1031,8 @@ mod tests {
                 .await;
             Mock::given(method("GET")).and(path("/catalog"))
                 .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-                    "lastUpdatedAt": (chrono::Utc::now() - chrono::Duration::minutes(if stale {31} else {0})).to_rfc3339(),
-                    "data":[{"rewards":[null]}]
+                    "refreshedAt": (chrono::Utc::now() - chrono::Duration::minutes(if stale {31} else {0})).to_rfc3339(),
+                    "games":[{"rewards":[null]}]
                 }))).mount(&server).await;
             let client = TwitchClient::new(Arc::new(http(&server)), &session());
             let output = Writer::default();

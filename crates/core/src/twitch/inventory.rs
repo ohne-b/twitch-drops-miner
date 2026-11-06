@@ -143,7 +143,7 @@ mod tests {
     };
 
     fn feed(records: Vec<Value>) -> Value {
-        json!({"lastUpdatedAt":Utc::now().to_rfc3339(), "data":[{
+        json!({"refreshedAt":Utc::now().to_rfc3339(), "games":[{
             "gameId":"1", "gameBoxArtURL":"https://static-cdn.jtvnw.net/rust.png", "rewards":records
         }]})
     }
@@ -341,18 +341,18 @@ mod tests {
             let mut payload = feed(vec![]);
             match mode {
                 "stale" => {
-                    payload["lastUpdatedAt"] = (Utc::now() - chrono::Duration::minutes(31))
+                    payload["refreshedAt"] = (Utc::now() - chrono::Duration::minutes(31))
                         .to_rfc3339()
                         .into()
                 }
                 "future" => {
-                    payload["lastUpdatedAt"] = (Utc::now() + chrono::Duration::minutes(6))
+                    payload["refreshedAt"] = (Utc::now() + chrono::Duration::minutes(6))
                         .to_rfc3339()
                         .into()
                 }
-                "null_groups" => payload["data"] = Value::Null,
+                "null_groups" => payload["games"] = Value::Null,
                 "invalid_neighbor" => {
-                    payload["data"][0]["rewards"] = json!([null, campaign_json("new")])
+                    payload["games"][0]["rewards"] = json!([null, campaign_json("new")])
                 }
                 _ => {}
             }

@@ -1800,8 +1800,8 @@ async fn refresh_finishes_after_publication_and_partial_or_failed_requests_keep_
     Mock::given(method("GET"))
         .and(path("/catalog"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-            "lastUpdatedAt":Utc::now().to_rfc3339(),
-            "data":[{"rewards":[public]}]
+            "refreshedAt":Utc::now().to_rfc3339(),
+            "games":[{"rewards":[public]}]
         })))
         .mount(&server)
         .await;
@@ -4420,7 +4420,7 @@ async fn rejected_account_records_block_award_recovery_but_preserve_durable_rece
                 // A matching public record must not substitute its award assumptions.
                 Mock::given(method("GET")).and(path("/catalog"))
                     .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-                        "lastUpdatedAt":Utc::now().to_rfc3339(),"data":[{"gameId":"1","rewards":[campaign_json("one")]}]
+                        "refreshedAt":Utc::now().to_rfc3339(),"games":[{"gameId":"1","rewards":[campaign_json("one")]}]
                     }))).mount(&server).await;
                 let requested_at = Utc::now();
                 let inventory = mining.client.inventory().await.unwrap();

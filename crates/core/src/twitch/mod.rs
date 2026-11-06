@@ -83,7 +83,7 @@ impl Default for Endpoints {
             tv: Url::parse(CLIENT_ORIGIN).unwrap(),
             web: Url::parse("https://www.twitch.tv/").unwrap(),
             pubsub: Url::parse("wss://pubsub-edge.twitch.tv/v1").unwrap(),
-            catalog: Url::parse("https://twitch-drops-api.sunkwi.com/v2/drops").unwrap(),
+            catalog: Url::parse("https://drops.sunkwi.com/api/twitch/drops").unwrap(),
             helix: Url::parse("https://api.twitch.tv/helix/").unwrap(),
             usher: Url::parse("https://usher.ttvnw.net/").unwrap(),
         }

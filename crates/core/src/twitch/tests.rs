@@ -267,7 +267,7 @@ pub(crate) async fn gql_mock(
     Mock::given(method("GET"))
         .and(path("/catalog"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-            "lastUpdatedAt": chrono::Utc::now().to_rfc3339(), "data": []
+            "refreshedAt": chrono::Utc::now().to_rfc3339(), "games": []
         })))
         .with_priority(255)
         .mount(server)
