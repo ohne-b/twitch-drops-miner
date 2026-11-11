@@ -10,7 +10,7 @@ impl AccountManager {
         snapshots: Vec<Snapshot>,
     ) -> anyhow::Result<Vec<(Arc<Application>, mpsc::Receiver<CommandRequest>)>> {
         anyhow::ensure!(self.offline.load(std::sync::atomic::Ordering::Acquire));
-        anyhow::ensure!(snapshots.len() < MAX_ACCOUNTS);
+        anyhow::ensure!(snapshots.len() < 100);
         if let Some(attempt) = self.login.lock().await.take() {
             attempt.cancel.cancel();
         }

@@ -377,7 +377,7 @@ impl AccountManager {
     async fn apply_targets(&self, targets: Vec<Target>, patch: Value) -> Result<Value, AppError> {
         let mut unique = std::collections::HashSet::new();
         if targets.is_empty()
-            || targets.len() > MAX_ACCOUNTS
+            || targets.len() > self.registry.lock().await.accounts.len()
             || targets
                 .iter()
                 .any(|t| !valid_id(&t.id) || !unique.insert(&t.id) || t.revision.len() > 64)

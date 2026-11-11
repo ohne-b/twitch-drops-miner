@@ -49,7 +49,6 @@ export interface AccountsOverview {
   instance: string;
   revision: number;
   accounts: AccountSummary[];
-  limit: number;
   login: AccountLogin | null;
 }
 export interface AccountTarget {
@@ -155,7 +154,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('beforeunload', warn);
   }, []);
   const receive = useCallback((value: AccountsOverview) => {
-    if (!value || !Array.isArray(value.accounts) || value.accounts.length > 20) return;
+    if (!value || !Array.isArray(value.accounts)) return;
     if (current.current?.instance === value.instance && current.current.revision > value.revision)
       return;
     current.current = value;

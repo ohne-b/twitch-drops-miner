@@ -77,13 +77,22 @@ async fn account_selection_is_durable_and_filters_claims_without_disabling_test_
     app.save_telegram(config).await.unwrap();
     app.test_telegram().await.unwrap();
     assert_eq!(server.received_requests().await.unwrap().len(), 3);
-    for ids in [vec![0], vec![1; 101]] {
-        let config = Config {
-            notification_accounts: Some(ids),
-            ..Config::default()
-        };
-        assert!(!config.valid());
-    }
+    let ids: Vec<u64> = (1..=101).collect();
+    let mut config = update(&app.telegram);
+    config.notification_accounts = Some(ids.clone());
+    app.save_telegram(config).await.unwrap();
+    assert_eq!(
+        Telegram::open(dir.path())
+            .unwrap()
+            .view()
+            .notification_accounts,
+        Some(ids)
+    );
+    let config = Config {
+        notification_accounts: Some(vec![0]),
+        ..Config::default()
+    };
+    assert!(!config.valid());
     let legacy: Config =
         serde_json::from_value(json!({"enabled":false,"token":"","chat_id":""})).unwrap();
     assert!(legacy.notification_accounts.is_none());

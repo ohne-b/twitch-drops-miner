@@ -150,9 +150,10 @@ embed it and run without a build tool/runtime companion. Production builds never
 ## Multiple accounts
 
 - One `AccountManager` owns independent account applications and their runtimes. Switching
-  the viewed account never pauses another account. Bound active profiles to 20 and stagger
-  startup. An account worker/storage failure remains local; process shutdown drains all workers,
-  accepted writes, onboarding, public catalog work and the one Telegram worker.
+  the viewed account never pauses another account. Account count has no fixed product cap;
+  stagger startup and retain bounded requests and shared HTTP scheduling. Bulk targets cannot
+  outnumber registered profiles. An account worker/storage failure remains local; process shutdown
+  drains all workers, accepted writes, onboarding, public catalog work and the one Telegram worker.
 - `accounts.json` binds opaque local IDs to verified immutable Twitch user IDs. The original
   profile keeps its files at the data root; additional profiles live in `accounts/<id>/`.
   Preserve existing history/archive/journal formats. Old data without a known identity stays

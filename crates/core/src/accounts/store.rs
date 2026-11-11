@@ -9,7 +9,6 @@ use crate::{
 };
 
 pub const PRIMARY: &str = "primary";
-pub const MAX_ACCOUNTS: usize = 20;
 const REGISTRY: &str = "accounts.json";
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -85,16 +84,12 @@ impl Registry {
         let mut ids = HashSet::new();
         let mut users = HashSet::new();
         ensure!(
-            self.version == 1 && self.accounts.len() <= 100,
+            self.version == 1,
             "invalid account registry; original file preserved"
         );
         ensure!(
             self.accounts.iter().filter(|a| a.id == PRIMARY).count() == 1,
             "missing original account; registry preserved"
-        );
-        ensure!(
-            self.accounts.iter().filter(|a| !a.removed).count() <= MAX_ACCOUNTS,
-            "too many active accounts"
         );
         for account in &self.accounts {
             ensure!(

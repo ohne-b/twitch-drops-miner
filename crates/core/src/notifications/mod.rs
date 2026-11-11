@@ -207,7 +207,7 @@ impl Config {
             && self
                 .notification_accounts
                 .as_ref()
-                .is_none_or(|accounts| accounts.len() <= 100 && accounts.iter().all(|id| *id > 0))
+                .is_none_or(|accounts| accounts.iter().all(|id| *id > 0))
             && token
             && chat
             && (!(self.enabled || self.remote_control)
