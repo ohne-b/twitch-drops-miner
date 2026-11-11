@@ -204,10 +204,11 @@ impl Config {
         let chat = self.chat_id.is_empty() || self.chat_id.parse::<i64>().is_ok_and(|id| id != 0);
         self.token.len() <= 256
             && self.chat_id.len() <= 24
-            && self
-                .notification_accounts
-                .as_ref()
-                .is_none_or(|accounts| accounts.iter().all(|id| *id > 0))
+            && self.notification_accounts.as_ref().is_none_or(|accounts| {
+                // Bound native selection payloads independently of the installation's account count.
+                accounts.len() <= 1024 * 1024 / size_of::<u64>()
+                    && accounts.iter().all(|id| *id > 0)
+            })
             && token
             && chat
             && (!(self.enabled || self.remote_control)

@@ -93,6 +93,17 @@ async fn account_selection_is_durable_and_filters_claims_without_disabling_test_
         ..Config::default()
     };
     assert!(!config.valid());
+    let original = std::fs::read(dir.path().join("telegram.json")).unwrap();
+    let mut config = update(&app.telegram);
+    config.notification_accounts = Some((1..=1024 * 1024 / size_of::<u64>() as u64 + 1).collect());
+    assert!(matches!(
+        app.save_telegram(config).await,
+        Err(crate::app::AppError::Telegram(Error::Invalid))
+    ));
+    assert_eq!(
+        std::fs::read(dir.path().join("telegram.json")).unwrap(),
+        original
+    );
     let legacy: Config =
         serde_json::from_value(json!({"enabled":false,"token":"","chat_id":""})).unwrap();
     assert!(legacy.notification_accounts.is_none());
