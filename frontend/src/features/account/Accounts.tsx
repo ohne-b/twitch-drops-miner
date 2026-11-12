@@ -183,7 +183,7 @@ export default function Accounts() {
     <IconButton
       path={mdiAccountPlusOutline}
       label={t(overview?.login ? 'accounts_continue_login' : 'accounts_add')}
-      disabled={disabled || (!overview?.login && accounts.length >= (overview?.limit ?? 20))}
+      disabled={disabled}
       onClick={() => (overview?.login ? setLoginOpen(true) : void login())}
     />
   );
@@ -309,9 +309,6 @@ export default function Accounts() {
           {addAccount}
         </div>
       ) : null}
-      {accounts.length >= (overview?.limit ?? 20) && (
-        <p className="text-xs text-muted">{t('account_limit')}</p>
-      )}
       {!accounts.length && <Empty title={t('accounts_empty')} detail={t('accounts_empty_help')} />}
       {accounts.length === 1 && !accounts[0]!.connected && (
         <p className="text-muted text-sm">

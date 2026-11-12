@@ -8,7 +8,7 @@ mod tests;
 
 pub use api::{Request, Target};
 pub use login::LoginView;
-pub use store::{Connection, MAX_ACCOUNTS, PRIMARY, valid_id};
+pub use store::{Connection, PRIMARY, valid_id};
 
 use crate::{
     app::{Application, CommandRequest, Notification},
@@ -31,8 +31,6 @@ pub enum Error {
     NotFound,
     #[error("account_required")]
     Required,
-    #[error("account_limit")]
-    Limit,
     #[error("account_busy")]
     Busy,
     #[error("account_identity_mismatch")]
@@ -54,7 +52,6 @@ impl Error {
         match self {
             Self::NotFound => "account_not_found",
             Self::Required => "account_required",
-            Self::Limit => "account_limit",
             Self::Busy => "account_busy",
             Self::Identity => "account_identity_mismatch",
             Self::Expired => "account_login_expired",
@@ -89,7 +86,6 @@ pub struct Overview {
     pub instance: String,
     pub revision: u64,
     pub accounts: Vec<Summary>,
-    pub limit: usize,
     pub login: Option<LoginView>,
 }
 
@@ -211,7 +207,6 @@ impl AccountManager {
                 instance: random_hex::<16>()?,
                 revision: 1,
                 accounts: vec![],
-                limit: MAX_ACCOUNTS,
                 login: None,
             }),
             publication: Mutex::new(()),

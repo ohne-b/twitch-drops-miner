@@ -487,7 +487,6 @@
             "accounts_cache_help": "Clears cached inventory and local claim history for {name}, then refreshes it. Settings, credentials and completed campaigns are kept.",
             "account_not_found": "This account is no longer available. Choose another account.",
             "account_required": "Choose a Twitch account first.",
-            "account_limit": "You can add up to 20 accounts.",
             "account_busy": "Another account operation is in progress. Finish or cancel the current sign-in first.",
             "account_identity_mismatch": "This Twitch account does not match the saved profile. Sign in with the original account, or add a separate account.",
             "account_login_expired": "This sign-in expired. Cancel it and start again.",

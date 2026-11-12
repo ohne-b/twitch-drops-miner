@@ -80,7 +80,6 @@ test.beforeEach(async ({ page }) => {
                 return {
                   instance: 'offline',
                   revision: 1,
-                  limit: 20,
                   login: null,
                   accounts: [
                     {

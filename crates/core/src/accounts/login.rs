@@ -229,10 +229,6 @@ impl AccountManager {
                     .map(|a| a.id.clone())
             })
             .unwrap_or(random_hex::<16>().map_err(|_| Error::Storage)?);
-        let was_active = registry.find(&account_id).is_some_and(|a| !a.removed);
-        if !was_active && registry.accounts.iter().filter(|a| !a.removed).count() >= MAX_ACCOUNTS {
-            return Err(Error::Limit.into());
-        }
         let old = self
             .entries
             .read()

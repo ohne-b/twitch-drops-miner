@@ -56,13 +56,13 @@ test.beforeEach(async ({ request, page }) => {
 
 for (const width of [1440, 390, 320]) {
   test(`account overview, bulk controls and switcher fit ${width}px`, async ({ page, request }) => {
-    await seed(request, 19);
+    await seed(request, 20);
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/settings#account');
     await expect(
-      page.getByRole('checkbox', { name: 'Select Account 20', exact: true }),
+      page.getByRole('checkbox', { name: 'Select Account 21', exact: true }),
     ).toBeAttached();
-    await expect(page.getByRole('button', { name: 'Add account', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Add account', exact: true })).toBeEnabled();
     await page.getByRole('checkbox', { name: 'Select all', exact: true }).check();
     const toolbar = page.getByRole('button', { name: 'Add account', exact: true }).locator('..');
     const buttons = toolbar.getByRole('button');
@@ -89,10 +89,12 @@ for (const width of [1440, 390, 320]) {
       .filter({ visible: true })
       .click();
     const picker = page.getByRole('group', { name: 'Switch account', exact: true });
-    await picker.getByRole('searchbox').fill('Account 20');
+    await picker.getByRole('searchbox').fill('Account 21');
     await expect(picker.getByRole('button')).toHaveCount(2); // Result and clear-search control.
-    await picker.getByRole('button', { name: /^Account 20/ }).click();
-    await expect(page).toHaveURL(/account=00000000000000000000000000000013/);
+    await picker.getByRole('button', { name: /^Account 21/ }).click();
+    await expect(page).toHaveURL(/account=00000000000000000000000000000014/);
+    await page.reload();
+    await expect(page.locator('#settings-account .account-identity')).toContainText('Account 21');
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
     await page.screenshot({ path: `../artifacts/accounts-${width}.png` });

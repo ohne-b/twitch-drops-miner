@@ -245,6 +245,43 @@ async fn bulk_actions_report_stale_accounts_without_replacing_newer_preferences(
 }
 
 #[tokio::test]
+async fn bulk_targets_still_reject_empty_duplicate_malformed_and_excess_requests() {
+    let (_directory, manager) = manager().await;
+    add(&manager, 73).await;
+    let primary = target(&manager, PRIMARY).await;
+    for targets in [
+        vec![],
+        vec![primary.clone(), primary.clone()],
+        vec![Target {
+            id: "../invalid".into(),
+            revision: primary.revision.clone(),
+        }],
+        vec![Target {
+            id: PRIMARY.into(),
+            revision: "x".repeat(65),
+        }],
+        (1..=3)
+            .map(|id| Target {
+                id: format!("{id:032x}"),
+                revision: primary.revision.clone(),
+            })
+            .collect(),
+    ] {
+        assert!(matches!(
+            manager
+                .request(Request::Pause {
+                    targets,
+                    paused: true
+                })
+                .await,
+            Err(AppError::Account(Error::Invalid))
+        ));
+    }
+    assert!(!manager.primary.settings.read().await.mining_paused);
+    manager.shutdown().await;
+}
+
+#[tokio::test]
 async fn copying_preferences_preserves_target_pause_display_connection_and_claim_setting() {
     let (_directory, manager) = manager().await;
     let id = add(&manager, 73).await;
@@ -398,28 +435,43 @@ async fn old_unassigned_data_requires_explicit_association_and_is_not_used_for_a
 }
 
 #[tokio::test]
-async fn twenty_accounts_have_bounded_registry_and_shutdown_without_network() {
-    let (_directory, manager) = manager().await;
-    for user in 100..119 {
+async fn more_than_one_hundred_accounts_can_add_bulk_pause_and_reopen_without_network() {
+    let (directory, manager) = manager().await;
+    for user in 100..200 {
         add(&manager, user).await;
     }
-    assert_eq!(manager.overview().await.accounts.len(), 20);
-    let attempt = verified(&manager, 200, None).await;
-    assert!(matches!(
-        manager
-            .request(Request::FinishLogin {
-                attempt,
-                label: String::new(),
-                copy_from: None,
-                copy_auto_claim: false
-            })
-            .await,
-        Err(AppError::Account(Error::Limit))
-    ));
+    let accounts = manager.overview().await.accounts;
+    assert_eq!(accounts.len(), 101);
+    let mut targets = vec![];
+    for account in &accounts {
+        targets.push(target(&manager, &account.id).await);
+    }
+    let result = manager
+        .request(Request::Pause {
+            targets,
+            paused: true,
+        })
+        .await
+        .unwrap();
+    assert_eq!(result["results"].as_array().unwrap().len(), 101);
+    assert!(
+        result["results"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|r| r["ok"] == true)
+    );
+    assert!(manager.overview().await.accounts.iter().all(|a| a.paused));
     tokio::time::timeout(Duration::from_secs(3), manager.shutdown())
         .await
         .unwrap();
     assert!(manager.tasks.is_empty() && manager.writes.is_empty());
+    drop(manager);
+    let (reopened, _commands) = AccountManager::open(directory.path().into()).unwrap();
+    let restored = reopened.overview().await.accounts;
+    assert_eq!(restored.len(), 101);
+    assert!(restored.iter().all(|a| a.paused && !a.unavailable));
+    reopened.shutdown().await;
 }
 
 #[test]
