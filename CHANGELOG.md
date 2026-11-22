@@ -1,5 +1,12 @@
 # Changelog
 
+## [v2.5.1](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v2.5.1) — 2026-11-22
+
+- switch to Sunkwi's new Twitch Drops catalog endpoint ([#144](https://github.com/ohne-b/twitch-drops-miner/pull/144))
+- remove the fixed account limit from onboarding, account management and Telegram claim-alert selection ([#146](https://github.com/ohne-b/twitch-drops-miner/pull/146))
+
+If you exceed an older version's account limits, restore a compatible data backup before downgrading.
+
 ## [v2.5.0](https://github.com/ohne-b/twitch-drops-miner/releases/tag/v2.5.0) — 2026-10-31
 
 - add customizable progress displays and an estimated countdown ([#140](https://github.com/ohne-b/twitch-drops-miner/pull/140))
